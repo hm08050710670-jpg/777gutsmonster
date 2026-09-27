@@ -50,7 +50,15 @@ class FieldScene {
   events() { return this.map.events.filter(e => this.eventActive(e)); }
   eventAt(x, y) { return this.events().find(e => e.x === x && e.y === y); }
   blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look'].includes(ev.kind); }
+  objectAt(x, y) {
+    for (const o of (this.map.objects || [])) {
+      if (x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h) return o;
+    }
+    return null;
+  }
   canWalk(x, y) {
+    const o = this.objectAt(x, y);
+    if (o) { const ds = o.doors || (o.door ? [o.door] : []); return ds.some(d => d.x === x && d.y === y); }
     if (!DATA.WALKABLE.has(this.tileAt(x, y))) return false;
     return !this.blocksWalk(this.eventAt(x, y));
   }
@@ -298,8 +306,21 @@ class FieldScene {
       for (let tx = cx0; tx <= cx0 + Math.ceil(W / T); tx++) {
         const t = this.tileAt(tx, ty);
         if (t === ' ') continue;
-        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), tx * T - camX + bx, ty * T - camY + by);
+        const px = tx * T - camX + bx, py = ty * T - camY + by;
+        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py);
+        if (t === '~') {
+          // 水際：陸に接する辺に暗い縁と明るい線
+          ctx.fillStyle = COL.waterEdge;
+          if (this.tileAt(tx, ty - 1) !== '~') { ctx.fillRect(px, py, T, 2); ctx.fillStyle = COL.waterL; ctx.fillRect(px + 2, py + 2, T - 4, 1); ctx.fillStyle = COL.waterEdge; }
+          if (this.tileAt(tx, ty + 1) !== '~') ctx.fillRect(px, py + T - 2, T, 2);
+          if (this.tileAt(tx - 1, ty) !== '~') ctx.fillRect(px, py, 2, T);
+          if (this.tileAt(tx + 1, ty) !== '~') ctx.fillRect(px + T - 2, py, 2, T);
+        }
       }
+    }
+    // 大きな建物
+    for (const o of (this.map.objects || [])) {
+      ctx.drawImage(Gfx.get(o.art), o.x * T - camX + bx, o.y * T - camY + by);
     }
     // イベントの見た目（ボール・NPC）
     for (const ev of this.events()) {
