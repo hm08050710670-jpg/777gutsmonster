@@ -32,12 +32,7 @@ class FieldScene {
     return !this.blocksWalk(this.eventAt(x, y));
   }
 
-  enter() {
-    // マップに入った直後のイベント（ノブオ登場など）
-    const rival = this.events().find(e => e.kind === 'rival');
-    if (rival) this.pendingEvent = rival;
-    UI.refreshNote(Game.state);
-  }
+  enter() { UI.refreshNote(Game.state); }
 
   update(frame) {
     const st = Game.state;
@@ -47,7 +42,6 @@ class FieldScene {
       if (this.moving === 0) this.onArrive();
       return;
     }
-    if (this.pendingEvent) { const ev = this.pendingEvent; this.pendingEvent = null; this.runRival(ev); return; }
     if (Input.pressed('start')) { openStartMenu(); return; }
     if (Input.pressed('a')) { this.interact(); return; }
 
@@ -110,6 +104,7 @@ class FieldScene {
       case 'sign': case 'look': say(ev.text); break;
       case 'npc': this.talkNpc(ev); break;
       case 'starter': this.pickStarter(ev); break;
+      case 'rival': this.runRival(ev); break;
     }
   }
 
@@ -142,7 +137,7 @@ class FieldScene {
         }, n);
       }, n);
     } else if (!st.flags.rival1) {
-      say('その子と いっしょに 冒険を はじめよう。\n町の南から ガーデンロードへ いける。', null, n);
+      say('その子と いっしょに 冒険を はじめよう。\n町の北から ガーデンロードへ いける。', null, n);
     } else {
       say('ノブオと たたかったのか。\nライバルが いると つよくなれるぞ。', null, n);
     }
@@ -163,7 +158,7 @@ class FieldScene {
   // ノブオ登場 → ブブとの初戦
   runRival(ev) {
     const st = Game.state;
-    ev.face = 'up';
+    ev.face = FACE[st.dir];
     say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
       say('じゃあ さっそく しょうぶだ！\nいけっ ブブ！', () => {
         const enemy = makeMonster('bubu', 5);
@@ -171,9 +166,9 @@ class FieldScene {
           Game.setFlag('rival1');
           if (result === 'lose') {
             st.party.forEach(m => { m.hp = m.maxHp; });
-            say('ま、そんなもんだろ。\nまた しょうぶ しようぜ！', () => Save.auto(st), 'ノブオ');
+            say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', () => Save.auto(st), 'ノブオ');
           } else {
-            say('くっ… ブブが まけるなんて！\nつぎは まけないからな！', () => Save.auto(st), 'ノブオ');
+            say('くっ… ブブが まけるなんて！\nガーデンロードは ゆずってやるよ。', () => Save.auto(st), 'ノブオ');
           }
         } }));
       }, 'ノブオ');

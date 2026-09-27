@@ -2,7 +2,7 @@
 """
 単一HTML（dist/index.html）を生成する。
   - CSS / JS をインライン化
-  - 美咲フォントを必要文字（ASCII・かな・全角記号・第1水準相当は含めず）にサブセット化して data: URI で埋め込む
+  - DotGothic16を必要文字（ASCII・かな・全角記号・第1水準相当は含めず）にサブセット化して data: URI で埋め込む
 用途: Claude の Artifact や、1ファイルで配布したいとき。GitHub Pages では不要。
 実行: python3 tools/build-single.py
 """
@@ -26,7 +26,7 @@ for a, b in ranges: unicodes.update(range(a, b + 1))
 unicodes.update(ord(c) for c in kanji)
 
 opts = subset.Options(); opts.notdef_outline = True; opts.name_IDs = ['*']; opts.hinting = False
-font = TTFont('assets/fonts/misaki_gothic.ttf')
+font = TTFont('assets/fonts/DotGothic16-Regular.ttf')
 sub = subset.Subsetter(opts); sub.populate(unicodes=unicodes); sub.subset(font)
 buf = io.BytesIO(); font.save(buf); font_b64 = base64.b64encode(buf.getvalue()).decode()
 print(f'font subset: {len(unicodes)} codepoints -> {len(buf.getvalue())//1024} KB')
@@ -39,7 +39,7 @@ html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{
 def inline_js(m):
     src = m.group(1)
     code = open(src, encoding='utf-8').read()
-    code = code.replace("url(assets/fonts/misaki_gothic.ttf)", f"url(data:font/ttf;base64,{font_b64})")
+    code = code.replace("FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf'", f"FONT_FILE: 'data:font/ttf;base64,{font_b64}'")
     return f'<script>\n{code}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline_js, html)
 

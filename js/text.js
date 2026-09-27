@@ -1,13 +1,13 @@
 // ============================================================
 // テキスト描画・ウィンドウ枠（CLASSIC COLOR）
-//   8x8 ドットの美咲ゴシック（自由利用可）を 8px で描画。半角は 4px 幅。
+//   DotGothic16（SIL OFL）を論理8px（実描画16px）で描画。半角は 4px 幅。
 // ============================================================
 const Text = (() => {
   let ready = false;
 
   async function load() {
     try {
-      const f = new FontFace(CONFIG.FONT, 'url(assets/fonts/misaki_gothic.ttf)');
+      const f = new FontFace(CONFIG.FONT, `url(${CONFIG.FONT_FILE})`);
       await f.load();
       document.fonts.add(f);
       await document.fonts.load(`8px "${CONFIG.FONT}"`);
@@ -40,7 +40,14 @@ const Text = (() => {
       let line = '', w = 0;
       for (const ch of para) {
         const cw = charW(ch);
-        if (w + cw > maxW) { lines.push(line); line = ''; w = 0; }
+        if (w + cw > maxW) {
+          // できるだけ直前の空白で折り返す（「だろ？」のような分断を避ける）
+          const sp = line.lastIndexOf(' ');
+          if (sp > 0) { lines.push(line.slice(0, sp)); line = line.slice(sp + 1); }
+          else { lines.push(line); line = ''; }
+          w = width(line);
+        }
+        if (ch === ' ' && line === '') continue;
         line += ch; w += cw;
       }
       lines.push(line);

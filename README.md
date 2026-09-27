@@ -63,7 +63,7 @@ js/data.js          モンスター・技・アイテム・マップ・イベン
 js/save.js          セーブ／ロード
 js/game.js          ループ・シーンスタック・スケーリング
 js/scenes/          title / field / dialog / menu / battle
-assets/fonts/       美咲ゴシック（8×8日本語ビットマップ・自由利用可、LICENSE同梱）
+assets/fonts/       DotGothic16（SIL OFL、ライセンス同梱）
 tools/smoke-test.js スマホ相当のヘッドレスブラウザで一通り操作する検証スクリプト
 ```
 
@@ -85,4 +85,4 @@ node tools/smoke-test.js
 ## ライセンス
 
 - コード: MIT（自由に改変してください）
-- 美咲フォント: `assets/fonts/misaki_LICENSE.txt` を参照（自由利用・再配布可、無保証）
+- DotGothic16: SIL Open Font License（`assets/fonts/DotGothic16_OFL.txt`）

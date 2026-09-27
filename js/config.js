@@ -11,7 +11,9 @@ const CONFIG = {
   ENCOUNTER_RATE: 12,
   GRACE_STEPS: 4,    // 戦闘直後はこの歩数だけ遭遇しない
   SAVE_KEY: 'guts-monsters-save-v1',
-  FONT: 'misaki_gothic',
+  FONT: 'DotGothic16',
+  FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf',
+  RENDER_SCALE: 2,   // 内部描画を2倍解像度にして文字を読みやすくする
   TITLE: 'GUTS MONSTERS',
   TAGLINE: 'A LITTLE STEP, A BIG ADVENTURE.',
 };

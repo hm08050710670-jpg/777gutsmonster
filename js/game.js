@@ -3,7 +3,10 @@
 // ============================================================
 const Game = (() => {
   const canvas = document.getElementById('screen');
+  const RS = CONFIG.RENDER_SCALE || 1;
+  canvas.width = CONFIG.W * RS; canvas.height = CONFIG.H * RS;
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);   // 以降の座標は 192x208 のまま
   ctx.imageSmoothingEnabled = false;
 
   const scenes = [];
