@@ -1,55 +1,139 @@
 // ============================================================
-// タイトル画面
+// タイトル画面 → 主人公設定（なまえ → せいべつ → プレビュー）
 // ============================================================
 class TitleScene {
   constructor() { this.overlay = false; this.sel = 0; this.menu = false; }
+  items() { return Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい']; }
   update(frame) {
     if (!this.menu) {
-      if (Input.pressed('a') || Input.pressed('start')) {
-        this.menu = true;
-        this.items = Save.exists() ? ['つづきから', 'はじめから'] : ['はじめから'];
-      }
+      if (Input.pressed('a') || Input.pressed('start')) this.menu = true;
       return;
     }
-    if (Input.pressed('up')) this.sel = (this.sel + this.items.length - 1) % this.items.length;
-    if (Input.pressed('down')) this.sel = (this.sel + 1) % this.items.length;
+    const it = this.items();
+    if (Input.pressed('up')) this.sel = (this.sel + it.length - 1) % it.length;
+    if (Input.pressed('down')) this.sel = (this.sel + 1) % it.length;
     if (Input.pressed('b')) { this.menu = false; return; }
     if (Input.pressed('a')) {
-      const label = this.items[this.sel];
+      const label = it[this.sel];
       if (label === 'つづきから') {
         Game.state = Save.load() || Save.newGame();
         Game.replace(new FieldScene());
+      } else if (label === 'せってい') {
+        Game.push(new SettingsScene());
       } else if (Save.exists()) {
-        ask('セーブデータを けして\nはじめから はじめますか？', ['はい', 'いいえ'], i => {
-          if (i === 0) { Game.state = Save.newGame(); Game.replace(new FieldScene()); }
-        });
+        ask('セーブデータを けして\nはじめから はじめますか？', ['はい', 'いいえ'], i => { if (i === 0) Game.push(new SetupScene()); });
       } else {
-        Game.state = Save.newGame();
+        Game.push(new SetupScene());
+      }
+    }
+  }
+
+  // 背景：カラーのゴルフコース（生成）
+  drawBackground(ctx, frame) {
+    const W = CONFIG.W, H = CONFIG.H;
+    const sky = ctx.createLinearGradient(0, 0, 0, 90);
+    sky.addColorStop(0, '#7cc4f2'); sky.addColorStop(1, '#dbeffb');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 90);
+    // 遠くの丘
+    ctx.fillStyle = '#7fc26a';
+    ctx.beginPath(); ctx.ellipse(40, 96, 90, 22, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(170, 100, 80, 26, 0, 0, Math.PI * 2); ctx.fill();
+    // フェアウェイ
+    ctx.fillStyle = '#5fae4b'; ctx.fillRect(0, 100, W, H - 100);
+    ctx.fillStyle = '#6ebd59';
+    for (let y = 100; y < H; y += 16) ctx.fillRect(0, y, W, 8);
+    // 池
+    ctx.fillStyle = '#4b93d8';
+    ctx.beginPath(); ctx.ellipse(140, 150, 34, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9fd0f2'; ctx.fillRect(126, 146, 10, 2); ctx.fillRect(150, 153, 8, 2);
+    // 木
+    [[8, 88], [28, 84], [160, 82], [178, 88], [4, 130], [60, 176]].forEach(([x, y]) => ctx.drawImage(Gfx.get('tree'), x, y));
+    // 旗
+    ctx.fillStyle = '#f4f1e8'; ctx.fillRect(96, 122, 1, 22);
+    ctx.fillStyle = '#e04a3a'; ctx.fillRect(97, 122, 8, 6);
+    ctx.fillStyle = '#f4f1e8'; ctx.beginPath(); ctx.ellipse(92, 146, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  draw(ctx, frame) {
+    this.drawBackground(ctx, frame);
+    // ロゴ
+    const W = CONFIG.W;
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(14, 22, W - 28, 44);
+    Text.box(ctx, 12, 18, W - 24, 44);
+    ctx.font = 'bold 15px system-ui, sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+    ctx.fillStyle = THEME.greenDark; ctx.fillText(CONFIG.TITLE, W / 2 + 1, 27);
+    ctx.fillStyle = '#e04a3a'; ctx.fillText(CONFIG.TITLE, W / 2, 26);
+    ctx.textAlign = 'left';
+    Text.draw(ctx, CONFIG.TAGLINE, W / 2 - Text.width(CONFIG.TAGLINE) / 2, 48, THEME.green);
+    // 御三家
+    ['m_hinokapi', 'm_shibamog', 'm_amepiyo'].forEach((s, i) => {
+      const bob = Math.floor(frame / 20 + i) % 2;
+      ctx.drawImage(Gfx.get(s), 26 + i * 52, 106 + bob);
+    });
+    if (!this.menu) {
+      if (Math.floor(frame / 30) % 2 === 0) {
+        const t = 'PUSH START'; Text.box(ctx, W / 2 - 34, 168, 68, 20); Text.draw(ctx, t, W / 2 - Text.width(t) / 2, 174);
+      }
+    } else {
+      const it = this.items(); const h = it.length * 16 + 16, w = 88;
+      Text.box(ctx, W / 2 - w / 2, 200 - h - 8, w, h);
+      it.forEach((label, i) => {
+        Text.draw(ctx, label, W / 2 - w / 2 + 20, 200 - h + i * 16);
+        if (i === this.sel) Text.cursor(ctx, W / 2 - w / 2 + 10, 200 - h + i * 16);
+      });
+    }
+    Text.draw(ctx, 'v0.2', W - 22, CONFIG.H - 10, '#ffffff');
+  }
+}
+
+// ---- 主人公設定 ----
+class SetupScene {
+  constructor() { this.overlay = false; this.step = 'name'; this.name = ''; this.gender = 'm'; this.sel = 0; this.asked = false; }
+  enter() {
+    UI.promptName(name => { this.name = name; this.step = 'gender'; });
+  }
+  update(frame) {
+    if (this.step === 'name') return; // HTML入力待ち
+    if (this.step === 'gender') {
+      if (Input.pressed('left') || Input.pressed('right') || Input.pressed('up') || Input.pressed('down')) this.sel ^= 1;
+      if (Input.pressed('a')) { this.gender = this.sel === 0 ? 'm' : 'f'; this.step = 'preview'; }
+      return;
+    }
+    if (this.step === 'preview') {
+      if (Input.pressed('b')) { this.step = 'gender'; return; }
+      if (Input.pressed('a')) {
+        const st = Save.newGame(this.name, this.gender);
+        Game.state = st;
+        Save.auto(st);
         Game.replace(new FieldScene());
       }
     }
   }
   draw(ctx, frame) {
-    ctx.fillStyle = PAL[0]; ctx.fillRect(0, 0, 160, 144);
-    // ロゴ（仮）：太い二重線の枠にタイトル
-    Text.box(ctx, 16, 24, 128, 40);
-    Text.draw(ctx, 'GB RPG', 56, 34);
-    Text.draw(ctx, 'SKELETON', 48, 46);
-    // 3匹をならべる
-    ['m_kokedama', 'm_hinokoro', 'm_shizukun'].forEach((s, i) => {
-      const bob = Math.floor(frame / 20 + i) % 2;
-      ctx.drawImage(Gfx.get(s, 2), 16 + i * 48, 72 + bob);
-    });
-    if (!this.menu) {
-      if (Math.floor(frame / 30) % 2 === 0) Text.draw(ctx, 'PUSH START', 60, 124);
-    } else {
-      const h = this.items.length * 16 + 16;
-      Text.box(ctx, 40, 136 - h - 8, 80, h);
-      this.items.forEach((it, i) => {
-        Text.draw(ctx, it, 56, 136 - h + i * 16);
-        if (i === this.sel) Text.cursor(ctx, 48, 136 - h + i * 16);
+    const W = CONFIG.W, H = CONFIG.H;
+    ctx.fillStyle = THEME.ivory2; ctx.fillRect(0, 0, W, H);
+    if (this.step === 'name') { Text.draw(ctx, '01. なまえを きめよう', 24, 24, THEME.green); return; }
+    if (this.step === 'gender') {
+      Text.draw(ctx, '02. せいべつを えらぼう', 24, 24, THEME.green);
+      ['hm', 'hf'].forEach((g, i) => {
+        const x = 40 + i * 80, y = 70;
+        Text.box(ctx, x - 12, y - 12, 56, 64);
+        ctx.drawImage(Gfx.get(`${g}_down0`, 2), x, y);
+        const label = i === 0 ? 'だんせい' : 'じょせい';
+        Text.draw(ctx, label, x + 16 - Text.width(label) / 2, y + 40);
+        if (this.sel === i) Text.cursor(ctx, x - 6, y + 40);
       });
+      Text.box(ctx, 0, H - 40, W, 40);
+      Text.draw(ctx, `${this.name}、どちらで 冒険する？`, 10, H - 26);
+      return;
     }
-    Text.draw(ctx, 'v0.1', 136, 136, 2);
+    // preview
+    Text.draw(ctx, '03. この主人公で いく？', 24, 24, THEME.green);
+    Text.box(ctx, W / 2 - 40, 48, 80, 96);
+    ctx.drawImage(Gfx.get(`${this.gender === 'f' ? 'hf' : 'hm'}_down0`, 4), W / 2 - 32, 60);
+    Text.draw(ctx, this.name, W / 2 - Text.width(this.name) / 2, 128);
+    Text.box(ctx, 0, H - 40, W, 40);
+    Text.draw(ctx, 'A: この主人公で 冒険をはじめる', 10, H - 30);
+    Text.draw(ctx, 'B: もどる', 10, H - 18, THEME.textDim);
   }
 }

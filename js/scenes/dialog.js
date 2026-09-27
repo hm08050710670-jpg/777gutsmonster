@@ -1,27 +1,22 @@
 // ============================================================
-// メッセージウィンドウ（文字送り・ページ送り・はい/いいえ）
-//   new DialogScene({ text, onDone, choices, onChoice, box })
-//   box: {x,y,w,h} 省略時は画面下 20x6 マス
+// メッセージウィンドウ（文字送り・ページ送り・はい/いいえ・話者名）
+//   new DialogScene({ text, name, onDone, choices, onChoice, box })
 // ============================================================
 class DialogScene {
   constructor(opt) {
     this.overlay = true;
     this.text = opt.text || '';
+    this.name = opt.name || null;
     this.onDone = opt.onDone || null;
-    this.choices = opt.choices || null;   // 例: ['はい','いいえ']
+    this.choices = opt.choices || null;
     this.onChoice = opt.onChoice || null;
-    this.box = opt.box || { x: 0, y: 96, w: 160, h: 48 };
-    this.lineY = [this.box.y + 12, this.box.y + 28];
-    this.textX = this.box.x + 8;
+    this.box = opt.box || { x: 0, y: CONFIG.H - 56, w: CONFIG.W, h: 56 };
+    this.lineY = [this.box.y + 14, this.box.y + 30];
+    this.textX = this.box.x + 10;
     this.instant = !!opt.instant;
-
-    const maxW = this.box.w - 16;
-    this.lines = Text.wrap(this.text, maxW);
-    this.page = 0;           // 表示中ページ（2行単位）
-    this.chars = 0;          // 現在ページで表示済みの文字数
-    this.tick = 0;
-    this.choosing = false;
-    this.sel = 0;
+    this.lines = Text.wrap(this.text, this.box.w - 20);
+    this.page = 0; this.chars = 0; this.tick = 0;
+    this.choosing = false; this.sel = 0;
   }
   pageLines() { return this.lines.slice(this.page * 2, this.page * 2 + 2); }
   pageTotal() { return this.pageLines().reduce((n, l) => n + [...l].length, 0); }
@@ -37,12 +32,11 @@ class DialogScene {
     }
     const total = this.pageTotal();
     if (this.chars < total) {
-      // Bかを押していると高速送り
-      const speed = (Input.down('a') || Input.down('b') || this.instant) ? 0 : CONFIG.TEXT_SPEED;
+      const base = (Game.state && Game.state.settings) ? Game.state.settings.textSpeed : CONFIG.TEXT_SPEED;
+      const speed = (Input.down('a') || Input.down('b') || this.instant) ? 0 : base;
       if (++this.tick >= speed) { this.tick = 0; this.chars++; }
       return;
     }
-    // 最終ページで選択肢がある場合は、文字送り完了と同時に選択肢を出す
     if (this.choices && this.isLastPage()) { this.choosing = true; return; }
     if (Input.pressed('a') || Input.pressed('b')) {
       if (!this.isLastPage()) { this.page++; this.chars = 0; return; }
@@ -54,29 +48,32 @@ class DialogScene {
   draw(ctx, frame) {
     const b = this.box;
     Text.box(ctx, b.x, b.y, b.w, b.h);
+    if (this.name) {
+      const w = Text.width(this.name) + 12;
+      Text.box(ctx, b.x + 6, b.y - 12, w, 18);
+      Text.draw(ctx, this.name, b.x + 12, b.y - 7, THEME.green);
+    }
     let remain = this.chars;
-    const pl = this.pageLines();
-    pl.forEach((line, i) => {
+    this.pageLines().forEach((line, i) => {
       const cs = [...line];
       const show = cs.slice(0, Math.max(0, remain)).join('');
       remain -= cs.length;
       Text.draw(ctx, show, this.textX, this.lineY[i]);
     });
     if (this.chars >= this.pageTotal() && !this.isLastPage()) {
-      Text.moreArrow(ctx, b.x + b.w - 16, b.y + b.h - 10, frame);
+      Text.moreArrow(ctx, b.x + b.w - 16, b.y + b.h - 11, frame);
     }
     if (this.choosing) {
-      const cw = 56, ch = this.choices.length * 16 + 16;
-      const cx = 160 - cw, cy = b.y - ch;
+      const cw = 60, ch = this.choices.length * 16 + 16;
+      const cx = b.x + b.w - cw - 4, cy = b.y - ch - 2;
       Text.box(ctx, cx, cy, cw, ch);
       this.choices.forEach((c, i) => {
-        Text.draw(ctx, c, cx + 16, cy + 8 + i * 16);
-        if (i === this.sel) Text.cursor(ctx, cx + 8, cy + 8 + i * 16);
+        Text.draw(ctx, c, cx + 18, cy + 8 + i * 16);
+        if (i === this.sel) Text.cursor(ctx, cx + 9, cy + 8 + i * 16);
       });
     }
   }
 }
 
-// 短縮ヘルパ
-function say(text, onDone) { Game.push(new DialogScene({ text, onDone })); }
-function ask(text, choices, onChoice) { Game.push(new DialogScene({ text, choices, onChoice })); }
+function say(text, onDone, name) { Game.push(new DialogScene({ text, onDone, name })); }
+function ask(text, choices, onChoice, name) { Game.push(new DialogScene({ text, choices, onChoice, name })); }

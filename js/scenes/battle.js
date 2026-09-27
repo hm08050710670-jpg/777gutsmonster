@@ -6,6 +6,7 @@ class BattleScene {
   constructor(opt) {
     this.overlay = false;
     this.enemy = opt.enemy;
+    this.trainer = opt.trainer || null;   // { name } トレーナー戦なら指定（にげられない）
     this.onEnd = opt.onEnd || null;
     this.pidx = Game.state.party.findIndex(m => m.hp > 0);
     this.mode = 'intro';   // intro | command | move | anim | end
@@ -16,8 +17,10 @@ class BattleScene {
   }
   me() { return Game.state.party[this.pidx]; }
 
+  foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
-    this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`);
+    if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`); }
+    else this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`);
     this.msg(`いけっ！ ${this.me().name}！`, () => { this.mode = 'command'; });
     this.next();
   }
@@ -37,7 +40,7 @@ class BattleScene {
   moveSteps(attacker, defender, move, isPlayer) {
     const m = DATA.MOVES[move.name];
     return [
-      this.msgStep(`${isPlayer ? '' : 'やせいの '}${attacker.name}の\n${move.name}！`),
+      this.msgStep(`${isPlayer ? '' : this.foe()}${attacker.name}の\n${move.name}！`),
       this.fnStep(() => {
         move.pp = Math.max(0, move.pp - 1);
         const eff = (DATA.TYPES[m.type] || {})[defender.type] ?? 1;
@@ -76,7 +79,8 @@ class BattleScene {
   checkEnd() {
     const me = this.me(), en = this.enemy;
     if (en.hp <= 0) {
-      this.msg(`やせいの ${en.name}を\nたおした！`);
+      this.msg(`${this.foe()}${en.name}を\nたおした！`);
+      if (this.trainer) this.msg(`${this.trainer.name}との しょうぶに かった！`);
       const gain = en.level * 10;
       this.msg(`${me.name}は ${gain}の\nけいけんちを もらった！`);
       this.step(() => {
@@ -110,6 +114,7 @@ class BattleScene {
 
   tryRun() {
     const me = this.me(), en = this.enemy;
+    if (this.trainer) { this.msg('しょうぶの さいちゅうに にげられない！'); this.queue.push(() => { this.mode = 'command'; }); this.next(); return; }
     const ok = me.spd >= en.spd || Math.random() < 0.7;
     if (ok) { this.msg('うまく にげきれた！'); this.queue.push(() => this.finish('run')); }
     else { this.msg('にげられない！'); this.queue.push(() => { this.playerTurnEnemyOnly(); }); }
@@ -182,50 +187,57 @@ class BattleScene {
     }
   }
 
-  // ---- 描画 ----
+  // ---- 描画（CLASSIC COLOR）----
   draw(ctx, frame) {
     const me = this.me(), en = this.enemy;
-    ctx.fillStyle = PAL[0]; ctx.fillRect(0, 0, 160, 144);
+    const W = CONFIG.W, H = CONFIG.H;
+    // 背景：空と芝
+    const sky = ctx.createLinearGradient(0, 0, 0, 96);
+    sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 96);
+    ctx.fillStyle = '#6cb85a'; ctx.fillRect(0, 96, W, H - 96);
+    ctx.fillStyle = '#5aa84a'; for (let x = 0; x < W; x += 16) ctx.fillRect(x + (frame >> 4) % 2 * 8, 104 + (x % 32 ? 8 : 0), 8, 4);
+    // 足場の楕円
+    const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
+    ctx.fillStyle = '#8fce7c'; oval(148, 66, 34, 8); oval(48, 138, 36, 8);
+
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
-
-    // 敵：右上スプライト、左上ステータス
-    ctx.drawImage(Gfx.get(DATA.MONSTERS[en.id].sprite, 2), 112 + sx, 8);
-    Text.draw(ctx, en.name, 8, 8);
-    Text.draw(ctx, `Lv${en.level}`, 64, 8);
-    Text.draw(ctx, 'HP:', 16, 18);
-    drawHpBar(ctx, 32, 20, 56, this.shownHp.e, en.maxHp);
-    ctx.fillStyle = PAL[3]; ctx.fillRect(8, 26, 88, 1);
-
-    // 自分：左下スプライト、右下ステータス
-    ctx.drawImage(Gfx.get('m_back', 2), 16, 56);
-    Text.draw(ctx, me.name, 72, 56);
-    Text.draw(ctx, `Lv${me.level}`, 128, 56);
-    Text.draw(ctx, 'HP:', 72, 66);
-    drawHpBar(ctx, 88, 68, 64, this.shownHp.p, me.maxHp);
-    Text.draw(ctx, `${String(this.shownHp.p).padStart(3)}/${String(me.maxHp).padStart(3)}`, 104, 76);
-    ctx.fillStyle = PAL[3]; ctx.fillRect(64, 86, 96, 1);
+    // 敵：右上
+    ctx.drawImage(Gfx.get(DATA.MONSTERS[en.id].sprite, 2), 124 + sx, 14);
+    Text.box(ctx, 6, 8, 100, 30);
+    Text.draw(ctx, en.name, 14, 13); Text.draw(ctx, `Lv${en.level}`, 76, 13, THEME.textDim);
+    Text.draw(ctx, 'HP', 14, 24, THEME.green); drawHpBar(ctx, 28, 25, 70, this.shownHp.e, en.maxHp);
+    // 自分：左下
+    ctx.drawImage(Gfx.get(DATA.MONSTERS[me.id].sprite, 2), 24, 90);
+    Text.box(ctx, 86, 100, 100, 40);
+    Text.draw(ctx, me.name, 94, 105); Text.draw(ctx, `Lv${me.level}`, 156, 105, THEME.textDim);
+    Text.draw(ctx, 'HP', 94, 116, THEME.green); drawHpBar(ctx, 108, 117, 70, this.shownHp.p, me.maxHp);
+    Text.draw(ctx, `${String(this.shownHp.p).padStart(3)}/${String(me.maxHp).padStart(3)}`, 138, 126, THEME.textDim);
 
     // 下部ウィンドウ
-    Text.box(ctx, 0, 96, 160, 48);
+    const by = H - 56;
+    Text.box(ctx, 0, by, W, 56);
     if (this.mode === 'command') {
-      Text.box(ctx, 64, 96, 96, 48);
+      Text.box(ctx, 92, by, 100, 56);
       const labels = ['たたかう', 'なかま', 'どうぐ', 'にげる'];
       labels.forEach((l, i) => {
-        const x = 80 + (i % 2) * 40, y = 108 + Math.floor(i / 2) * 16;
+        const x = 108 + (i % 2) * 44, y = by + 14 + Math.floor(i / 2) * 18;
         Text.draw(ctx, l, x, y);
-        if (i === this.cmd) Text.cursor(ctx, x - 8, y);
+        if (i === this.cmd) Text.cursor(ctx, x - 9, y);
       });
+      Text.draw(ctx, `${me.name}は\nどうする？`.split('\n')[0], 10, by + 14);
+      Text.draw(ctx, 'どうする？', 10, by + 30);
     } else if (this.mode === 'move') {
-      Text.box(ctx, 32, 80, 128, 64);
+      Text.box(ctx, 56, by - 8, W - 56, 64);
       me.moves.forEach((mv, i) => {
-        Text.draw(ctx, mv.name, 48, 88 + i * 12);
-        if (i === this.mv) Text.cursor(ctx, 40, 88 + i * 12);
+        Text.draw(ctx, mv.name, 74, by + 4 + i * 13);
+        if (i === this.mv) Text.cursor(ctx, 65, by + 4 + i * 13);
       });
       const cur = me.moves[this.mv];
-      Text.box(ctx, 0, 96, 40, 48);
-      Text.draw(ctx, 'PP', 4, 104);
-      Text.draw(ctx, `${cur.pp}/${cur.maxPp}`, 4, 116);
-      Text.draw(ctx, DATA.MOVES[cur.name].type, 4, 128, 2);
+      Text.box(ctx, 0, by, 56, 56);
+      Text.draw(ctx, 'PP', 8, by + 10, THEME.green);
+      Text.draw(ctx, `${cur.pp}/${cur.maxPp}`, 8, by + 22);
+      Text.draw(ctx, DATA.MOVES[cur.name].type, 8, by + 36, THEME.textDim);
     }
   }
 }

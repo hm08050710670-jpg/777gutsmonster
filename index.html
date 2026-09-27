@@ -5,40 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0f380f">
-<title>GB RPG Skeleton</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1d3d26">
+<title>GUTS MONSTERS</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
+  <!-- ① ADVENTURE NOTE（現在の目的） -->
+  <div id="note"><span id="note-label">ADVENTURE NOTE</span><span id="note-text"></span></div>
+
+  <!-- ② ゲームフィールド -->
   <div id="screen-wrap">
-    <canvas id="screen" width="160" height="144"></canvas>
+    <canvas id="screen" width="192" height="208"></canvas>
   </div>
+
+  <!-- ③ 操作エリア（フィールドに重ねない） -->
   <div id="pad">
     <div id="dpad">
       <button class="pbtn dir" data-key="up" aria-label="上">▲</button>
       <button class="pbtn dir" data-key="left" aria-label="左">◀</button>
+      <div id="dpad-center"></div>
       <button class="pbtn dir" data-key="right" aria-label="右">▶</button>
       <button class="pbtn dir" data-key="down" aria-label="下">▼</button>
     </div>
-    <div id="abxy">
-      <button class="pbtn round" data-key="b" aria-label="B">B</button>
-      <button class="pbtn round" data-key="a" aria-label="A">A</button>
+    <div id="abtn">
+      <button class="pbtn round b" data-key="b" aria-label="B">B</button>
+      <button class="pbtn round a" data-key="a" aria-label="A">A</button>
     </div>
-    <div id="sysbtn">
-      <button class="pbtn pill" data-key="select" aria-label="SELECT">SELECT</button>
-      <button class="pbtn pill" data-key="start" aria-label="START">START</button>
+    <button class="pbtn pill" id="menu-btn" data-key="start" aria-label="メニュー">MENU</button>
+  </div>
+
+  <!-- ④ 補助表示 -->
+  <div id="aux"><span id="saved">AUTO SAVE ✓</span></div>
+
+  <!-- 名前入力（RPG風に見せる最小構成。本格的な画面は今後） -->
+  <div id="name-overlay" hidden>
+    <div id="name-card">
+      <div class="nc-title">01. なまえを きめよう</div>
+      <input id="name-input" type="text" maxlength="8" autocomplete="off" placeholder="8もじまで">
+      <button id="name-ok" class="nc-btn">これで きめる</button>
     </div>
   </div>
 </div>
 
-<!-- 依存ゼロ・ビルド不要。読み込み順に意味があります -->
 <script src="js/config.js"></script>
 <script src="js/input.js"></script>
 <script src="js/text.js"></script>
 <script src="js/gfx.js"></script>
 <script src="js/data.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/save.js"></script>
 <script src="js/scenes/dialog.js"></script>
 <script src="js/scenes/menu.js"></script>

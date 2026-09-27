@@ -6,27 +6,29 @@ const Game = (() => {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  const scenes = [];     // シーンスタック（末尾が最前面）
+  const scenes = [];
   let frame = 0;
-  let state = null;      // セーブデータ相当（現在の進行状況）
+  let state = null;
 
-  // ---- スケーリング：整数倍でスマホ幅にフィット。縦はパッド分を確保 ----
+  // ---- スケーリング：端末幅に合わせて拡大（高DPI端末では小数倍でも十分きれい）----
   function fit() {
-    const wrap = document.getElementById('screen-wrap');
     const app = document.getElementById('app');
     const landscape = matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
-    const availW = landscape ? Math.floor(app.clientWidth * 0.55) : app.clientWidth;
-    const padMin = landscape ? 0 : 150;
-    const availH = app.clientHeight - padMin;
-    const scale = Math.max(1, Math.min(Math.floor(availW / CONFIG.W), Math.floor(availH / CONFIG.H)));
-    canvas.style.width = (CONFIG.W * scale) + 'px';
-    canvas.style.height = (CONFIG.H * scale) + 'px';
-    wrap.style.height = landscape ? '100%' : (CONFIG.H * scale) + 'px';
+    const noteH = landscape ? 0 : (document.getElementById('note').offsetHeight + 10);
+    const auxH = landscape ? 0 : 18;
+    const padMin = landscape ? 0 : 140;
+    const availW = landscape ? Math.floor(app.clientWidth * 0.5) : app.clientWidth;
+    const availH = app.clientHeight - noteH - auxH - padMin - 4;
+    let scale = Math.min(availW / CONFIG.W, availH / CONFIG.H);
+    // 2倍以上なら整数に丸めてドットを揃える。それ未満は小数倍を許容（1倍だと小さすぎる）
+    if (scale >= 2) scale = Math.floor(scale);
+    scale = Math.max(1, scale);
+    canvas.style.width = Math.floor(CONFIG.W * scale) + 'px';
+    canvas.style.height = Math.floor(CONFIG.H * scale) + 'px';
   }
   window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', () => setTimeout(fit, 100));
+  window.addEventListener('orientationchange', () => setTimeout(fit, 150));
 
-  // ---- シーン操作 ----
   const push = s => { scenes.push(s); s.enter && s.enter(); };
   const pop = () => { const s = scenes.pop(); s && s.exit && s.exit(); };
   const replace = s => { while (scenes.length) pop(); push(s); };
@@ -40,15 +42,13 @@ const Game = (() => {
   }
 
   function draw() {
-    // 最前面から遡って、overlay でないシーンから順に描く
     let i = scenes.length - 1;
     while (i > 0 && scenes[i].overlay) i--;
-    ctx.fillStyle = PAL[0];
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
     for (; i < scenes.length; i++) scenes[i].draw(ctx, frame);
   }
 
-  // ---- 固定ステップループ ----
   let last = 0, acc = 0;
   const STEP = 1000 / CONFIG.FPS;
   function loop(t) {
@@ -62,16 +62,18 @@ const Game = (() => {
     fit();
     Input.setupPad();
     await Text.load();
+    fit();
     push(new TitleScene());
     requestAnimationFrame(t => { last = t; loop(t); });
   }
 
-  // 便利：セーブ状態
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const setFlag = (k, v = true) => { if (state) { state.flags[k] = v; UI.refreshNote(state); } };
 
   return {
-    start, push, pop, replace, top, fit, rand,
-    get state() { return state; }, set state(v) { state = v; },
+    start, push, pop, replace, top, fit, rand, setFlag,
+    get state() { return state; },
+    set state(v) { state = v; UI.refreshNote(v); },
   };
 })();
 

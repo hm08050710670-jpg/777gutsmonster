@@ -65,9 +65,39 @@ const Input = (() => {
     pad.addEventListener('pointerleave', release);
     // 長押しメニュー・ダブルタップズームの抑止
     pad.addEventListener('contextmenu', e => e.preventDefault());
-  }
 
-  function update() { KEYS.forEach(k => { prev[k] = state[k]; }); }
+    // ---- スワイプ移動：フィールドをドラッグした方向に歩く（指を離すまで継続）----
+    const canvas = document.getElementById('screen');
+    let swipe = null; // { id, x, y, key }
+    const swipeKey = (dx, dy) => {
+      if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return null;
+      return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    };
+    canvas.addEventListener('pointerdown', e => { e.preventDefault(); swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, key: null }; });
+    canvas.addEventListener('pointermove', e => {
+      if (!swipe || swipe.id !== e.pointerId) return;
+      const k = swipeKey(e.clientX - swipe.x, e.clientY - swipe.y);
+      if (k !== swipe.key) { if (swipe.key) state[swipe.key] = false; if (k) state[k] = true; swipe.key = k; }
+    });
+    const swipeEnd = e => {
+      if (!swipe || swipe.id !== e.pointerId) return;
+      if (swipe.key) state[swipe.key] = false;
+      else tapA = true; // スワイプせずにタップ → A（会話送りに便利）
+      swipe = null;
+    };
+    canvas.addEventListener('pointerup', swipeEnd);
+    canvas.addEventListener('pointercancel', swipeEnd);
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  let tapA = false;
+
+  function update() {
+    KEYS.forEach(k => { prev[k] = state[k]; });
+    // 画面タップは1フレームだけ A を押したことにする
+    if (tapA) { state.a = true; tapA = false; tapRelease = true; }
+    else if (tapRelease) { state.a = false; tapRelease = false; }
+  }
+  let tapRelease = false;
   // update() は「フレームの最後」に呼ぶ。pressed は前フレームとの差分。
   return {
     setupPad, update,

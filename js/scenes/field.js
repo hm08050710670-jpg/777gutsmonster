@@ -1,34 +1,53 @@
 // ============================================================
-// フィールド（マップ移動・イベント・エンカウント）
+// フィールド（マップ移動・当たり判定・イベント・ワープ・エンカウント）
 // ============================================================
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+const FACE = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 class FieldScene {
   constructor() {
     this.overlay = false;
-    this.moving = 0;       // 移動中フレーム残り
-    this.animStep = 0;     // 歩行アニメの左右足
-    this.busy = false;     // 会話中など
+    this.moving = 0;
+    this.animStep = 0;
+    this.bump = 0;          // 壁にぶつかった時のフィードバック残りフレーム
+    this.pendingEvent = null;
   }
   get map() { return DATA.MAPS[Game.state.map]; }
-  tileAt(x, y) {
-    const r = this.map.rows[y];
-    return r ? r[x] : 'W';
+  get mapW() { return this.map.rows[0].length; }
+  get mapH() { return this.map.rows.length; }
+  tileAt(x, y) { const r = this.map.rows[y]; return r && r[x] ? r[x] : ' '; }
+
+  // フラグ条件付きイベント（if / unless）
+  eventActive(ev) {
+    const f = Game.state.flags;
+    if (ev.if && !f[ev.if]) return false;
+    if (ev.unless && f[ev.unless]) return false;
+    return true;
   }
-  eventAt(x, y) { return this.map.events.find(e => e.x === x && e.y === y); }
+  events() { return this.map.events.filter(e => this.eventActive(e)); }
+  eventAt(x, y) { return this.events().find(e => e.x === x && e.y === y); }
+  blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look'].includes(ev.kind); }
   canWalk(x, y) {
     if (!DATA.WALKABLE.has(this.tileAt(x, y))) return false;
-    const ev = this.eventAt(x, y);
-    return !(ev && (ev.kind === 'npc' || ev.kind === 'sign'));
+    return !this.blocksWalk(this.eventAt(x, y));
+  }
+
+  enter() {
+    // マップに入った直後のイベント（ノブオ登場など）
+    const rival = this.events().find(e => e.kind === 'rival');
+    if (rival) this.pendingEvent = rival;
+    UI.refreshNote(Game.state);
   }
 
   update(frame) {
     const st = Game.state;
+    if (this.bump > 0) this.bump--;
     if (this.moving > 0) {
       this.moving--;
       if (this.moving === 0) this.onArrive();
       return;
     }
+    if (this.pendingEvent) { const ev = this.pendingEvent; this.pendingEvent = null; this.runRival(ev); return; }
     if (Input.pressed('start')) { openStartMenu(); return; }
     if (Input.pressed('a')) { this.interact(); return; }
 
@@ -40,6 +59,8 @@ class FieldScene {
           st.x += dx; st.y += dy;
           this.moving = CONFIG.WALK_FRAMES;
           this.animStep ^= 1;
+        } else if (this.bump === 0 && Input.pressed(d)) {
+          this.bump = 10; // 壁：小さく揺れる
         }
         break;
       }
@@ -49,74 +70,165 @@ class FieldScene {
   onArrive() {
     const st = Game.state;
     st.steps++;
+    if (st.grace > 0) st.grace--;
     const ev = this.eventAt(st.x, st.y);
-    if (ev && ev.kind === 'door') { say(ev.text); return; }
-    if (this.tileAt(st.x, st.y) === 'T' && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
+    if (ev && ev.kind === 'warp') { this.warp(ev.to); return; }
+    if (this.tileAt(st.x, st.y) === 'T' && this.map.encounters && st.grace === 0 && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
       if (st.party.some(m => m.hp > 0)) {
         startWildBattle(st.map, result => {
-          if (result === 'lose') {
-            // 全滅：回復して初期位置へ
-            st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
-            const s = this.map.start; st.x = s.x; st.y = s.y; st.dir = s.dir;
-            say('なかまを かいふくして\nまちに もどった。');
-          }
+          st.grace = CONFIG.GRACE_STEPS;
+          if (result === 'lose') this.wipeOut();
+          else Save.auto(st);
         });
       }
     }
+  }
+
+  // 全滅：回復して自宅へ
+  wipeOut() {
+    const st = Game.state;
+    st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
+    say('なかまを かいふくして\nいえに もどった。', () => this.warp({ map: 'home', x: 4, y: 4, dir: 'down' }));
+  }
+
+  warp(to) {
+    const st = Game.state;
+    st.map = to.map; st.x = to.x; st.y = to.y; st.dir = to.dir || st.dir;
+    this.moving = 0;
+    Save.auto(st);
+    this.enter();
   }
 
   interact() {
     const st = Game.state;
     const [dx, dy] = DIRS[st.dir];
-    const ev = this.eventAt(st.x + dx, st.y + dy);
+    let ev = this.eventAt(st.x + dx, st.y + dy);
+    // 受付カウンター越しに話しかける
+    if (!ev && this.tileAt(st.x + dx, st.y + dy) === 'C') ev = this.eventAt(st.x + dx * 2, st.y + dy * 2);
     if (!ev) return;
-    if (ev.kind === 'npc') {
-      ev.face = { up: 'down', down: 'up', left: 'right', right: 'left' }[st.dir]; // こちらを向く
-      if (ev.heal) {
-        say(ev.text, () => {
-          st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
-          say('げんきに なった！');
-        });
-      } else say(ev.text);
-    } else if (ev.kind === 'sign') {
-      say(ev.text);
+    switch (ev.kind) {
+      case 'sign': case 'look': say(ev.text); break;
+      case 'npc': this.talkNpc(ev); break;
+      case 'starter': this.pickStarter(ev); break;
     }
   }
 
-  // 主人公スプライト名（左向きは右向きの反転）
-  playerSprite(dir, step) {
+  talkNpc(ev) {
+    const st = Game.state;
+    ev.face = FACE[st.dir];
+    if (ev.prof) { this.talkProf(ev); return; }
+    if (ev.heal) {
+      say(ev.text, () => {
+        st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
+        say(st.party.length ? 'なかまは げんきに なった！' : 'なかまが いないみたいですね。', () => Save.auto(st), ev.name);
+      }, ev.name);
+      return;
+    }
+    if (ev.shop) {
+      say(ev.text, () => {
+        if (!st.flags.shopGift) { st.flags.shopGift = true; st.items['きずぐすり'] = (st.items['きずぐすり'] || 0) + 1; say('きずぐすりを 1つ もらった！'); }
+      }, ev.name);
+      return;
+    }
+    say(ev.text, null, ev.name);
+  }
+
+  talkProf(ev) {
+    const st = Game.state, n = ev.name;
+    if (!st.flags.starter) {
+      say(`よく来たね ${st.name}くん！\nきみに GUTS MONSTERSの せかいを おしえよう。`, () => {
+        say('この せかいには ゴルフ場の しぜんと\nゴルフボールが とけこんだ モンスターが いる。', () => {
+          say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', null, n);
+        }, n);
+      }, n);
+    } else if (!st.flags.rival1) {
+      say('その子と いっしょに 冒険を はじめよう。\n町の南から ガーデンロードへ いける。', null, n);
+    } else {
+      say('ノブオと たたかったのか。\nライバルが いると つよくなれるぞ。', null, n);
+    }
+  }
+
+  pickStarter(ev) {
+    const st = Game.state, sp = DATA.MONSTERS[ev.id];
+    ask(`${sp.name}（${sp.type}タイプ）\n${sp.desc}\n${sp.name}を えらびますか？`, ['はい', 'いいえ'], i => {
+      if (i !== 0) return;
+      st.party = [makeMonster(ev.id, 7)];
+      Game.setFlag('starter');
+      say(`${st.name}は ${sp.name}を なかまにした！`, () => {
+        say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => Save.auto(st), 'オクムラ博士');
+      });
+    });
+  }
+
+  // ノブオ登場 → ブブとの初戦
+  runRival(ev) {
+    const st = Game.state;
+    ev.face = 'up';
+    say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
+      say('じゃあ さっそく しょうぶだ！\nいけっ ブブ！', () => {
+        const enemy = makeMonster('bubu', 5);
+        Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
+          Game.setFlag('rival1');
+          if (result === 'lose') {
+            st.party.forEach(m => { m.hp = m.maxHp; });
+            say('ま、そんなもんだろ。\nまた しょうぶ しようぜ！', () => Save.auto(st), 'ノブオ');
+          } else {
+            say('くっ… ブブが まけるなんて！\nつぎは まけないからな！', () => Save.auto(st), 'ノブオ');
+          }
+        } }));
+      }, 'ノブオ');
+    }, 'ノブオ');
+  }
+
+  heroSprite(dir, step) {
+    const g = Game.state.gender === 'f' ? 'hf' : 'hm';
     const base = dir === 'left' ? 'right' : dir;
-    return Gfx.get(`p_${base}${step}`, 1, dir === 'left');
+    return Gfx.get(`${g}_${base}${step}`, 1, dir === 'left');
+  }
+  npcSprite(ev) {
+    const dir = ev.face || ev.dir || 'down';
+    return Gfx.get(ev.sprite); // NPCは正面のみ（方向別スプライトは未実装）
   }
 
   draw(ctx, frame) {
-    const st = Game.state, T = CONFIG.TILE;
-    // カメラ：主人公を画面中央（4,4 マス目）に。移動中は補間
+    const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
+    // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
     let ox = 0, oy = 0;
     if (this.moving > 0) {
       const [dx, dy] = DIRS[st.dir];
-      const t = this.moving / CONFIG.WALK_FRAMES;  // 1→0
+      const t = this.moving / CONFIG.WALK_FRAMES;
       ox = dx * t * T; oy = dy * t * T;
     }
-    const camX = (st.x - 4) * T - ox, camY = (st.y - 4) * T - oy;
-    const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
+    const mapPW = this.mapW * T, mapPH = this.mapH * T;
+    let camX = st.x * T - ox - (W - T) / 2;
+    let camY = st.y * T - oy - (H - T) / 2;
+    camX = mapPW <= W ? -(W - mapPW) / 2 : Math.max(0, Math.min(mapPW - W, camX));
+    camY = mapPH <= H ? -(H - mapPH) / 2 : Math.max(0, Math.min(mapPH - H, camY));
+    camX = Math.round(camX); camY = Math.round(camY);
 
-    for (let ty = cy0; ty <= cy0 + 9; ty++) {
-      for (let tx = cx0; tx <= cx0 + 10; tx++) {
+    // 壁ぶつかり：画面をわずかに揺らす
+    const bx = this.bump ? (this.bump % 2 ? 1 : -1) * (DIRS[st.dir][0]) : 0;
+    const by = this.bump ? (this.bump % 2 ? 1 : -1) * (DIRS[st.dir][1]) : 0;
+
+    ctx.fillStyle = this.map.indoor ? '#1a1410' : '#173a1c';
+    ctx.fillRect(0, 0, W, H);
+    const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
+    for (let ty = cy0; ty <= cy0 + Math.ceil(H / T); ty++) {
+      for (let tx = cx0; tx <= cx0 + Math.ceil(W / T); tx++) {
         const t = this.tileAt(tx, ty);
-        const art = DATA.TILE_ART[t] || 'tree';
-        ctx.drawImage(Gfx.get(art), Math.round(tx * T - camX), Math.round(ty * T - camY));
+        if (t === ' ') continue;
+        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), tx * T - camX + bx, ty * T - camY + by);
       }
     }
-    // NPC（イベント）
-    for (const ev of this.map.events) {
-      if (ev.kind !== 'npc') continue;
-      const sx = Math.round(ev.x * T - camX), sy = Math.round(ev.y * T - camY);
-      if (sx < -T || sy < -T || sx > 160 || sy > 144) continue;
-      ctx.drawImage(Gfx.get(ev.sprite), sx, sy - 2);
+    // イベントの見た目（ボール・NPC）
+    for (const ev of this.events()) {
+      const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
+      if (sx < -T || sy < -T || sx > W || sy > H) continue;
+      if (ev.kind === 'starter') ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
+      else if (ev.sprite) ctx.drawImage(this.npcSprite(ev), sx, sy - 2);
     }
-    // 主人公（常に画面中央マス）
+    // 主人公
     const step = this.moving > 0 && (this.moving % 8) < 4 ? this.animStep : 0;
-    ctx.drawImage(this.playerSprite(st.dir, step), 4 * T, 4 * T - 2);
+    ctx.drawImage(this.heroSprite(st.dir, step), st.x * T - ox - camX + bx, st.y * T - oy - camY - 2 + by);
   }
 }

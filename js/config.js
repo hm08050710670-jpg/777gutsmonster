@@ -1,17 +1,29 @@
 // ============================================================
-// 基本設定（画面サイズ・パレット・タイルサイズ）
+// 基本設定
 // ============================================================
 const CONFIG = {
-  W: 160,           // 内部解像度（初代GBと同じ）
-  H: 144,
-  TILE: 16,         // 1マス = 16px（画面 10x9 マス）
+  W: 192,            // フィールド内部解像度（12マス）
+  H: 208,            // 13マス
+  TILE: 16,
   FPS: 60,
-  WALK_FRAMES: 8,   // 1マス移動にかけるフレーム数（2px/frame）
-  TEXT_SPEED: 2,    // 文字送り：1文字あたりのフレーム数
-  ENCOUNTER_RATE: 12, // 草むら1歩あたりの遭遇率(%)
-  SAVE_KEY: 'gb-rpg-skeleton-save-v1',
+  WALK_FRAMES: 8,
+  TEXT_SPEED: 2,
+  ENCOUNTER_RATE: 12,
+  GRACE_STEPS: 4,    // 戦闘直後はこの歩数だけ遭遇しない
+  SAVE_KEY: 'guts-monsters-save-v1',
   FONT: 'misaki_gothic',
+  TITLE: 'GUTS MONSTERS',
+  TAGLINE: 'A LITTLE STEP, A BIG ADVENTURE.',
 };
 
-// GB 4階調（0=最も明るい … 3=最も暗い）
-const PAL = ['#9bbc0f', '#8bac0f', '#306230', '#0f380f'];
+// UI配色（会話窓：アイボリー地・深緑枠）
+const THEME = {
+  ivory: '#f6f0dc',
+  ivory2: '#ebe3c8',
+  green: '#2f5d3a',
+  greenDark: '#1d3d26',
+  text: '#23301f',
+  textDim: '#7c8a72',
+  hpHigh: '#4caf50', hpMid: '#e5b83c', hpLow: '#d9534f',
+  shadow: 'rgba(0,0,0,0.25)',
+};
