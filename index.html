@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f380f">
+<title>GB RPG Skeleton</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="screen-wrap">
+    <canvas id="screen" width="160" height="144"></canvas>
+  </div>
+  <div id="pad">
+    <div id="dpad">
+      <button class="pbtn dir" data-key="up" aria-label="上">▲</button>
+      <button class="pbtn dir" data-key="left" aria-label="左">◀</button>
+      <button class="pbtn dir" data-key="right" aria-label="右">▶</button>
+      <button class="pbtn dir" data-key="down" aria-label="下">▼</button>
+    </div>
+    <div id="abxy">
+      <button class="pbtn round" data-key="b" aria-label="B">B</button>
+      <button class="pbtn round" data-key="a" aria-label="A">A</button>
+    </div>
+    <div id="sysbtn">
+      <button class="pbtn pill" data-key="select" aria-label="SELECT">SELECT</button>
+      <button class="pbtn pill" data-key="start" aria-label="START">START</button>
+    </div>
+  </div>
+</div>
+
+<!-- 依存ゼロ・ビルド不要。読み込み順に意味があります -->
+<script src="js/config.js"></script>
+<script src="js/input.js"></script>
+<script src="js/text.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/scenes/dialog.js"></script>
+<script src="js/scenes/menu.js"></script>
+<script src="js/scenes/battle.js"></script>
+<script src="js/scenes/field.js"></script>
+<script src="js/scenes/title.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

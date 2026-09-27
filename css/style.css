@@ -1,0 +1,104 @@
+/* ---- GB風 4階調パレットは JS 側(config.js)で定義。ここは外枠とパッドのみ ---- */
+:root {
+  --bg: #1b1b1b;
+  --pad-bg: #2a2a2a;
+  --btn: #4a4a4a;
+  --btn-active: #8bac0f;
+  --btn-text: #e0e0e0;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  font-family: system-ui, sans-serif;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding-top: var(--safe-t);
+  padding-bottom: var(--safe-b);
+}
+
+#screen-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+#screen {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #9bbc0f;
+  display: block;
+}
+
+/* ---- 仮想パッド ---- */
+#pad {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 480px;
+  background: var(--pad-bg);
+  position: relative;
+  min-height: 150px;
+}
+
+#dpad {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-58%);
+  width: 132px; height: 132px;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+}
+#dpad .dir[data-key="up"]    { grid-area: 1 / 2; }
+#dpad .dir[data-key="left"]  { grid-area: 2 / 1; }
+#dpad .dir[data-key="right"] { grid-area: 2 / 3; }
+#dpad .dir[data-key="down"]  { grid-area: 3 / 2; }
+
+#abxy {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-58%);
+  display: flex; gap: 14px; align-items: center;
+}
+#abxy .round { width: 58px; height: 58px; border-radius: 50%; font-size: 20px; }
+#abxy .round[data-key="a"] { margin-top: -28px; }
+
+#sysbtn {
+  position: absolute; left: 50%; bottom: 10px;
+  transform: translateX(-50%);
+  display: flex; gap: 12px;
+}
+#sysbtn .pill { width: 64px; height: 22px; border-radius: 11px; font-size: 10px; }
+
+.pbtn {
+  background: var(--btn);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 0;
+  touch-action: none;
+}
+.pbtn.active { background: var(--btn-active); color: #0f380f; }
+
+/* 横向き(ランドスケープ)では画面の横にパッドを置く */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app { flex-direction: row; justify-content: center; }
+  #screen-wrap { width: auto; height: 100%; }
+  #pad { height: 100%; min-height: 0; max-width: none; flex: 1 1 auto; }
+  #dpad { transform: translateY(-50%); }
+  #abxy { transform: translateY(-50%); }
+}
