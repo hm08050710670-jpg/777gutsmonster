@@ -19,6 +19,7 @@ class BattleScene {
 
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
+    Sound.play(this.trainer ? 'rival' : 'wild');
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`); }
     else this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`);
     this.msg(`いけっ！ ${this.me().name}！`, () => { this.mode = 'command'; });
@@ -130,6 +131,7 @@ class BattleScene {
   finish(result) {
     this.mode = 'end';
     Game.pop();
+    const m = DATA.MAPS[Game.state.map]; Sound.play(m && m.bgm);
     this.onEnd && this.onEnd(result);
   }
 

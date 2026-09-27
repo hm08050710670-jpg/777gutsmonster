@@ -58,6 +58,7 @@ class FieldScene {
   enter() {
     UI.refreshNote(Game.state);
     const st = Game.state;
+    Sound.play(this.map.bgm);
     // 研究所に初めて入ったら、まず博士の説明
     if (st.map === 'lab' && !st.flags.starter && !st.flags.labIntro) {
       this.introStarted = true;

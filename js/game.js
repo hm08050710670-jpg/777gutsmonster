@@ -64,6 +64,7 @@ const Game = (() => {
   async function start() {
     fit();
     Input.setupPad();
+    Sound.installUnlock();
     await Text.load();
     fit();
     push(new TitleScene());

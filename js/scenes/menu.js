@@ -53,6 +53,7 @@ class SettingsScene {
     const s = Game.state ? Game.state.settings : { textSpeed: CONFIG.TEXT_SPEED };
     return [
       { label: `もじの はやさ：${s.textSpeed <= 1 ? 'はやい' : 'ふつう'}`, action: () => { s.textSpeed = s.textSpeed <= 1 ? 2 : 1; } },
+      { label: `BGM：${s.bgm === false ? 'OFF' : 'ON'}`, action: () => { s.bgm = s.bgm === false; Sound.setEnabled(s.bgm); } },
       { label: 'とじる', action: () => Game.pop() },
     ];
   }

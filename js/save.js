@@ -10,7 +10,7 @@ const Save = {
       items: { 'きずぐすり': 2 },
       flags: {},
       steps: 0, grace: 0,
-      settings: { textSpeed: 2 },
+      settings: { textSpeed: 2, bgm: true },
     };
   },
   exists() { try { return !!localStorage.getItem(CONFIG.SAVE_KEY); } catch (e) { return false; } },

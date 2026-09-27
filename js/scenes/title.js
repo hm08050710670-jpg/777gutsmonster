@@ -3,6 +3,7 @@
 // ============================================================
 class TitleScene {
   constructor() { this.overlay = false; this.sel = 0; this.menu = false; }
+  enter() { Sound.stop(); }
   items() { return Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい']; }
   update(frame) {
     if (!this.menu) {

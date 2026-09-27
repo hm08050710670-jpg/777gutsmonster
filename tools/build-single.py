@@ -31,6 +31,14 @@ sub = subset.Subsetter(opts); sub.populate(unicodes=unicodes); sub.subset(font)
 buf = io.BytesIO(); font.save(buf); font_b64 = base64.b64encode(buf.getvalue()).decode()
 print(f'font subset: {len(unicodes)} codepoints -> {len(buf.getvalue())//1024} KB')
 
+# BGM を data: URI に
+bgm_b64 = {}
+for name in ['guts_town', 'okumura_lab', 'wild_adventure', 'rival_battle']:
+    path = f'assets/bgm/{name}.mp3'
+    if os.path.exists(path):
+        bgm_b64[path] = 'data:audio/mpeg;base64,' + base64.b64encode(open(path, 'rb').read()).decode()
+print('bgm embedded:', len(bgm_b64), 'tracks')
+
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
@@ -40,6 +48,7 @@ def inline_js(m):
     src = m.group(1)
     code = open(src, encoding='utf-8').read()
     code = code.replace("FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf'", f"FONT_FILE: 'data:font/ttf;base64,{font_b64}'")
+    for path, uri in bgm_b64.items(): code = code.replace(f"'{path}'", f"'{uri}'")
     return f'<script>\n{code}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline_js, html)
 

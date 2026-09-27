@@ -32,6 +32,14 @@ const DATA = {
   },
   STARTERS: ['hinokapi', 'shibamog', 'amepiyo'],
 
+  // ---- BGM（assets/bgm/README_BGM.txt 参照）----
+  BGM: {
+    town:  'assets/bgm/guts_town.mp3',       // GUTS TOWN 112BPM
+    lab:   'assets/bgm/okumura_lab.mp3',     // OKUMURA LAB 96BPM
+    wild:  'assets/bgm/wild_adventure.mp3',  // A: ADVENTURE 156BPM（野生戦）
+    rival: 'assets/bgm/rival_battle.mp3',    // RIVAL BATTLE 168BPM（ノブオ戦）
+  },
+
   ITEMS: {
     'きずぐすり': { heal: 20, desc: 'HPを20かいふく' },
   },
@@ -56,7 +64,7 @@ const DATA = {
 
   MAPS: {
     home: {
-      name: 'じぶんの いえ', indoor: true,
+      name: 'じぶんの いえ', indoor: true, bgm: 'town',
       rows: [
         'XXXXXXXXXX',
         'X.b..s.t.X',
@@ -76,7 +84,7 @@ const DATA = {
       ],
     },
     town: {
-      name: 'ガッツタウン',
+      name: 'ガッツタウン', bgm: 'town',
       rows: [
         'WWWWWWWWWPWWWWWWWWWW',
         'WGGGGGGGGPGGGGGGGGGW',
@@ -114,7 +122,7 @@ const DATA = {
       ],
     },
     lab: {
-      name: 'オクムラ研究所', indoor: true,
+      name: 'オクムラ研究所', indoor: true, bgm: 'lab',
       rows: [
         'XXXXXXXXXXXX',
         'X..MM.....sX',
@@ -136,7 +144,7 @@ const DATA = {
       ],
     },
     heal: {
-      name: 'かいふくの いえ', indoor: true,
+      name: 'かいふくの いえ', indoor: true, bgm: 'town',
       rows: [
         'XXXXXXXXXX',
         'X........X',
@@ -153,7 +161,7 @@ const DATA = {
       ],
     },
     shop: {
-      name: 'ショップ', indoor: true,
+      name: 'ショップ', indoor: true, bgm: 'town',
       rows: [
         'XXXXXXXXXX',
         'X........X',
@@ -170,7 +178,7 @@ const DATA = {
       ],
     },
     road: {
-      name: 'ガーデンロード',
+      name: 'ガーデンロード', bgm: 'town',   // ※専用曲は未提供のため町の曲を仮使用
       rows: [
         'WWWWWWWWWWWWWW',
         'WGGGGGSPGGGGGW',
