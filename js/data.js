@@ -109,11 +109,8 @@ const DATA = {
           text: '北の ガーデンロードには\nやせいの GUTS MONSTERSが いるのよ。' },
         { x: 6, y: 13, kind: 'npc', sprite: 'npc_man', dir: 'right',
           text: 'ここの 芝は ゴルフ場と おなじ\n手入れを しているんだ。' },
-        // 御三家を もらうまで 町の出口を ふさぐ
-        { x: 9, y: 1, kind: 'npc', sprite: 'npc_man', dir: 'down', unless: 'starter',
-          text: 'まだ モンスターを もっていないだろ？\nまずは オクムラ博士の 研究所へ いきな。' },
-        // 御三家を もらったあと：出口の手前で ノブオが 待っている（話しかけて勝負）
-        { x: 9, y: 1, kind: 'rival', sprite: 'npc_rival', dir: 'down', if: 'starter', unless: 'rival1' },
+        // 町の北出口の手前：御三家をもらう前は引き返す／もらった後はノブオが下から来て勝負
+        { x: 9, y: 1, kind: 'trigger', id: 'townExit' },
       ],
     },
     lab: {

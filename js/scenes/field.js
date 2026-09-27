@@ -10,7 +10,30 @@ class FieldScene {
     this.moving = 0;
     this.animStep = 0;
     this.bump = 0;          // 壁にぶつかった時のフィードバック残りフレーム
-    this.pendingEvent = null;
+    this.actor = null;      // カットシーン中に歩かせる人物 { x, y, sprite, path:[dir...], onDone }
+    this.actorMove = 0;
+    this.actorDir = 'up';
+  }
+
+  // 人物を path の順に1マスずつ歩かせ、終わったら onDone
+  walkActor(actor, path, onDone) {
+    this.actor = Object.assign(actor, { path: [...path], onDone });
+    this.actorMove = 0;
+  }
+  updateActor() {
+    const a = this.actor;
+    if (!a) return false;
+    if (this.actorMove > 0) {
+      this.actorMove--;
+      if (this.actorMove === 0 && !a.path.length) { const f = a.onDone; a.onDone = null; f && f(); }
+      return true;
+    }
+    if (!a.path.length) return !!a.onDone;
+    const d = a.path.shift(); this.actorDir = d;
+    const [dx, dy] = DIRS[d];
+    a.x += dx; a.y += dy;
+    this.actorMove = CONFIG.WALK_FRAMES;
+    return true;
   }
   get map() { return DATA.MAPS[Game.state.map]; }
   get mapW() { return this.map.rows[0].length; }
@@ -32,11 +55,20 @@ class FieldScene {
     return !this.blocksWalk(this.eventAt(x, y));
   }
 
-  enter() { UI.refreshNote(Game.state); }
+  enter() {
+    UI.refreshNote(Game.state);
+    const st = Game.state;
+    // 研究所に初めて入ったら、まず博士の説明
+    if (st.map === 'lab' && !st.flags.starter && !st.flags.labIntro) {
+      this.introStarted = true;
+      setTimeout(() => this.profIntro(), 0);
+    }
+  }
 
   update(frame) {
     const st = Game.state;
     if (this.bump > 0) this.bump--;
+    if (this.updateActor()) return;   // カットシーン中は操作不可
     if (this.moving > 0) {
       this.moving--;
       if (this.moving === 0) this.onArrive();
@@ -67,6 +99,7 @@ class FieldScene {
     if (st.grace > 0) st.grace--;
     const ev = this.eventAt(st.x, st.y);
     if (ev && ev.kind === 'warp') { this.warp(ev.to); return; }
+    if (ev && ev.kind === 'trigger') { this.runTrigger(ev); return; }
     if (this.tileAt(st.x, st.y) === 'T' && this.map.encounters && st.grace === 0 && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
       if (st.party.some(m => m.hp > 0)) {
         startWildBattle(st.map, result => {
@@ -131,11 +164,8 @@ class FieldScene {
   talkProf(ev) {
     const st = Game.state, n = ev.name;
     if (!st.flags.starter) {
-      say(`よく来たね ${st.name}くん！\nきみに GUTS MONSTERSの せかいを おしえよう。`, () => {
-        say('この せかいには ゴルフ場の しぜんと\nゴルフボールが とけこんだ モンスターが いる。', () => {
-          say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', null, n);
-        }, n);
-      }, n);
+      if (!st.flags.labIntro) this.profIntro();
+      else say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', null, n);
     } else if (!st.flags.rival1) {
       say('その子と いっしょに 冒険を はじめよう。\n町の北から ガーデンロードへ いける。', null, n);
     } else {
@@ -145,6 +175,7 @@ class FieldScene {
 
   pickStarter(ev) {
     const st = Game.state, sp = DATA.MONSTERS[ev.id];
+    if (!st.flags.labIntro) { this.profIntro(() => this.pickStarter(ev)); return; }
     ask(`${sp.name}（${sp.type}タイプ）\n${sp.desc}\n${sp.name}を えらびますか？`, ['はい', 'いいえ'], i => {
       if (i !== 0) return;
       st.party = [makeMonster(ev.id, 7)];
@@ -155,7 +186,61 @@ class FieldScene {
     });
   }
 
-  // ノブオ登場 → ブブとの初戦
+  runTrigger(ev) {
+    const st = Game.state;
+    if (ev.id === 'townExit') {
+      if (!st.flags.starter) {
+        // 御三家をもらう前：ひとりごとを言って1歩もどる
+        say('まずは オクムラ博士の 研究所へ いこう。', () => { st.dir = 'down'; st.y += 1; this.moving = CONFIG.WALK_FRAMES; });
+        return;
+      }
+      if (!st.flags.rival1) this.rivalApproach(ev);
+    }
+  }
+
+  // 博士の説明（研究所に入った直後 / ボールを調べた時）
+  profIntro(then) {
+    const st = Game.state, n = 'オクムラ博士';
+    const prof = this.events().find(e => e.prof); if (prof) prof.face = 'down';
+    say(`おお ${st.name}くん、よく来たね！\nきみに GUTS MONSTERSの せかいを おしえよう。`, () => {
+      say('この せかいには ゴルフ場の しぜんと\nゴルフボールが とけこんだ', () => {
+        say('GUTS MONSTERSが すんでいる。\nなかまにして いっしょに 冒険するんだ。', () => {
+          say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', () => {
+            Game.setFlag('labIntro'); Save.auto(st);
+            then && then();
+          }, n);
+        }, n);
+      }, n);
+    }, n);
+  }
+
+  // ノブオが 下から 歩いてきて 勝負を しかける
+  rivalApproach(ev) {
+    const st = Game.state;
+    st.dir = 'down';
+    const actor = { x: st.x, y: st.y + 7, sprite: 'npc_rival' };
+    say('おーい！ ちょっと まてよ！', () => {
+      this.walkActor(actor, ['up', 'up', 'up', 'up', 'up', 'up'], () => {
+        say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
+          say('ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ブブ！', () => this.rivalBattle(() => {
+            // 勝負のあと、来た道を もどる
+            this.walkActor(actor, ['down', 'down', 'down', 'down', 'down', 'down'], () => { this.actor = null; Save.auto(st); });
+          }), 'ノブオ');
+        }, 'ノブオ');
+      });
+    }, 'ノブオ');
+  }
+  rivalBattle(after) {
+    const st = Game.state;
+    const enemy = makeMonster('bubu', 5);
+    Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
+      Game.setFlag('rival1');
+      if (result === 'lose') { st.party.forEach(m => { m.hp = m.maxHp; }); say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', after, 'ノブオ'); }
+      else say('くっ… ブブが まけるなんて！\nガーデンロードは ゆずってやるよ。', after, 'ノブオ');
+    } }));
+  }
+
+  // （旧）話しかけて勝負する版。データ側で kind:'rival' を使えば動く
   runRival(ev) {
     const st = Game.state;
     ev.face = FACE[st.dir];
@@ -221,6 +306,12 @@ class FieldScene {
       if (sx < -T || sy < -T || sx > W || sy > H) continue;
       if (ev.kind === 'starter') ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
       else if (ev.sprite) ctx.drawImage(this.npcSprite(ev), sx, sy - 2);
+    }
+    // カットシーンの人物
+    if (this.actor) {
+      const a = this.actor; let ax = 0, ay = 0;
+      if (this.actorMove > 0) { const [dx, dy] = DIRS[this.actorDir]; const t = this.actorMove / CONFIG.WALK_FRAMES; ax = dx * t * T; ay = dy * t * T; }
+      ctx.drawImage(Gfx.get(a.sprite), a.x * T - ax - camX + bx, a.y * T - ay - camY - 2 + by);
     }
     // 主人公
     const step = this.moving > 0 && (this.moving % 8) < 4 ? this.animStep : 0;

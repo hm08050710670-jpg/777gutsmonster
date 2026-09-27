@@ -63,7 +63,7 @@ const server = http.createServer((req, res) => {
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(400); await shot('09_blocked'); await advance();
   // 研究所へ
   await page.evaluate(() => { Game.state.x = 15; Game.state.y = 5; Game.state.dir = 'up'; });
-  await walk('up'); await page.waitForTimeout(300); await shot('10_lab'); console.log('lab:', await st());
+  await walk('up'); await page.waitForTimeout(400); await shot('10_lab'); console.log('lab:', await st()); await advance(40); await shot('10b_lab_after_intro');
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
   await walk('left'); await tap('a'); await page.waitForTimeout(600); await shot('12_starter_ask');
   await tap('a'); await page.waitForTimeout(300); await advance(); console.log('after starter:', await st());
@@ -72,12 +72,13 @@ const server = http.createServer((req, res) => {
   await page.evaluate(() => { Game.state.x = 5; Game.state.y = 5; Game.state.dir = 'down'; });
   await walk('down'); await page.waitForTimeout(400);
   await page.evaluate(() => { Game.state.x = 9; Game.state.y = 3; Game.state.dir = 'up'; });
-  await walk('up'); await walk('up'); await page.waitForTimeout(200); await shot('14_rival_wait'); console.log('rival wait:', await st());
-  await tap('a'); await page.waitForTimeout(500); await shot('14_rival'); await advance(); await page.waitForTimeout(300); await shot('15_rival_battle');
-  await advance(); await shot('16_battle_cmd');
+  await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('14_rival_call');
+  await advance(); await page.waitForTimeout(600); await shot('14_rival_walking'); await page.waitForTimeout(800); await shot('14_rival_arrived');
+  for (let i = 0; i < 20; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }
+  await shot('15_rival_battle'); await advance(); await shot('16_battle_cmd');
   await tap('a'); await page.waitForTimeout(150); await shot('17_moves');
   await tap('down'); await tap('a'); await page.waitForTimeout(1200); await shot('18_attack');
-  await finishBattle(); await advance(); console.log('after rival:', await st());
+  await finishBattle(); await advance(); await page.waitForTimeout(1200); console.log('after rival:', await st(), 'actor:', await page.evaluate(() => !!Game.top().actor));
   await shot('19_after_rival');
   // メニュー
   await tap('start'); await page.waitForTimeout(150); await shot('20_menu'); await tap('a'); await page.waitForTimeout(150); await shot('21_party'); await tap('b'); await tap('b');
