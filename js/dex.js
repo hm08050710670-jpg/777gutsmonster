@@ -5,7 +5,7 @@
 // ============================================================
 // 使用するモンスター。null にすると図鑑の全員が使われる。
 //   （2026-09-28：御三家以外はいったん外す。新しいドット絵ができた個体から追加していく）
-const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou', 'nidomu', 'nyakimi', 'nyakimino', 'nyakiageha'];
+const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou', 'nidomu', 'nyakimi', 'nyakimino', 'nyakiageha', 'kinomushi', 'kinomino', 'honeybal'];
 
 const DEX = [
   // ---- 御三家 ----
@@ -175,6 +175,9 @@ const DEX = [
   { no: 148, id: 'nyakimi',    name: 'ニャキミ',     type: 'くさ', stage: 1, evo: ['nyakimino', 7] },
   { no: 149, id: 'nyakimino',  name: 'ニャキミノ',   type: 'くさ', stage: 2, evo: ['nyakiageha', 10] },
   { no: 150, id: 'nyakiageha', name: 'ニャキアゲハ', type: 'くさ', stage: 3 },
+  { no: 151, id: 'kinomushi',  name: 'キノムシ',     type: 'くさ', stage: 1, evo: ['kinomino', 7] },
+  { no: 152, id: 'kinomino',   name: 'キノミノ',     type: 'くさ', stage: 2, evo: ['honeybal', 10] },
+  { no: 153, id: 'honeybal',   name: 'ハニーバル',   type: 'くさ', stage: 3 },
 ];
 
 // タイプ相性（攻撃側→防御側）。未定義は1倍。
