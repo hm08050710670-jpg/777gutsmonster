@@ -52,6 +52,66 @@ if mid not in bmeta:
     bmeta[mid] = [n * 48, 0, 48, 48]
 bx = bmeta[mid][0]; batlas.paste(Image.new('RGBA', (48, 48), (0, 0, 0, 0)), (bx, 0)); batlas.paste(back, (bx, 0), back)
 batlas.save('assets/monsters_back.png'); json.dump(bmeta, open('assets/monsters_back.json', 'w'))
+# ---- ドット絵の格子を復元して等倍で保存（assets/monsters_px.png）：拡大してもにじまない ----
+def grid_period(arr, axis):
+    """格子の周期：境界エネルギーの自己相関で最も強いピーク（7〜45px）を採り、±1pxを0.1刻みで詰める"""
+    d = np.abs(np.diff(arr[:, :, :3], axis=axis)).sum(2).sum(1 - axis).astype(float); d -= d.mean()
+    ac = np.correlate(d, d, 'full')[len(d) - 1:]
+    peaks = [i for i in range(7, 45) if ac[i] > ac[i - 1] and ac[i] >= ac[i + 1]]
+    base = max(peaks, key=lambda i: ac[i])
+    dd = np.abs(np.diff(arr[:, :, :3], axis=axis)).sum(2).sum(1 - axis)
+    def score(p):
+        best = 0
+        for off in np.arange(0, p, 0.5):
+            idx = np.arange(off, len(dd), p).astype(int); idx = idx[idx < len(dd)]
+            best = max(best, dd[idx].sum() / len(idx))
+        return best
+    return max(np.arange(base - 1.0, base + 1.01, 0.1), key=score)
+def grid_offset(arr, axis, p):
+    d = np.abs(np.diff(arr[:, :, :3], axis=axis)).sum(2).sum(1 - axis)
+    best = None
+    for off in np.arange(0, p, 0.5):
+        idx = np.arange(off, len(d), p).astype(int); idx = idx[idx < len(d)]
+        sc = d[idx].sum() / len(idx)
+        if best is None or sc > best[0]: best = (sc, off)
+    return best[1]
+_whole = np.array(im).astype(float)
+PX, PY = grid_period(_whole, 1), grid_period(_whole, 0)
+print('grid', PX, PY)
+def to_native(img):
+    arr = np.array(img).astype(float); H, W = arr.shape[:2]
+    px, py = PX, PY; ox = grid_offset(arr, 1, px); oy = grid_offset(arr, 0, py)
+    cols = int((W - ox) // px); rows = int((H - oy) // py)
+    out = np.zeros((rows, cols, 4), np.uint8)
+    for j in range(rows):
+        for i in range(cols):
+            cx = int(ox + i * px + px / 2); cy = int(oy + j * py + py / 2)
+            blk = arr[max(0, cy - 2):cy + 3, max(0, cx - 2):cx + 3].reshape(-1, 4)
+            out[j, i] = np.median(blk, axis=0)
+    out[out[:, :, 3] < 128] = 0; out[out[:, :, 3] >= 128, 3] = 255
+    o = Image.fromarray(out, 'RGBA'); return o.crop(o.getbbox())
+nf = to_native(im.crop((0, 0, split, H))); nb = to_native(im.crop((split, 0, W, H)))
+CELL = 80
+pmeta = {}; patlas = Image.new('RGBA', (CELL * 8, CELL), (0, 0, 0, 0))
+if os.path.exists('assets/monsters_px.json'):
+    pmeta = json.load(open('assets/monsters_px.json')); patlas = Image.open('assets/monsters_px.png').convert('RGBA')
+if mid not in pmeta:
+    n = len(pmeta)
+    while (n + 1) * CELL * 2 > patlas.width * (patlas.height // CELL):
+        nb2 = Image.new('RGBA', (patlas.width, patlas.height + CELL), (0, 0, 0, 0)); nb2.paste(patlas, (0, 0)); patlas = nb2
+    per_row = patlas.width // CELL
+    slot = lambda k: ((k % per_row) * CELL, (k // per_row) * CELL)
+    fx, fy = slot(n * 2); bx2, by2 = slot(n * 2 + 1)
+    pmeta[mid] = {'f': [fx, fy, 0, 0], 'b': [bx2, by2, 0, 0]}
+for key, spr in (('f', nf), ('b', nb)):
+    if max(spr.size) > CELL:
+        s2 = CELL / max(spr.size); spr = spr.resize((max(1, round(spr.width * s2)), max(1, round(spr.height * s2))), Image.NEAREST)
+    x0, y0 = pmeta[mid][key][:2]
+    patlas.paste(Image.new('RGBA', (CELL, CELL), (0, 0, 0, 0)), (x0, y0)); patlas.paste(spr, (x0, y0), spr)
+    pmeta[mid][key] = [x0, y0, spr.width, spr.height]
+patlas.save('assets/monsters_px.png'); json.dump(pmeta, open('assets/monsters_px.json', 'w'))
+print('native', mid, nf.size, nb.size)
+
 pv = Image.new('RGBA', (192, 96), (120, 180, 120, 255))
 for i, s in enumerate([front, back]):
     r = s.resize((96, 96), Image.NEAREST); pv.paste(r, (i * 96, 0), r)

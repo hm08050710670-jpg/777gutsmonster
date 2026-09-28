@@ -6,6 +6,7 @@
 const Mon = (() => {
   let img = null, meta = {}, ready = false;
   let bimg = null, bmeta = {};   // 後ろ姿（自分側・あるものだけ）
+  let pimg = null, pmeta = {};   // 等倍ドット絵（正面f／後ろ姿b、あるものだけ）：拡大してもにじまない
   const S = 2; // 素材px → 論理px
   async function load() {
     try {
@@ -19,11 +20,34 @@ const Mon = (() => {
       bimg = new Image();
       await new Promise((res, rej) => { bimg.onload = res; bimg.onerror = rej; bimg.src = CONFIG.MON_BACK_IMG || 'assets/monsters_back.png'; });
     } catch (e) { bimg = null; bmeta = {}; }
+    await loadPx();
   }
   const hasBack = id => !!(bimg && bmeta[id]);
+  // 等倍ドット絵の読み込み（無ければ無視）
+  async function loadPx() {
+    try {
+      pmeta = CONFIG.MON_PX_META ? CONFIG.MON_PX_META : await (await fetch('assets/monsters_px.json')).json();
+      pimg = new Image();
+      await new Promise((res, rej) => { pimg.onload = res; pimg.onerror = rej; pimg.src = CONFIG.MON_PX_IMG || 'assets/monsters_px.png'; });
+    } catch (e) { pimg = null; pmeta = {}; }
+  }
+  const hasPx = id => !!(pimg && pmeta[id]);
+  // 等倍ドット絵：24*scale の箱に収まるよう最近傍で拡大（足元を下に揃える）
+  function drawPx(ctx, id, x, y, scale, flip, back) {
+    const e = pmeta[id]; const r = back && e.b ? e.b : e.f; if (!r) return false;
+    const [sx, sy, sw, sh] = r, box = 24 * scale, k = box / Math.max(sw, sh);
+    const w = Math.round(sw * k), h = Math.round(sh * k), dx = x + Math.floor((box - w) / 2), dy = y + box - h;
+    const doFlip = flip && !(back && e.b);
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    if (doFlip) { ctx.translate(dx + w, dy); ctx.scale(-1, 1); ctx.drawImage(pimg, sx, sy, sw, sh, 0, 0, w, h); }
+    else ctx.drawImage(pimg, sx, sy, sw, sh, dx, dy, w, h);
+    ctx.restore();
+    return true;
+  }
   const has = id => ready && !!meta[id];
   // back=true：後ろ姿があればそれを（反転なし）、無ければ正面を左右反転
   function draw(ctx, id, x, y, scale = 1, flip = false, back = false) {
+    if (hasPx(id)) return drawPx(ctx, id, x, y, scale, flip, back);
     if (back && hasBack(id)) return drawFrom(ctx, bimg, bmeta[id], x, y, scale, false);
     const r = meta[id]; if (!r || !ready) return false;
     return drawFrom(ctx, img, r, x, y, scale, flip);
