@@ -24,7 +24,7 @@ const DEX = [
   { no: 12, id: 'mogujuou',   name: 'モグジュオウ', type: 'くさ', stage: 3 },
   { no: 13, id: 'shibatta',   name: 'シバッタ',     type: 'くさ', stage: 1, evo: ['rafubatta', 15] },
   { no: 14, id: 'rafubatta',  name: 'ラフバッタ',   type: 'くさ', stage: 2, evo: ['shigebatta', 30] },
-  { no: 15, id: 'shigebatta', name: 'シゲバッタ',   type: 'くさ', stage: 3 },
+  { no: 15, id: 'shigebatta', name: 'カマバッタ',   type: 'くさ', stage: 3 },
   { no: 16, id: 'yotsubausa', name: 'ヨツバウサ',   type: 'くさ', stage: 1, evo: ['clovernny', 18] },
   { no: 17, id: 'clovernny',  name: 'クローバニー', type: 'くさ', stage: 2 },
   { no: 18, id: 'happachi',   name: 'ハッパチ',     type: 'くさ', stage: 1, evo: ['hachibana', 16] },
