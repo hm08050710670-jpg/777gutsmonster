@@ -65,8 +65,7 @@ const Game = (() => {
     fit();
     Input.setupPad();
     Sound.installUnlock();
-    await Promise.all([Text.load(), Atlas.load()]);
-    MapImages.preload(Object.values(DATA.MAPS).filter(m => m.image).map(m => m.image));
+    await Text.load();
     fit();
     push(new TitleScene());
     requestAnimationFrame(t => { last = t; loop(t); });

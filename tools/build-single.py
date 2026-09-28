@@ -40,8 +40,10 @@ for name in ['guts_town', 'okumura_lab', 'wild_adventure', 'rival_battle']:
 print('bgm embedded:', len(bgm_b64), 'tracks')
 
 # アトラスを埋め込み
-atlas_png = 'data:image/png;base64,' + base64.b64encode(open('assets/atlas.png', 'rb').read()).decode()
-atlas_json = open('assets/atlas.json', encoding='utf-8').read()
+atlas_png = atlas_json = None
+if os.path.exists('assets/atlas.png'):
+    atlas_png = 'data:image/png;base64,' + base64.b64encode(open('assets/atlas.png', 'rb').read()).decode()
+    atlas_json = open('assets/atlas.json', encoding='utf-8').read()
 
 # 一枚絵マップを埋め込み
 map_imgs = {}
@@ -62,7 +64,7 @@ def inline_js(m):
     code = open(src, encoding='utf-8').read()
     code = code.replace("FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf'", f"FONT_FILE: 'data:font/ttf;base64,{font_b64}'")
     for path, uri in bgm_b64.items(): code = code.replace(f"'{path}'", f"'{uri}'")
-    if src == 'js/config.js':
+    if src == 'js/config.js' and atlas_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline_js, html)

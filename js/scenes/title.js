@@ -48,7 +48,7 @@ class TitleScene {
     ctx.beginPath(); ctx.ellipse(140, 150, 34, 12, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#9fd0f2'; ctx.fillRect(126, 146, 10, 2); ctx.fillRect(150, 153, 8, 2);
     // 木
-    [[8, 88], [28, 84], [160, 82], [178, 88], [4, 130], [60, 176]].forEach(([x, y]) => { if (!Atlas.draw(ctx, 'tree', x, y - 6)) ctx.drawImage(Gfx.get('tree'), x, y); });
+    [[8, 88], [28, 84], [160, 82], [178, 88], [4, 130], [60, 176]].forEach(([x, y]) => ctx.drawImage(Gfx.get('tree'), x, y));
     // 旗
     ctx.fillStyle = '#f4f1e8'; ctx.fillRect(96, 122, 1, 22);
     ctx.fillStyle = '#e04a3a'; ctx.fillRect(97, 122, 8, 6);
@@ -119,8 +119,7 @@ class SetupScene {
       ['hm', 'hf'].forEach((g, i) => {
         const x = 40 + i * 80, y = 70;
         Text.box(ctx, x - 12, y - 12, 56, 64);
-        if (Atlas.has(`${g}_down0`)) { ctx.save(); ctx.translate(x + 4, y - 2); ctx.scale(2, 2); Atlas.draw(ctx, `${g}_down0`, 0, 0); ctx.restore(); }
-        else ctx.drawImage(Gfx.get(`${g}_down0`, 2), x, y);
+        ctx.drawImage(Gfx.get(`${g}_down0`, 2), x, y);
         const label = i === 0 ? 'だんせい' : 'じょせい';
         Text.draw(ctx, label, x + 16 - Text.width(label) / 2, y + 40);
         if (this.sel === i) Text.cursor(ctx, x - 6, y + 40);
@@ -132,9 +131,7 @@ class SetupScene {
     // preview
     Text.draw(ctx, '03. この主人公で いく？', 24, 24, THEME.green);
     Text.box(ctx, W / 2 - 40, 48, 80, 96);
-    const hg = this.gender === 'f' ? 'hf' : 'hm';
-    if (Atlas.has(`${hg}_down0`)) { ctx.save(); ctx.translate(W / 2 - 24, 52); ctx.scale(4, 4); Atlas.draw(ctx, `${hg}_down0`, 0, 0); ctx.restore(); }
-    else ctx.drawImage(Gfx.get(`${hg}_down0`, 4), W / 2 - 32, 60);
+    ctx.drawImage(Gfx.get(`${this.gender === 'f' ? 'hf' : 'hm'}_down0`, 4), W / 2 - 32, 60);
     Text.draw(ctx, this.name, W / 2 - Text.width(this.name) / 2, 128);
     Text.box(ctx, 0, H - 40, W, 40);
     Text.draw(ctx, 'A: この主人公で 冒険をはじめる', 10, H - 30);

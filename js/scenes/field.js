@@ -36,7 +36,6 @@ class FieldScene {
     return true;
   }
   get map() { return DATA.MAPS[Game.state.map]; }
-  get T() { return this.map.indoor ? CONFIG.TILE_INDOOR : CONFIG.TILE; }
   get mapW() { return this.map.rows[0].length; }
   get mapH() { return this.map.rows.length; }
   tileAt(x, y) { const r = this.map.rows[y]; return r && r[x] ? r[x] : ' '; }
@@ -51,15 +50,7 @@ class FieldScene {
   events() { return this.map.events.filter(e => this.eventActive(e)); }
   eventAt(x, y) { return this.events().find(e => e.x === x && e.y === y); }
   blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look'].includes(ev.kind); }
-  objectAt(x, y) {
-    for (const o of (this.map.objects || [])) {
-      if (x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h) return o;
-    }
-    return null;
-  }
   canWalk(x, y) {
-    const o = this.objectAt(x, y);
-    if (o) { const ds = o.doors || (o.door ? [o.door] : []); return ds.some(d => d.x === x && d.y === y); }
     if (!DATA.WALKABLE.has(this.tileAt(x, y))) return false;
     return !this.blocksWalk(this.eventAt(x, y));
   }
@@ -228,14 +219,13 @@ class FieldScene {
   rivalApproach(ev) {
     const st = Game.state;
     st.dir = 'down';
-    const spec = ev.rival || { x: st.x, y: st.y + 7, path: ['up', 'up', 'up', 'up', 'up', 'up'] };
-    const actor = { x: spec.x, y: spec.y, sprite: 'rival' };
-    const back = [...spec.path].reverse().map(d => ({ up: 'down', down: 'up', left: 'right', right: 'left' }[d]));
+    const actor = { x: st.x, y: st.y + 7, sprite: 'npc_rival' };
     say('おーい！ ちょっと まてよ！', () => {
-      this.walkActor(actor, spec.path, () => {
+      this.walkActor(actor, ['up', 'up', 'up', 'up', 'up', 'up'], () => {
         say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
           say('ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ブブ！', () => this.rivalBattle(() => {
-            this.walkActor(actor, back, () => { this.actor = null; Save.auto(st); });
+            // 勝負のあと、来た道を もどる
+            this.walkActor(actor, ['down', 'down', 'down', 'down', 'down', 'down'], () => { this.actor = null; Save.auto(st); });
           }), 'ノブオ');
         }, 'ノブオ');
       });
@@ -271,47 +261,19 @@ class FieldScene {
     }, 'ノブオ');
   }
 
-  // ---- 人物スプライト（アトラス：4方向×3コマ。歩行は 1,0,2,0 の順） ----
-  charFrame(moving, animStep) {
-    if (moving <= 0) return 0;
-    return (moving % 8) < 4 ? (animStep ? 1 : 2) : 0;
-  }
-  drawChar(ctx, name, dir, frame, x, y) {
-    // x,y はタイル左上（論理px）。足元をタイルの下辺に、横は中央に合わせる
-    const key = `${name}_${dir}${frame}`;
-    if (Atlas.has(key)) { const sz = Atlas.size(key), T = this.T; Atlas.draw(ctx, key, x + (T - sz.w) / 2, y + T - sz.h); return; }
-    // フォールバック（旧文字列アート）
-    const legacy = { hm: 'hm', hf: 'hf', prof: 'npc_prof', rival: 'npc_rival', woman: 'npc_woman', man: 'npc_man', nurse: 'npc_nurse' }[name];
-    if (!legacy) return;
-    if (legacy.startsWith('npc')) { ctx.drawImage(Gfx.get(legacy), x, y - 2); return; }
+  heroSprite(dir, step) {
+    const g = Game.state.gender === 'f' ? 'hf' : 'hm';
     const base = dir === 'left' ? 'right' : dir;
-    ctx.drawImage(Gfx.get(`${legacy}_${base}${frame ? 1 : 0}`, 1, dir === 'left'), x, y - 2);
+    return Gfx.get(`${g}_${base}${step}`, 1, dir === 'left');
   }
-
-  // 水の自動タイル：陸に接する辺・角で岸のタイルを選ぶ
-  waterTile(tx, ty) {
-    const w = (x, y) => this.tileAt(x, y) === '~' || this.tileAt(x, y) === 'B';
-    const n = !w(tx, ty - 1), s = !w(tx, ty + 1), wl = !w(tx - 1, ty), e = !w(tx + 1, ty);
-    if (n && wl) return 'shore_nw'; if (n && e) return 'shore_ne'; if (s && wl) return 'shore_sw'; if (s && e) return 'shore_se';
-    if (n) return 'shore_n'; if (s) return 'shore_s'; if (wl) return 'shore_w'; if (e) return 'shore_e';
-    return null;
-  }
-  // 道の自動タイル：芝に接する辺・角で境界タイルを選ぶ
-  pathTile(tx, ty) {
-    const p = (x, y) => { const t = this.tileAt(x, y); return t === 'P' || t === 'B' || t === ' '; };
-    const n = !p(tx, ty - 1), s = !p(tx, ty + 1), w = !p(tx - 1, ty), e = !p(tx + 1, ty);
-    if (n && w) return 'path_nw'; if (n && e) return 'path_ne'; if (s && w) return 'path_sw'; if (s && e) return 'path_se';
-    if (n) return 'path_n'; if (s) return 'path_s'; if (w) return 'path_w'; if (e) return 'path_e';
-    return 'path';
-  }
-  fenceTile(tx, ty) {
-    const f = (x, y) => this.tileAt(x, y) === '=';
-    const l = f(tx - 1, ty), r = f(tx + 1, ty);
-    return l && r ? 'fence' : (r ? 'fence_l' : (l ? 'fence_r' : 'fence_v'));
+  npcSprite(ev) {
+    const dir = ev.face || ev.dir || 'down';
+    return Gfx.get(ev.sprite); // NPCは正面のみ（方向別スプライトは未実装）
   }
 
   draw(ctx, frame) {
-    const st = Game.state, T = this.T, W = CONFIG.W, H = CONFIG.H;
+    const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
+    // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
     let ox = 0, oy = 0;
     if (this.moving > 0) {
       const [dx, dy] = DIRS[st.dir];
@@ -324,77 +286,36 @@ class FieldScene {
     camX = mapPW <= W ? -(W - mapPW) / 2 : Math.max(0, Math.min(mapPW - W, camX));
     camY = mapPH <= H ? -(H - mapPH) / 2 : Math.max(0, Math.min(mapPH - H, camY));
     camX = Math.round(camX); camY = Math.round(camY);
+
+    // 壁ぶつかり：画面をわずかに揺らす
     const bx = this.bump ? (this.bump % 2 ? 1 : -1) * (DIRS[st.dir][0]) : 0;
     const by = this.bump ? (this.bump % 2 ? 1 : -1) * (DIRS[st.dir][1]) : 0;
 
     ctx.fillStyle = this.map.indoor ? '#1a1410' : '#173a1c';
     ctx.fillRect(0, 0, W, H);
-    const useAtlas = Atlas.isReady() && !this.map.indoor;
-    const bgImg = this.map.image ? MapImages.get(this.map.image) : null;
-    const sprites = []; // 奥行き順に描くもの { y, fn }
     const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
-    const waterFrame = Math.floor(frame / 24) % 4;
-
-    if (bgImg) {
-      // 一枚絵：画像のマス(px) → 論理マス(T) の比で切り出して描く
-      const kx = this.map.imageW / this.mapW / T, ky = this.map.imageH / this.mapH / T;
-      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bgImg, (camX - bx) * kx, (camY - by) * ky, W * kx, H * ky, 0, 0, W, H);
-      ctx.restore();
-    }
-    for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
-      for (let tx = cx0 - 1; tx <= cx0 + Math.ceil(W / T) + 1; tx++) {
-        if (bgImg) break;
+    for (let ty = cy0; ty <= cy0 + Math.ceil(H / T); ty++) {
+      for (let tx = cx0; tx <= cx0 + Math.ceil(W / T); tx++) {
         const t = this.tileAt(tx, ty);
         if (t === ' ') continue;
-        const px = tx * T - camX + bx, py = ty * T - camY + by;
-        if (!useAtlas) {
-          if (px < -T || py < -T || px > W || py > H) continue;
-          ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py, T, T);
-          continue;
-        }
-        // 下地
-        const base = DATA.ATLAS_BASE[t];
-        if (base === 'water') { Atlas.draw(ctx, this.waterTile(tx, ty) || `water${waterFrame}`, px, py); }
-        else if (base === 'path') { const pt = this.pathTile(tx, ty); Atlas.draw(ctx, Atlas.has(pt) ? pt : 'path', px, py); }
-        else if (base) Atlas.draw(ctx, base, px, py);
-        else Atlas.draw(ctx, 'grass', px, py);
-        // 上に載る小物（奥行き順）
-        let dec = DATA.ATLAS_DECOR[t];
-        if (t === '=') dec = this.fenceTile(tx, ty);
-        if (dec) {
-          const sz = Atlas.size(dec);
-          const dy = py + T - (sz ? sz.h : T);
-          sprites.push({ y: ty * T + T, fn: () => Atlas.draw(ctx, dec, px, dy) });
-        }
+        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), tx * T - camX + bx, ty * T - camY + by);
       }
     }
-    // 大きな建物・オブジェクト（足元の y で並べる）
-    for (const o of (this.map.objects || [])) {
-      const px = o.x * T - camX + bx, py = o.y * T - camY + by;
-      if (useAtlas && Atlas.has(o.art)) { const sz = Atlas.size(o.art); const dy = (o.y + o.h) * T - camY + by - sz.h; sprites.push({ y: (o.y + o.h) * T - 1, fn: () => Atlas.draw(ctx, o.art, px, dy) }); }
-      else ctx.drawImage(Gfx.get(o.art), px, py, o.w * T, o.h * T);
-    }
-    // イベント（ボール・NPC）
+    // イベントの見た目（ボール・NPC）
     for (const ev of this.events()) {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
-      if (sx < -T * 2 || sy < -T * 2 || sx > W + T || sy > H + T) continue;
-      if (ev.kind === 'starter') sprites.push({ y: ev.y * T + T, fn: () => ctx.drawImage(Gfx.get('ball'), sx, sy - 4, T, T) });
-      else if (ev.sprite) sprites.push({ y: ev.y * T + T, fn: () => this.drawChar(ctx, ev.sprite, ev.face || ev.dir || 'down', 0, sx, sy) });
+      if (sx < -T || sy < -T || sx > W || sy > H) continue;
+      if (ev.kind === 'starter') ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
+      else if (ev.sprite) ctx.drawImage(this.npcSprite(ev), sx, sy - 2);
     }
     // カットシーンの人物
     if (this.actor) {
       const a = this.actor; let ax = 0, ay = 0;
       if (this.actorMove > 0) { const [dx, dy] = DIRS[this.actorDir]; const t = this.actorMove / CONFIG.WALK_FRAMES; ax = dx * t * T; ay = dy * t * T; }
-      const f = this.charFrame(this.actorMove, Math.floor(this.actorMove / 8) % 2);
-      sprites.push({ y: a.y * T - ay + T, fn: () => this.drawChar(ctx, a.sprite, this.actorDir, f, a.x * T - ax - camX + bx, a.y * T - ay - camY + by) });
+      ctx.drawImage(Gfx.get(a.sprite), a.x * T - ax - camX + bx, a.y * T - ay - camY - 2 + by);
     }
     // 主人公
-    const hero = st.gender === 'f' ? 'hf' : 'hm';
-    const hf = this.charFrame(this.moving, this.animStep);
-    sprites.push({ y: st.y * T - oy + T, fn: () => this.drawChar(ctx, hero, st.dir, hf, st.x * T - ox - camX + bx, st.y * T - oy - camY + by) });
-
-    sprites.sort((a, b) => a.y - b.y);
-    for (const s of sprites) s.fn();
+    const step = this.moving > 0 && (this.moving % 8) < 4 ? this.animStep : 0;
+    ctx.drawImage(this.heroSprite(st.dir, step), st.x * T - ox - camX + bx, st.y * T - oy - camY - 2 + by);
   }
 }

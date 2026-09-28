@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = require('path').join(__dirname, '..');
 const OUT = __dirname + '/shots'; fs.mkdirSync(OUT, { recursive: true });
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.png': 'image/png', '.json': 'application/json', '.webp': 'image/webp' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.wav': 'audio/wav', '.mp3': 'audio/mpeg' };
 const server = http.createServer((req, res) => {
   let p = path.join(ROOT, req.url === '/' ? '/index.html' : req.url.split('?')[0]);
   if (req.url.startsWith('/bgmtest/')) p = path.join(__dirname, 'bgm/wav', req.url.slice(9));
@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => {
   const errors = [];
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('http://localhost:8766/'); await page.waitForTimeout(1500);
+  await page.goto('http://localhost:8766/'); await page.waitForTimeout(800);
   // ヘッドレスChromiumはmp3をデコードできないため、検証ではWAV原本に差し替える
   if (process.env.BGM_WAV) await page.evaluate(() => { DATA.BGM = { town: '/bgmtest/01_guts_town_v01_112bpm.wav', lab: '/bgmtest/02_okumura_lab_v01_96bpm.wav', wild: '/bgmtest/03_wild_adventure_A_v02_156bpm.wav', rival: '/bgmtest/04_rival_battle_v01_168bpm.wav' }; });
   const snd = () => page.evaluate(() => Sound.status());
@@ -64,10 +64,10 @@ const server = http.createServer((req, res) => {
   await walk('down'); await page.waitForTimeout(300); await shot('08_town');
   console.log('town:', await st());
   // 町の出口に行くと止められる（テレポートで確認）
-  await page.evaluate(() => { Game.state.x = 13; Game.state.y = 3; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 9; Game.state.y = 3; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(400); await shot('09_blocked'); await advance();
   // 研究所へ
-  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 4; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 15; Game.state.y = 5; Game.state.dir = 'up'; });
   await walk('up'); await page.waitForTimeout(400); await shot('10_lab'); console.log('lab:', await st()); await page.waitForTimeout(800); console.log('bgm@lab:', await snd()); await advance(40); await shot('10b_lab_after_intro');
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
   await walk('left'); await tap('a'); await page.waitForTimeout(600); await shot('12_starter_ask');
@@ -76,9 +76,9 @@ const server = http.createServer((req, res) => {
   // 研究所を出る → ノブオ
   await page.evaluate(() => { Game.state.x = 5; Game.state.y = 5; Game.state.dir = 'down'; });
   await walk('down'); await page.waitForTimeout(400);
-  await page.evaluate(() => { Game.state.x = 13; Game.state.y = 3; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 9; Game.state.y = 3; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('14_rival_call');
-  await advance(); await page.waitForTimeout(600); await shot('14_rival_walking'); await page.waitForTimeout(1200); await shot('14_rival_arrived');
+  await advance(); await page.waitForTimeout(600); await shot('14_rival_walking'); await page.waitForTimeout(800); await shot('14_rival_arrived');
   for (let i = 0; i < 20; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }
   await shot('15_rival_battle'); console.log('bgm@rival:', await snd()); await advance(); await shot('16_battle_cmd');
   await tap('a'); await page.waitForTimeout(150); await shot('17_moves');
@@ -88,9 +88,9 @@ const server = http.createServer((req, res) => {
   // メニュー
   await tap('start'); await page.waitForTimeout(150); await shot('20_menu'); await tap('a'); await page.waitForTimeout(150); await shot('21_party'); await tap('b'); await tap('b');
   // ガーデンロードへ
-  await page.evaluate(() => { Game.state.x = 13; Game.state.y = 2; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 9; Game.state.y = 2; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('22_road'); console.log('road:', await st());
-  await page.evaluate(() => { CONFIG.ENCOUNTER_RATE = 100; Game.state.grace = 0; Game.state.x = 4; Game.state.y = 3; Game.state.dir = 'down'; });
+  await page.evaluate(() => { CONFIG.ENCOUNTER_RATE = 100; Game.state.grace = 0; Game.state.x = 2; Game.state.y = 3; Game.state.dir = 'down'; });
   await walk('down'); await page.waitForTimeout(500); await shot('23_wild'); console.log('wild:', await st()); console.log('bgm@wild:', await snd());
   await finishBattle(); await advance(); console.log('after wild:', await st()); await page.waitForTimeout(600); console.log('bgm@after wild:', await snd());
   // 回復の家
