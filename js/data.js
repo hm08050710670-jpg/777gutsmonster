@@ -219,7 +219,7 @@ const DATA = {
         'WWWWWWWPWWWWWW',
       ],
       encounters: [
-        { id: 'shibatta', level: [3, 5], weight: 5 }, { id: 'bankani', level: [3, 5], weight: 3 },
+        { id: 'shibatta', level: [3, 5], weight: 4 }, { id: 'kokemogu', level: [3, 5], weight: 4 }, { id: 'bankani', level: [3, 5], weight: 3 },
       ],
       events: [
         { x: 7, y: 21, kind: 'warp', to: { map: 'town', x: 9, y: 1, dir: 'down' } },

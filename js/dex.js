@@ -5,7 +5,7 @@
 // ============================================================
 // 使用するモンスター。null にすると図鑑の全員が使われる。
 //   （2026-09-28：御三家以外はいったん外す。新しいドット絵ができた個体から追加していく）
-const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta'];
+const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou'];
 
 const DEX = [
   // ---- 御三家 ----
@@ -19,7 +19,7 @@ const DEX = [
   { no: 8, id: 'amegamo',    name: 'アメガモ',   type: 'みず',   stage: 2, evo: ['doshagamo', 28] },
   { no: 9, id: 'doshagamo',  name: 'ドシャガモ', type: 'みず',   stage: 3 },
   // ---- くさ ----
-  { no: 10, id: 'kokemogu',   name: 'コケモグ',     type: 'くさ', stage: 1, evo: ['rafumoggu', 16] },
+  { no: 10, id: 'kokemogu',   name: 'シバモグ',     type: 'くさ', stage: 1, evo: ['rafumoggu', 16] },
   { no: 11, id: 'rafumoggu',  name: 'ラフモッグ',   type: 'くさ', stage: 2, evo: ['mogujuou', 32] },
   { no: 12, id: 'mogujuou',   name: 'モグジュオウ', type: 'くさ', stage: 3 },
   { no: 13, id: 'shibatta',   name: 'シバッタ',     type: 'くさ', stage: 1, evo: ['rafubatta', 15] },
