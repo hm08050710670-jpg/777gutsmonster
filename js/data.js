@@ -218,11 +218,8 @@ const DATA = {
         'WGGGGGGPGGGGGW',
         'WWWWWWWPWWWWWW',
       ],
-      // ※ 御三家以外を外している間の仮テーブル。野生の個体が増えたら差し替える
       encounters: [
-        { id: 'bankani', level: [3, 5], weight: 3 },
-        { id: 'kokegame', level: [3, 5], weight: 1 }, { id: 'hinoshishi', level: [3, 5], weight: 1 },
-        { id: 'amepiyo', level: [3, 5], weight: 1 },
+        { id: 'shibatta', level: [3, 5], weight: 5 }, { id: 'bankani', level: [3, 5], weight: 3 },
       ],
       events: [
         { x: 7, y: 21, kind: 'warp', to: { map: 'town', x: 9, y: 1, dir: 'down' } },

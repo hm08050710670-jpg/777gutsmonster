@@ -57,7 +57,7 @@ def grid_period(arr, axis):
     """格子の周期：境界エネルギーの自己相関で最も強いピーク（7〜45px）を採り、±1pxを0.1刻みで詰める"""
     d = np.abs(np.diff(arr[:, :, :3], axis=axis)).sum(2).sum(1 - axis).astype(float); d -= d.mean()
     ac = np.correlate(d, d, 'full')[len(d) - 1:]
-    peaks = [i for i in range(7, 45) if ac[i] > ac[i - 1] and ac[i] >= ac[i + 1]]
+    peaks = [i for i in range(5, 45) if ac[i] > ac[i - 1] and ac[i] >= ac[i + 1]]
     base = max(peaks, key=lambda i: ac[i])
     dd = np.abs(np.diff(arr[:, :, :3], axis=axis)).sum(2).sum(1 - axis)
     def score(p):
