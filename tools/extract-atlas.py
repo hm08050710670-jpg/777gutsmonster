@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from cut import keyout
 
-U = 32
+U = int(os.environ.get('TILE_PX', '24'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
 SHEETS = os.path.join(OUT, 'sheets')
 sheets = {n: keyout(f'{SHEETS}/{n}.png')[0] for n in ['terrain', 'props', 'objects', 'chars']}

@@ -36,6 +36,7 @@ class FieldScene {
     return true;
   }
   get map() { return DATA.MAPS[Game.state.map]; }
+  get T() { return this.map.indoor ? CONFIG.TILE_INDOOR : CONFIG.TILE; }
   get mapW() { return this.map.rows[0].length; }
   get mapH() { return this.map.rows.length; }
   tileAt(x, y) { const r = this.map.rows[y]; return r && r[x] ? r[x] : ' '; }
@@ -275,8 +276,9 @@ class FieldScene {
     return (moving % 8) < 4 ? (animStep ? 1 : 2) : 0;
   }
   drawChar(ctx, name, dir, frame, x, y) {
-    // x,y はタイル左上（論理px）。人物は 16x24 で、足元をタイルの下に合わせる
-    if (Atlas.has(`${name}_${dir}${frame}`)) { Atlas.draw(ctx, `${name}_${dir}${frame}`, x, y - 8); return; }
+    // x,y はタイル左上（論理px）。足元をタイルの下辺に、横は中央に合わせる
+    const key = `${name}_${dir}${frame}`;
+    if (Atlas.has(key)) { const sz = Atlas.size(key), T = this.T; Atlas.draw(ctx, key, x + (T - sz.w) / 2, y + T - sz.h); return; }
     // フォールバック（旧文字列アート）
     const legacy = { hm: 'hm', hf: 'hf', prof: 'npc_prof', rival: 'npc_rival', woman: 'npc_woman', man: 'npc_man', nurse: 'npc_nurse' }[name];
     if (!legacy) return;
@@ -300,7 +302,7 @@ class FieldScene {
   }
 
   draw(ctx, frame) {
-    const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
+    const st = Game.state, T = this.T, W = CONFIG.W, H = CONFIG.H;
     let ox = 0, oy = 0;
     if (this.moving > 0) {
       const [dx, dy] = DIRS[st.dir];
@@ -330,7 +332,7 @@ class FieldScene {
         const px = tx * T - camX + bx, py = ty * T - camY + by;
         if (!useAtlas) {
           if (px < -T || py < -T || px > W || py > H) continue;
-          ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py);
+          ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py, T, T);
           continue;
         }
         // 下地
@@ -352,13 +354,13 @@ class FieldScene {
     for (const o of (this.map.objects || [])) {
       const px = o.x * T - camX + bx, py = o.y * T - camY + by;
       if (useAtlas && Atlas.has(o.art)) sprites.push({ y: (o.y + o.h) * T - 1, fn: () => Atlas.draw(ctx, o.art, px, py) });
-      else ctx.drawImage(Gfx.get(o.art), px, py);
+      else ctx.drawImage(Gfx.get(o.art), px, py, o.w * T, o.h * T);
     }
     // イベント（ボール・NPC）
     for (const ev of this.events()) {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
       if (sx < -T * 2 || sy < -T * 2 || sx > W + T || sy > H + T) continue;
-      if (ev.kind === 'starter') sprites.push({ y: ev.y * T + T, fn: () => ctx.drawImage(Gfx.get('ball'), sx, sy - 4) });
+      if (ev.kind === 'starter') sprites.push({ y: ev.y * T + T, fn: () => ctx.drawImage(Gfx.get('ball'), sx, sy - 4, T, T) });
       else if (ev.sprite) sprites.push({ y: ev.y * T + T, fn: () => this.drawChar(ctx, ev.sprite, ev.face || ev.dir || 'down', 0, sx, sy) });
     }
     // カットシーンの人物
