@@ -14,7 +14,16 @@ const Save = {
     };
   },
   exists() { try { return !!localStorage.getItem(CONFIG.SAVE_KEY); } catch (e) { return false; } },
-  load() { try { return JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY)); } catch (e) { return null; } },
+  load() {
+    try {
+      const st = JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY));
+      if (st && st.party) {  // 旧IDの移行（御三家の入れ替え）
+        const MIG = { shibamog: 'kokegame', hinokapi: 'hinoshishi' };
+        st.party.forEach(m => { if (MIG[m.id]) { m.id = MIG[m.id]; m.name = DATA.MONSTERS[m.id].name; m.type = DATA.MONSTERS[m.id].type; } });
+      }
+      return st;
+    } catch (e) { return null; }
+  },
   store(state) {
     try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(state)); return true; }
     catch (e) { console.warn('セーブ失敗', e); return false; }

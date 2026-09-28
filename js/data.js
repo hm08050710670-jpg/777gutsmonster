@@ -21,16 +21,16 @@ const DATA = {
 
   // 御三家（Lv7スタート、Lv14・Lv28で進化：進化は未実装）
   MONSTERS: {
-    hinokapi: { name: 'ヒノカピ', type: 'ほのお', sprite: 'm_hinokapi', base: { hp: 44, atk: 52, def: 45, spd: 50 }, moves: ['たいあたり', 'ひのこ'],
-      desc: '太陽とゴルフボールを まとった のんびりカピバラ' },
-    shibamog: { name: 'シバモグ', type: 'くさ',   sprite: 'm_shibamog', base: { hp: 48, atk: 47, def: 52, spd: 40 }, moves: ['ひっかく', 'はっぱカッター'],
-      desc: '芝から かおを だす ちいさなモグラ' },
-    amepiyo:  { name: 'アメピヨ', type: 'みず',   sprite: 'm_amepiyo',  base: { hp: 46, atk: 45, def: 48, spd: 55 }, moves: ['たいあたり', 'あまごい'],
-      desc: '雨の日に げんきになる ダサかわアヒル' },
-    bubu:     { name: 'ブブ',     type: 'ノーマル', sprite: 'm_bubu',   base: { hp: 50, atk: 55, def: 50, spd: 45 }, moves: ['たいあたり', 'かみつく'],
+    kokegame:   { name: 'コケガメ', type: 'くさ',   sprite: 'm_kokegame',   base: { hp: 50, atk: 45, def: 55, spd: 38 }, moves: ['たいあたり', 'はっぱカッター'],
+      desc: '甲羅が ゴルフボールみたいな 小さなリクガメ。\n苔が生えていて ちょっと ねむそう' },
+    hinoshishi: { name: 'ヒノシシ', type: 'ほのお', sprite: 'm_hinoshishi', base: { hp: 44, atk: 54, def: 42, spd: 52 }, moves: ['たいあたり', 'ひのこ'],
+      desc: '背中に ディンプルもようの イノシシのこ。\nしっぽの先に 小さな炎' },
+    amepiyo:    { name: 'アメピヨ', type: 'みず',   sprite: 'm_amepiyo',    base: { hp: 46, atk: 45, def: 48, spd: 55 }, moves: ['たいあたり', 'あまごい'],
+      desc: '頭に 雨粒をのせた 黄色いヒヨコ。\n雨の日だけ やけに テンションが高い' },
+    bubu:       { name: 'ブブ',     type: 'ノーマル', sprite: 'm_bubu',     base: { hp: 50, atk: 55, def: 50, spd: 45 }, moves: ['たいあたり', 'かみつく'],
       desc: '王冠をかぶった ちょっと悪そうな フレンチブルドッグ' },
   },
-  STARTERS: ['hinokapi', 'shibamog', 'amepiyo'],
+  STARTERS: ['kokegame', 'hinoshishi', 'amepiyo'],
 
   // ---- BGM（assets/bgm/README_BGM.txt 参照）----
   BGM: {
@@ -137,8 +137,8 @@ const DATA = {
       events: [
         { x: 5, y: 6, kind: 'warp', to: { map: 'town', x: 15, y: 5, dir: 'down' } },
         { x: 5, y: 2, kind: 'npc', sprite: 'npc_prof', dir: 'down', name: 'オクムラ博士', prof: true },
-        { x: 4, y: 3, kind: 'starter', id: 'hinokapi', unless: 'starter' },
-        { x: 5, y: 3, kind: 'starter', id: 'shibamog', unless: 'starter' },
+        { x: 4, y: 3, kind: 'starter', id: 'kokegame', unless: 'starter' },
+        { x: 5, y: 3, kind: 'starter', id: 'hinoshishi', unless: 'starter' },
         { x: 6, y: 3, kind: 'starter', id: 'amepiyo',  unless: 'starter' },
         { x: 3, y: 1, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
         { x: 10, y: 1, kind: 'look', text: '研究ノートが ぎっしり。' },
@@ -205,8 +205,8 @@ const DATA = {
         'WWWWWWWPWWWWWW',
       ],
       encounters: [
-        { id: 'hinokapi', level: [3, 5], weight: 3 },
-        { id: 'shibamog', level: [3, 5], weight: 4 },
+        { id: 'kokegame', level: [3, 5], weight: 4 },
+        { id: 'hinoshishi', level: [3, 5], weight: 3 },
         { id: 'amepiyo',  level: [3, 5], weight: 3 },
       ],
       events: [

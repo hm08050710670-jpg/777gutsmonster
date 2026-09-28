@@ -67,7 +67,7 @@ class TitleScene {
     ctx.textAlign = 'left';
     Text.draw(ctx, CONFIG.TAGLINE, W / 2 - Text.width(CONFIG.TAGLINE) / 2, 48, THEME.green);
     // 御三家
-    ['m_hinokapi', 'm_shibamog', 'm_amepiyo'].forEach((s, i) => {
+    ['m_kokegame', 'm_hinoshishi', 'm_amepiyo'].forEach((s, i) => {
       const bob = Math.floor(frame / 20 + i) % 2;
       ctx.drawImage(Gfx.get(s), 26 + i * 52, 106 + bob);
     });
