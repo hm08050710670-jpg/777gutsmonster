@@ -9,9 +9,9 @@ class TitleScene {
     if (this.debug) it.push('バトルテスト');
     return it;
   }
-  // 裏技：タイトルで ↑↑↓↓BA → 「バトルテスト」が出る（いきなり野生戦。セーブは変えない）
+  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」が出る（いきなり野生戦。セーブは変えない）
   checkCode() {
-    const seq = ['up', 'up', 'down', 'down', 'b', 'a'];
+    const seq = ['up', 'down', 'b', 'down', 'down'];
     const k = ['up', 'down', 'left', 'right', 'a', 'b', 'start'].find(x => Input.pressed(x));
     if (!k) return false;
     this.code = k === seq[this.code] ? this.code + 1 : (k === seq[0] ? 1 : 0);
