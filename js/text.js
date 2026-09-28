@@ -12,10 +12,23 @@ const Text = (() => {
       document.fonts.add(f);
       await document.fonts.load(`8px "${CONFIG.FONT}"`);
       ready = true;
+      measure();
     } catch (e) {
       console.warn('フォント読込失敗。代替フォントで描画します', e);
       ready = false;
     }
+  }
+
+  // 文字の縦位置：ブラウザごとに textBaseline='top' の解釈が違う（Safariは下に寄る）ので、
+  // 実際のインクの高さを測って「y+1 に文字の上端」が来るように alphabetic 基準で描く
+  let ascent = 7;
+  function measure() {
+    try {
+      const c = document.createElement('canvas').getContext('2d');
+      c.font = `80px "${CONFIG.FONT}", monospace`; c.textBaseline = 'alphabetic';
+      const m = c.measureText('日');   // 大きく測って精度を上げる
+      if (m.actualBoundingBoxAscent) ascent = Math.round(m.actualBoundingBoxAscent / 10 * 2) / 2;
+    } catch (e) { /* 測れなければ既定値 */ }
   }
 
   const isHalf = ch => ch.charCodeAt(0) < 0x100 || (ch >= '｡' && ch <= 'ﾟ');
@@ -24,11 +37,12 @@ const Text = (() => {
 
   function draw(ctx, str, x, y, color = THEME.text) {
     ctx.font = `8px "${CONFIG.FONT}", monospace`;
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = color;
+    const by = y + 1 + ascent;
     let cx = x;
     for (const ch of str) {
-      if (ch !== ' ' && ch !== '　') ctx.fillText(ch, cx, y);
+      if (ch !== ' ' && ch !== '　') ctx.fillText(ch, cx, by);
       cx += charW(ch);
     }
     return cx;

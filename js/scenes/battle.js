@@ -242,8 +242,8 @@ class BattleScene {
       labels.forEach((l, i) => {
         const x = 92 + (i % 2) * 51, y = by + Math.floor(i / 2) * 29;
         Text.box(ctx, x, y, 49, 27);
-        Text.draw(ctx, l, x + 13, y + 10);
-        if (i === this.cmd) Text.cursor(ctx, x + 5, y + 10);
+        Text.draw(ctx, l, x + 13, y + 9);
+        if (i === this.cmd) Text.cursor(ctx, x + 5, y + 9);
       });
     } else if (this.mode === 'move') {
       const py = H - 72;
@@ -251,9 +251,9 @@ class BattleScene {
       me.moves.forEach((mv, i) => {
         const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 33;
         Text.box(ctx, x, y, 68, 31);
-        Text.draw(ctx, mv.name, x + 8, y + 5);
+        Text.draw(ctx, mv.name, x + 7, y + 5);
         Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 16, THEME.textDim);
-        if (i === this.mv) Text.cursor(ctx, x + 3, y + 5);
+        if (i === this.mv) Text.cursor(ctx, x + 2, y + 5);
       });
       // 右：技の説明（タイプ・いりょく・めいちゅう）
       const cur = DATA.MOVES[me.moves[this.mv].name];

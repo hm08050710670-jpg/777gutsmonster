@@ -24,7 +24,7 @@ const THEME = {
   ivory2: '#ebe3c8',
   green: '#2f5d3a',
   greenDark: '#1d3d26',
-  text: '#23301f',
+  text: '#1b2418',
   textDim: '#7c8a72',
   hpHigh: '#4caf50', hpMid: '#e5b83c', hpLow: '#d9534f',
   shadow: 'rgba(0,0,0,0.25)',

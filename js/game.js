@@ -3,11 +3,18 @@
 // ============================================================
 const Game = (() => {
   const canvas = document.getElementById('screen');
-  const RS = CONFIG.RENDER_SCALE || 1;
-  canvas.width = CONFIG.W * RS; canvas.height = CONFIG.H * RS;
   const ctx = canvas.getContext('2d');
-  ctx.setTransform(RS, 0, 0, RS, 0, 0);   // 以降の座標は 192x208 のまま
-  ctx.imageSmoothingEnabled = false;
+  let RS = 0;
+  // 内部解像度：表示倍率×端末のピクセル密度に合わせる（iPhoneなら 2×3=6倍）。文字が実ピクセルで描かれてくっきりする
+  function setRenderScale(rs) {
+    rs = Math.max(2, Math.min(8, Math.round(rs)));
+    if (rs === RS) return;
+    RS = rs;
+    canvas.width = CONFIG.W * RS; canvas.height = CONFIG.H * RS;
+    ctx.setTransform(RS, 0, 0, RS, 0, 0);   // 以降の座標は 192x208 のまま
+    ctx.imageSmoothingEnabled = false;
+  }
+  setRenderScale(CONFIG.RENDER_SCALE || 2);
 
   const scenes = [];
   let frame = 0;
@@ -28,6 +35,7 @@ const Game = (() => {
     scale = Math.max(1, scale);
     canvas.style.width = Math.floor(CONFIG.W * scale) + 'px';
     canvas.style.height = Math.floor(CONFIG.H * scale) + 'px';
+    setRenderScale(scale * (window.devicePixelRatio || 1));
   }
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', () => setTimeout(fit, 150));
