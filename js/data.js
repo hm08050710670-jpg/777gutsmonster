@@ -57,9 +57,10 @@ const DATA = {
   TILE_ART: {
     G: 'grass', T: 'tall', F: 'flower', W: 'tree', P: 'path', '~': 'water', B: 'bridge',
     '#': 'wall', N: 'window', R: 'roof', '^': 'roof_edge', D: 'door', S: 'sign', '=': 'fence', L: 'lamp', H: 'hedge',
+    A: 'lab_roof', a: 'lab_roof_dish', E: 'lab_wall', e: 'lab_window', J: 'lab_logo', I: 'lab_door',
     '.': 'floor', X: 'wallin', b: 'bed', t: 'tv', d: 'desk', s: 'shelf', p: 'plant', m: 'mat', c: 'carpet', M: 'machine', C: 'counter', O: 'table',
   },
-  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', '.', 'm', 'c']),
+  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', '.', 'm', 'c']),
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -88,9 +89,9 @@ const DATA = {
       rows: [
         'WWWWWWWWWPWWWWWWWWWW',
         'WGGGGGGGGPGGGGGGGGGW',
-        'WG^^^GGGGPGGG^^^^^GW',
-        'WG#N#GFGGPGGG#N#N#GW',
-        'WG#D#GGGGPGGG#NDN#GW',
+        'WG^^^GGGGPGGGAAaAAGW',
+        'WG#N#GFGGPGGGeEJEeGW',
+        'WG#D#GGGGPGGGeEIEeGW',
         'WGPPPGGSGPGGGGGPGGGW',
         'WGGGPPPPPPPPPPPPGGGW',
         'WGFGGGGGGPGGGGGGLGGW',

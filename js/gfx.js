@@ -125,6 +125,43 @@ const Gfx = (() => {
       'eeKbBBBBBBBBbKee', 'eeKbBBBBBByBbKee', 'eeKbBBBBBBBBbKee', 'eeKbBBBBBBBBbKee',
       'eeKbbbbbbbbbbKee', 'eeKKKKKKKKKKKKee', 'dddddddddddddddd', 'DDDDDDDDDDDDDDDD',
     ],
+    // ---- 研究所（灰色の近未来風・青いガラス）----
+    lab_roof: [ // 平らな屋上（灰色、縁取り）
+      'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED', 'DEddddddddddddED', 'DEddddddddddddED',
+      'DEddddddddddddED', 'DEddddddddddddED', 'DEddddddddddddED', 'DEddddddddddddED',
+      'DEddddddddddddED', 'DEddddddddddddED', 'DEddddddddddddED', 'DEddddddddddddED',
+      'DEddddddddddddED', 'DEEEEEEEEEEEEEED', 'DDDDDDDDDDDDDDDD', 'nnnnnnnnnnnnnnnn',
+    ],
+    lab_roof_dish: [ // パラボラアンテナつき
+      'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED', 'DEdddd##ddddddED', 'DEddd#ee#dddddED',
+      'DEdd#eeEe#ddddED', 'DEdd#eEEe#ddddED', 'DEdd#eeee#ddddED', 'DEddd#ee#dddddED',
+      'DEdddd##ddddddED', 'DEddddd#dddddDED', 'DEdddd###ddddDED', 'DEddddddddddddED',
+      'DEddddddddddddED', 'DEEEEEEEEEEEEEED', 'DDDDDDDDDDDDDDDD', 'nnnnnnnnnnnnnnnn',
+    ],
+    lab_wall: [ // 白い外壁・横のライン
+      'nnnnnnnnnnnnnnnn', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'EEEEEEEEEEEEEEEE',
+      'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee',
+      'EEEEEEEEEEEEEEEE', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee',
+      'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'dddddddddddddddd', 'DDDDDDDDDDDDDDDD',
+    ],
+    lab_window: [ // 横長の青い窓
+      'nnnnnnnnnnnnnnnn', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'eDDDDDDDDDDDDDDe',
+      'eDxxwwwwwwwwwwDe', 'eDxwwwwwwwwwwwDe', 'eDwwwwwwwwwwwwDe', 'eDwwwwwwwwwwwwDe',
+      'eDWWWWWWWWWWWWDe', 'eDDDDDDDDDDDDDDe', 'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee',
+      'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'dddddddddddddddd', 'DDDDDDDDDDDDDDDD',
+    ],
+    lab_logo: [ // 「G」ロゴ
+      'nnnnnnnnnnnnnnnn', 'eeeeeeeeeeeeeeee', 'eeeee######eeeee', 'eeee#eeeeee#eeee',
+      'eee#eee##eee#eee', 'eee#ee#ee#ee#eee', 'eee#ee#eeeee#eee', 'eee#ee#e###e#eee',
+      'eee#ee#eee#e#eee', 'eee#eee###ee#eee', 'eeee#eeeeee#eeee', 'eeeee######eeeee',
+      'eeeeeeeeeeeeeeee', 'eeeeeeeeeeeeeeee', 'dddddddddddddddd', 'DDDDDDDDDDDDDDDD',
+    ],
+    lab_door: [ // 青いガラスの両開き扉
+      'nnnnnnnnnnnnnnnn', 'eeeeeeeeeeeeeeee', 'eDDDDDDDDDDDDDDe', 'eDxxwwwwDwwwwxDe',
+      'eDxwwwwwDwwwwwDe', 'eDwwwwwwDwwwwwDe', 'eDwwwwwwDwwwwwDe', 'eDwwwwewDwewwwDe',
+      'eDwwwwewDwewwwDe', 'eDwwwwwwDwwwwwDe', 'eDWWWWWWDWWWWWDe', 'eDWWWWWWDWWWWWDe',
+      'eDDDDDDDDDDDDDDe', 'EEEEEEEEEEEEEEEE', 'dddddddddddddddd', 'DDDDDDDDDDDDDDDD',
+    ],
     sign: [
       'gggggggggggggggg', 'ggKKKKKKKKKKKKgg', 'gKjjjjjjjjjjjjKg', 'gKjBBBjjBBBBjjKg',
       'gKjjjjjjjjjjjjKg', 'gKjBBBBjjBBjjjKg', 'gKjjjjjjjjjjjjKg', 'ggKKKKKKKKKKKKgg',
