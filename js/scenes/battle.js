@@ -13,6 +13,7 @@ class BattleScene {
     this.cmd = 0; this.mv = 0;
     this.queue = [];       // 実行待ちのステップ
     this.shownHp = { p: this.me().hp, e: this.enemy.hp }; // 表示用（アニメ）
+    this.bg = opt.bg || Bg.pick(Game.state.map);          // 背景（場所・時刻で決まる）
     this.shake = 0;
   }
   me() { return Game.state.party[this.pidx]; }
@@ -213,19 +214,24 @@ class BattleScene {
   draw(ctx, frame) {
     const me = this.me(), en = this.enemy;
     const W = CONFIG.W, H = CONFIG.H;
-    // 背景：空と芝
-    const sky = ctx.createLinearGradient(0, 0, 0, 96);
-    sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 96);
-    ctx.fillStyle = '#6cb85a'; ctx.fillRect(0, 96, W, H - 96);
-    ctx.fillStyle = '#5aa84a'; for (let x = 0; x < W; x += 16) ctx.fillRect(x + (frame >> 4) % 2 * 8, 104 + (x % 32 ? 8 : 0), 8, 4);
-    // 足場の楕円
+    // 背景：画像（assets/bg）。無ければ空と芝を描く
+    const bgImg = Bg.get(this.bg);
+    if (bgImg) {
+      ctx.drawImage(bgImg, 0, 0, W, 152);
+    } else {
+      const sky = ctx.createLinearGradient(0, 0, 0, 96);
+      sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 96);
+      ctx.fillStyle = '#6cb85a'; ctx.fillRect(0, 96, W, H - 96);
+    }
+    // 足場の楕円（半透明で背景になじませる）
     const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
-    ctx.fillStyle = '#8fce7c'; oval(148, 66, 34, 8); oval(48, 138, 36, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, 90, 34, 8); oval(48, 138, 36, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, 92, 30, 5); oval(48, 140, 32, 5);
 
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     // 敵：右上
-    drawMonster(ctx, en, 124 + sx, 14, 48);
+    drawMonster(ctx, en, 124 + sx, 38, 48);
     this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 30, false);
     // 自分：左下（左右反転で敵と向き合う）
     if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);

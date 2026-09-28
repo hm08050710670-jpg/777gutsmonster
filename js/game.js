@@ -73,7 +73,7 @@ const Game = (() => {
     fit();
     Input.setupPad();
     Sound.installUnlock();
-    await Promise.all([Text.load(), Mon.load()]);
+    await Promise.all([Text.load(), Mon.load(), Bg.load()]);
     fit();
     push(new TitleScene());
     requestAnimationFrame(t => { last = t; loop(t); });

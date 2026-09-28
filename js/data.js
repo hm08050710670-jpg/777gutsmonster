@@ -190,7 +190,7 @@ const DATA = {
       ],
     },
     road: {
-      name: 'ガーデンロード', bgm: 'town',   // ※専用曲は未提供のため町の曲を仮使用
+      name: 'ガーデンロード', bgm: 'town', battleBg: 'rough',   // ※専用曲は未提供のため町の曲を仮使用
       rows: [
         'WWWWWWWWWWWWWW',
         'WGGGGGSPGGGGGW',

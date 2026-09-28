@@ -31,7 +31,7 @@ class TitleScene {
     const ids = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
     const enemy = makeMonster(ids[Game.rand(0, ids.length - 1)], Game.rand(5, 12));
     Game.replace(new FieldScene());
-    Game.push(new BattleScene({ enemy, onEnd: () => Game.replace(new TitleScene()) }));
+    Game.push(new BattleScene({ enemy, bg: Bg.pick('road', { random: true }), onEnd: () => Game.replace(new TitleScene()) }));
   }
   update(frame) {
     if (this.checkCode()) return;
