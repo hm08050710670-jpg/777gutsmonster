@@ -37,7 +37,7 @@ const DEX = [
   { no: 25, id: 'donglion',   name: 'ドングリオン', type: 'くさ', stage: 2 },
   { no: 26, id: 'kameri',     name: 'カメリ',       type: 'くさ', stage: 1, evo: ['camellia', 22] },
   { no: 27, id: 'camellia',   name: 'カメリア',     type: 'くさ', stage: 2 },
-  { no: 28, id: 'nidomu',     name: 'ニドム',       type: 'くさ', stage: 1 },
+  { no: 28, id: 'nidomu',     name: 'ニドム',       type: 'じめん', stage: 1 },
   { no: 29, id: 'nasu',       name: 'ナス',         type: 'くさ', stage: 1 },
   { no: 30, id: 'ibaraki',    name: 'イバラキ',     type: 'くさ', stage: 1 },
   { no: 31, id: 'sayama',     name: 'サヤマ',       type: 'くさ', stage: 1 },
