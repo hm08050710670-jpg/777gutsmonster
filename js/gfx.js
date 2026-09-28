@@ -236,10 +236,10 @@ const Gfx = (() => {
       'BBKKBBBBBBBBKKBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB',
     ],
     ball: [
-      '                ', '     ######     ', '   ##eeeeee##   ', '  #eeEeeeeEee#  ',
-      '  #eeeeEeeeee#  ', ' #eEeeeeeeEeee# ', ' #eeeeeeeeeeee# ', ' #####eeee##### ',
-      ' ####ee##ee#### ', ' #####eeee##### ', ' #eeeeeeeeeeee# ', ' #eEeeeeeeEeee# ',
-      '  #eeeEeeeeeE#  ', '  #eeeeeeEeee#  ', '   ##eeeeee##   ', '     ######     ',
+      '                ', '                ', '                ', '                ',
+      '      ####      ', '     #eEee#     ', '    #eeeeee#    ', '    ##e##e##    ',
+      '    #eeeeee#    ', '    #eEeeEe#    ', '     #eeee#     ', '      ####      ',
+      '                ', '                ', '                ', '                ',
     ],
     machine: [ // 研究所の装置
       'eeeeeeeeeeeeeeee', 'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED', 'DE#wwww##yyyy#ED',
@@ -332,7 +332,7 @@ const Gfx = (() => {
     // ---------- NPC ----------
     npc_prof: [
       '     aaaaaa     ', '    aaaaaaaa    ', '   aaaaaaaaaa   ', '   aassssssaa   ',
-      '   a#s##s#ssa   ', '   assssssssa   ', '    ssssssss    ', '    sSSSSSSs    ',
+      '   aDssDDssDa   ', '   aD#sDD#sDa   ', '    ssssssss    ', '    sSSSSSSs    ',
       '   #eeeeeeee#   ', '  seeeewweeees  ', '  seeeeweeeees  ', '   eeeeeeeeee   ',
       '    NNNNNNNN    ', '    NNN  NNN    ', '    aaa  aaa    ', '   AAA    AAA   ',
     ],
