@@ -241,6 +241,16 @@ const Gfx = (() => {
       '    #eeeeee#    ', '    #eEeeEe#    ', '     #eeee#     ', '      ####      ',
       '                ', '                ', '                ', '                ',
     ],
+    // ---------- タイプアイコン（8×8・戦闘のHP窓用） ----------
+    'type_みず':   ['   w    ', '   ww   ', '  wwww  ', ' wxwwww ', ' wxwwwww', ' wwwwww ', '  wwww  ', '   ww   '],
+    'type_ほのお': ['   f    ', '  ff    ', '  fff f ', ' ffOff  ', ' fOOff  ', ' fOyOff ', '  fOOf  ', '   ff   '],
+    'type_くさ':   ['      G ', '    GGg ', '   Ghhg ', '  Ghhgg ', ' GhhggG ', ' GhggG  ', 'GGGG    ', 'G       '],
+    'type_でんき': ['    yy  ', '   yy   ', '  yy    ', ' yyyyy  ', '   yyy  ', '   yy   ', '  yy    ', '  y     '],
+    'type_かぜ':   ['  xxxx  ', ' x    x ', '      x ', '  xxxx  ', ' x      ', '        ', '  xxxxx ', '        '],
+    'type_じめん': ['        ', '   BB   ', '  BbbB  ', ' BbbbbB ', ' BbbjbB ', 'KBBBBBK ', 'KKKKKKK ', '        '],
+    'type_ひかり': ['   y    ', '   y    ', '  yIy   ', 'yyIIIyy ', '  yIy   ', ' y y y  ', '   y    ', '        '],
+    'type_やみ':   ['  nnn   ', ' nn  n  ', 'nn      ', 'nn      ', 'nn      ', ' nn  n  ', '  nnn   ', '        '],
+    'type_ノーマル': ['  DDDD  ', ' DddddD ', 'DdddeddD', 'DddddddD', 'DddddddD', 'DddddddD', ' DddddD ', '  DDDD  '],
     machine: [ // 研究所の装置
       'eeeeeeeeeeeeeeee', 'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED', 'DE#wwww##yyyy#ED',
       'DE#wxww##yyyy#ED', 'DE#wwww##yyyy#ED', 'DE########r###ED', 'DEEEEEEEEEEEEEED',

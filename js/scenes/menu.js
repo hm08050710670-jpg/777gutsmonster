@@ -110,7 +110,7 @@ class PartyScene {
 // ---- もちもの ----
 class ItemScene {
   constructor(opt = {}) {
-    this.overlay = true;
+    this.overlay = false;   // 全画面（一覧＋説明＋問いかけ）
     this.inBattle = !!opt.inBattle;
     this.onUse = opt.onUse || null;
     this.sel = 0;
@@ -136,15 +136,39 @@ class ItemScene {
     }
   }
   draw(ctx) {
-    const L = this.list();
-    const h = (L.length + 1) * 16 + 16, w = 116, x = CONFIG.W - w - 4;
-    Text.box(ctx, x, 4, w, h);
+    const L = this.list(), W = CONFIG.W, H = CONFIG.H;
+    ctx.fillStyle = THEME.greenDark; ctx.fillRect(0, 0, W, H);
+    // 左：一覧（名前 × 個数）
+    const lx = 4, ly = 6, lw = 118, lh = 140;
+    Text.box(ctx, lx, ly, lw, lh);
+    const rowY = i => ly + 10 + i * 14;
     L.forEach(([name, n], i) => {
-      Text.draw(ctx, name, x + 18, 12 + i * 16);
-      Text.draw(ctx, `x${n}`, x + w - 22, 12 + i * 16, THEME.textDim);
+      Text.draw(ctx, name, lx + 16, rowY(i));
+      const c = `× ${String(n).padStart(2)}`;
+      Text.draw(ctx, c, lx + lw - 8 - Text.width(c), rowY(i));
     });
-    Text.draw(ctx, 'やめる', x + 18, 12 + L.length * 16);
-    Text.cursor(ctx, x + 9, 12 + this.sel * 16);
+    Text.draw(ctx, 'やめる', lx + 16, rowY(L.length));
+    Text.cursor(ctx, lx + 7, rowY(this.sel));
+    // 右：説明
+    const dx = 126, dw = 62;
+    Text.box(ctx, dx, ly, dw, lh);
+    if (this.sel < L.length) {
+      const [name, n] = L[this.sel], it = DATA.ITEMS[name] || {};
+      let y = ly + 8;
+      Text.wrap(name, dw - 12).forEach(l => { Text.draw(ctx, l, dx + 6, y); y += 10; });
+      Text.rule(ctx, dx + 5, y + 2, dw - 10); y += 8;
+      Text.wrap(it.desc || '', dw - 12).forEach(l => { Text.draw(ctx, l, dx + 6, y); y += 10; });
+      Text.rule(ctx, dx + 5, y + 2, dw - 10); y += 8;
+      Text.draw(ctx, 'もっている', dx + 6, y);
+      Text.draw(ctx, 'かず', dx + 6, y + 10);
+      Text.draw(ctx, String(n), dx + dw - 6 - Text.width(String(n)), y + 10);
+    } else {
+      Text.draw(ctx, 'もちものを', dx + 6, ly + 8, THEME.textDim);
+      Text.draw(ctx, 'とじる', dx + 6, ly + 18, THEME.textDim);
+    }
+    // 下：問いかけ
+    Text.box(ctx, 0, H - 56, W, 56);
+    Text.draw(ctx, this.inBattle ? 'どの どうぐを つかいますか？' : 'どの どうぐを つかう？', 8, H - 42);
   }
 }
 
@@ -158,11 +182,15 @@ function drawMonster(ctx, m, x, y, size = 24, flip = false) {
 }
 
 // ---- HPバー ----
-function drawHpBar(ctx, x, y, w, hp, max) {
-  ctx.fillStyle = THEME.greenDark; ctx.fillRect(x, y, w, 5);
-  ctx.fillStyle = THEME.ivory2; ctx.fillRect(x + 1, y + 1, w - 2, 3);
+function drawHpBar(ctx, x, y, w, hp, max, big = false) {
+  const h = big ? 7 : 5;
+  ctx.fillStyle = THEME.greenDark; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = THEME.ivory; ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
   const r = Math.max(0, hp / max);
   const fill = Math.ceil((w - 2) * r);
   ctx.fillStyle = r > 0.5 ? THEME.hpHigh : (r > 0.2 ? THEME.hpMid : THEME.hpLow);
-  if (fill > 0) ctx.fillRect(x + 1, y + 1, fill, 3);
+  if (fill > 0) {
+    ctx.fillRect(x + 1, y + 1, fill, h - 2);
+    if (big) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 1, y + 1, fill, 1); }  // ハイライト
+  }
 }

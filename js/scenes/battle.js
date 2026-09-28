@@ -89,15 +89,19 @@ class BattleScene {
         const need = me.level * 20;
         if (me.exp >= need) {
           me.exp -= need;
-          const before = me.maxHp;
+          const before = { maxHp: me.maxHp, atk: me.atk, def: me.def, spd: me.spd };
           const grown = makeMonster(me.id, me.level + 1);
           me.level++; me.maxHp = grown.maxHp; me.atk = grown.atk; me.def = grown.def; me.spd = grown.spd;
-          me.hp = Math.min(me.maxHp, me.hp + (me.maxHp - before));
-          this.queue.unshift(this.msgStep(`${me.name}は レベル${me.level}に あがった！`));
+          me.hp = Math.min(me.maxHp, me.hp + (me.maxHp - before.maxHp));
+          this.grow = { before, after: { maxHp: me.maxHp, atk: me.atk, def: me.def, spd: me.spd } };
+          // きらめき → 「レベルが あがった」 → のうりょく表（Aで閉じる）
+          this.queue.unshift(this.fnStep(() => { this.sparkle = 90; }),
+            this.msgStep(`……！\n${me.name}は Lv.${me.level}に あがった！`),
+            () => { this.mode = 'stats'; });
           const evo = DATA.MONSTERS[me.id].evo;
           if (evo && me.level >= evo[1] && DATA.MONSTERS[evo[0]]) {
             const to = DATA.MONSTERS[evo[0]], from = me.name;
-            this.queue.splice(1, 0, this.msgStep(`おや…！？ ${from}の ようすが…！`), this.fnStep(() => {
+            this.queue.splice(3, 0, this.msgStep(`おや…！？ ${from}の ようすが…！`), this.fnStep(() => {
               const g = makeMonster(evo[0], me.level);
               me.id = evo[0]; me.name = to.name; me.type = to.type; me.maxHp = g.maxHp; me.hp = Math.min(me.maxHp, me.hp + 10); me.atk = g.atk; me.def = g.def; me.spd = g.spd;
               this.shownHp.p = me.hp;
@@ -147,6 +151,11 @@ class BattleScene {
   // ---- 入力 ----
   update(frame) {
     if (this.shake > 0) this.shake--;
+    if (this.sparkle > 0) this.sparkle--;
+    if (this.mode === 'stats') {
+      if (Input.pressed('a') || Input.pressed('b')) { this.mode = 'busy'; this.next(); }
+      return;
+    }
     if (this.mode === 'anim') {
       const key = this.anim, target = key === 'p' ? this.me().hp : this.enemy.hp;
       if (this.shownHp[key] > target) this.shownHp[key]--;
@@ -186,8 +195,10 @@ class BattleScene {
     }
     if (this.mode === 'move') {
       const moves = this.me().moves;
-      if (Input.pressed('up')) this.mv = (this.mv + moves.length - 1) % moves.length;
-      if (Input.pressed('down')) this.mv = (this.mv + 1) % moves.length;
+      // 2×2 の枠を上下左右で移動（存在しない枠には行かない）
+      const go = d => { const n = this.mv ^ d; if (n < moves.length) this.mv = n; };
+      if (Input.pressed('up') || Input.pressed('down')) go(2);
+      if (Input.pressed('left') || Input.pressed('right')) go(1);
       if (Input.pressed('b')) { this.mode = 'command'; return; }
       if (Input.pressed('a')) {
         const mv = moves[this.mv];
@@ -215,41 +226,104 @@ class BattleScene {
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     // 敵：右上
     drawMonster(ctx, en, 124 + sx, 14, 48);
-    Text.box(ctx, 6, 8, 100, 30);
-    Text.draw(ctx, en.name, 14, 13); Text.draw(ctx, `Lv${en.level}`, 76, 13, THEME.textDim);
-    Text.draw(ctx, 'HP', 14, 24, THEME.green); drawHpBar(ctx, 28, 25, 70, this.shownHp.e, en.maxHp);
-    // 自分：左下
-    drawMonster(ctx, me, 24, 90, 48, true);   // 自分側は左右反転（敵と向き合う）
-    Text.box(ctx, 86, 100, 100, 40);
-    Text.draw(ctx, me.name, 94, 105); Text.draw(ctx, `Lv${me.level}`, 156, 105, THEME.textDim);
-    Text.draw(ctx, 'HP', 94, 116, THEME.green); drawHpBar(ctx, 108, 117, 70, this.shownHp.p, me.maxHp);
-    Text.draw(ctx, `${String(this.shownHp.p).padStart(3)}/${String(me.maxHp).padStart(3)}`, 138, 126, THEME.textDim);
+    this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 32, false);
+    // 自分：左下（左右反転で敵と向き合う）
+    if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);
+    drawMonster(ctx, me, 24, 90, 48, true);
+    this.drawStatus(ctx, me, this.shownHp.p, 84, 98, 104, 44, true);
 
     // 下部ウィンドウ
     const by = H - 56;
-    Text.box(ctx, 0, by, W, 56);
     if (this.mode === 'command') {
-      Text.box(ctx, 92, by, 100, 56);
+      Text.box(ctx, 0, by, 90, 56);
+      Text.draw(ctx, `${me.name}は`, 8, by + 14);
+      Text.draw(ctx, 'どうする？', 8, by + 30);
       const labels = ['たたかう', 'なかま', 'どうぐ', 'にげる'];
       labels.forEach((l, i) => {
-        const x = 108 + (i % 2) * 44, y = by + 14 + Math.floor(i / 2) * 18;
-        Text.draw(ctx, l, x, y);
-        if (i === this.cmd) Text.cursor(ctx, x - 9, y);
+        const x = 92 + (i % 2) * 51, y = by + Math.floor(i / 2) * 29;
+        Text.box(ctx, x, y, 49, 27);
+        Text.draw(ctx, l, x + 13, y + 10);
+        if (i === this.cmd) Text.cursor(ctx, x + 5, y + 10);
       });
-      Text.draw(ctx, `${me.name}は\nどうする？`.split('\n')[0], 10, by + 14);
-      Text.draw(ctx, 'どうする？', 10, by + 30);
     } else if (this.mode === 'move') {
-      Text.box(ctx, 56, by - 8, W - 56, 64);
+      const py = H - 70;
+      Text.box(ctx, 0, py, W, 70, { fill: THEME.green });
       me.moves.forEach((mv, i) => {
-        Text.draw(ctx, mv.name, 74, by + 4 + i * 13);
-        if (i === this.mv) Text.cursor(ctx, 65, by + 4 + i * 13);
+        const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 32;
+        Text.box(ctx, x, y, 68, 30);
+        Text.draw(ctx, mv.name, x + 8, y + 7);
+        Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 18, THEME.textDim);
+        if (i === this.mv) Text.cursor(ctx, x + 3, y + 7);
       });
-      const cur = me.moves[this.mv];
-      Text.box(ctx, 0, by, 56, 56);
-      Text.draw(ctx, 'PP', 8, by + 10, THEME.green);
-      Text.draw(ctx, `${cur.pp}/${cur.maxPp}`, 8, by + 22);
-      Text.draw(ctx, DATA.MOVES[cur.name].type, 8, by + 36, THEME.textDim);
+      // 右：技の説明（タイプ・いりょく・めいちゅう）
+      const cur = DATA.MOVES[me.moves[this.mv].name];
+      const dx = 140, dw = 50;
+      Text.box(ctx, dx, py + 4, dw, 62);
+      Text.draw(ctx, cur.type, dx + 5, py + 9, THEME.green);
+      Text.rule(ctx, dx + 5, py + 20, dw - 10);
+      Text.draw(ctx, 'いりょく', dx + 5, py + 24);
+      Text.draw(ctx, String(cur.power), dx + dw - 6 - Text.width(String(cur.power)), py + 33);
+      Text.draw(ctx, 'めいちゅう', dx + 5, py + 44);
+      Text.draw(ctx, '100', dx + dw - 6 - 12, py + 53);
+    } else {
+      Text.box(ctx, 0, by, W, 56);
     }
+
+    if (this.mode === 'stats') this.drawStats(ctx, me, frame);
+  }
+
+  // HP窓：名前 / Lv. / タイプアイコン / HPピル＋バー / (自分のみ) EXPバー＋現在/最大
+  drawStatus(ctx, m, hp, x, y, w, h, mine) {
+    Text.box(ctx, x, y, w, h, { tab: true });
+    Text.draw(ctx, m.name, x + 8, y + 6);
+    const lv = `Lv.${m.level}`;
+    Text.draw(ctx, lv, x + w - 8 - Text.width(lv), y + 6);
+    const ry = y + 18;
+    const icon = Gfx.get(`type_${m.type}`, 1);
+    if (icon) ctx.drawImage(icon, x + 8, ry);
+    // 「HP」の金文字ピル
+    ctx.fillStyle = THEME.greenDark; ctx.fillRect(x + 19, ry - 1, 14, 10);
+    Text.draw(ctx, 'HP', x + 22, ry, '#f2d27a');
+    drawHpBar(ctx, x + 33, ry + 1, w - 41, hp, m.maxHp, true);
+    if (mine) {
+      // EXP（次のレベルまで）
+      const need = m.level * 20, r = Math.min(1, (m.exp || 0) / need);
+      ctx.fillStyle = THEME.greenDark; ctx.fillRect(x + 8, y + 33, 44, 5);
+      ctx.fillStyle = '#9fd0f2'; ctx.fillRect(x + 9, y + 34, Math.floor(42 * r), 3);
+      const s = `${hp} / ${m.maxHp}`;
+      Text.draw(ctx, s, x + w - 8 - Text.width(s), y + 31);
+    }
+  }
+
+  // レベルアップのきらめき（黄色の放射線）
+  drawSparkle(ctx, cx, cy, frame) {
+    ctx.fillStyle = '#f2d27a';
+    const t = Math.floor(frame / 6) % 2;
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6 + t * 0.2;
+      const r0 = 28 + (i % 2) * 6, r1 = r0 + 6 + t * 3;
+      for (let r = r0; r < r1; r += 1) ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+    }
+  }
+
+  // のうりょく表（レベルアップ後）
+  drawStats(ctx, m, frame) {
+    const g = this.grow; if (!g) return;
+    const x = 12, y = 36, w = 168, h = 104;
+    Text.box(ctx, x, y, w, h);
+    Text.draw(ctx, `${m.name}の`, x + 8, y + 7);
+    Text.draw(ctx, 'のうりょくが あがった！', x + 8, y + 18);
+    Text.rule(ctx, x + 6, y + 30, w - 12);
+    const rows = [['HP', 'maxHp'], ['こうげき', 'atk'], ['ぼうぎょ', 'def'], ['すばやさ', 'spd']];
+    rows.forEach(([label, key], i) => {
+      const ry = y + 36 + i * 13, b = g.before[key], a = g.after[key];
+      Text.draw(ctx, label, x + 8, ry);
+      Text.draw(ctx, String(b).padStart(3), x + 62, ry, THEME.textDim);
+      Text.cursor(ctx, x + 84, ry);
+      Text.draw(ctx, String(a).padStart(3), x + 94, ry);
+      Text.draw(ctx, `(+${a - b})`, x + 126, ry, THEME.green);
+    });
+    Text.moreArrow(ctx, x + w - 16, y + h - 11, frame);
   }
 }
 

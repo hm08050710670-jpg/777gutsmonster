@@ -55,16 +55,33 @@ const Text = (() => {
     return lines;
   }
 
-  // アイボリー地・深緑の外枠・少し内側に薄い線
-  function box(ctx, x, y, w, h) {
-    ctx.fillStyle = THEME.shadow; ctx.fillRect(x + 1, y + 2, w, h);     // 影
-    ctx.fillStyle = THEME.greenDark; ctx.fillRect(x, y, w, h);          // 外枠
-    ctx.fillStyle = THEME.green; ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-    ctx.fillStyle = THEME.ivory; ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
-    ctx.fillStyle = THEME.ivory2;                                       // 内側の薄い枠
-    ctx.fillRect(x + 4, y + 4, w - 8, 1); ctx.fillRect(x + 4, y + h - 5, w - 8, 1);
-    ctx.fillRect(x + 4, y + 4, 1, h - 8); ctx.fillRect(x + w - 5, y + 4, 1, h - 8);
+  // 深緑の二重枠（角を欠いたドット枠）・アイボリー地
+  //   opt.tab: 左下に斜めの影タブ（戦闘のHP窓用）  opt.fill: 地の色
+  function box(ctx, x, y, w, h, opt = {}) {
+    // 角を1ドット欠いた矩形
+    const notched = (px, py, pw, ph, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(px + 1, py, pw - 2, ph); ctx.fillRect(px, py + 1, pw, ph - 2);
+    };
+    if (opt.tab) {   // 斜めの影タブ（左下から右へ）
+      ctx.fillStyle = THEME.greenDark; ctx.fillRect(x - 6, y + h - 4, w + 6, 6);
+      ctx.fillRect(x - 4, y + h - 8, 4, 4); ctx.fillRect(x - 2, y + h - 12, 2, 4);
+      ctx.fillStyle = THEME.green; ctx.fillRect(x - 5, y + h - 3, w + 4, 3);
+      ctx.fillStyle = '#7fa889'; ctx.fillRect(x + Math.floor(w / 2), y + h, Math.floor(w / 2) - 4, 1);
+    } else {
+      ctx.fillStyle = THEME.shadow; ctx.fillRect(x + 1, y + 2, w, h);   // 影
+    }
+    notched(x, y, w, h, THEME.greenDark);                                // 外枠（2px）
+    notched(x + 2, y + 2, w - 4, h - 4, opt.fill || THEME.ivory);        // 地
+    notched(x + 3, y + 3, w - 6, h - 6, THEME.green);                    // 内側の細線
+    ctx.fillStyle = opt.fill || THEME.ivory; ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
+    // 内線の角も欠く
+    ctx.fillRect(x + 3, y + 3, 1, 1); ctx.fillRect(x + w - 4, y + 3, 1, 1);
+    ctx.fillRect(x + 3, y + h - 4, 1, 1); ctx.fillRect(x + w - 4, y + h - 4, 1, 1);
   }
+
+  // 窓の中の区切り線（説明パネル用）
+  function rule(ctx, x, y, w) { ctx.fillStyle = '#b9c9b3'; ctx.fillRect(x, y, w, 1); }
 
   function cursor(ctx, x, y, color = THEME.green) {
     ctx.fillStyle = color;
@@ -76,5 +93,5 @@ const Text = (() => {
     for (let i = 0; i < 4; i++) ctx.fillRect(x + i, y + i, 7 - i * 2, 1);
   }
 
-  return { load, draw, width, wrap, box, cursor, moreArrow, isReady: () => ready };
+  return { load, draw, width, wrap, box, rule, cursor, moreArrow, isReady: () => ready };
 })();
