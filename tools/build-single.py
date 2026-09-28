@@ -54,6 +54,11 @@ if os.path.isdir(mapdir):
         map_imgs[f'{mapdir}/{f}'] = f'data:{mime};base64,' + base64.b64encode(open(f'{mapdir}/{f}', 'rb').read()).decode()
 print('map images embedded:', len(map_imgs))
 
+mon_png = mon_json = None
+if os.path.exists('assets/monsters.png'):
+    mon_png = 'data:image/png;base64,' + base64.b64encode(open('assets/monsters.png', 'rb').read()).decode()
+    mon_json = open('assets/monsters.json', encoding='utf-8').read()
+
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
@@ -64,6 +69,8 @@ def inline_js(m):
     code = open(src, encoding='utf-8').read()
     code = code.replace("FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf'", f"FONT_FILE: 'data:font/ttf;base64,{font_b64}'")
     for path, uri in bgm_b64.items(): code = code.replace(f"'{path}'", f"'{uri}'")
+    if src == 'js/config.js' and mon_png:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  MON_IMG: '{mon_png}',\n  MON_META: {mon_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'

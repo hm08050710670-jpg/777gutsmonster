@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = require('path').join(__dirname, '..');
 const OUT = __dirname + '/shots'; fs.mkdirSync(OUT, { recursive: true });
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.wav': 'audio/wav', '.mp3': 'audio/mpeg' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ttf': 'font/ttf', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.png': 'image/png', '.json': 'application/json' };
 const server = http.createServer((req, res) => {
   let p = path.join(ROOT, req.url === '/' ? '/index.html' : req.url.split('?')[0]);
   if (req.url.startsWith('/bgmtest/')) p = path.join(__dirname, 'bgm/wav', req.url.slice(9));

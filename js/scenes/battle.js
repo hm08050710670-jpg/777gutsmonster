@@ -94,6 +94,15 @@ class BattleScene {
           me.level++; me.maxHp = grown.maxHp; me.atk = grown.atk; me.def = grown.def; me.spd = grown.spd;
           me.hp = Math.min(me.maxHp, me.hp + (me.maxHp - before));
           this.queue.unshift(this.msgStep(`${me.name}は レベル${me.level}に あがった！`));
+          const evo = DATA.MONSTERS[me.id].evo;
+          if (evo && me.level >= evo[1] && DATA.MONSTERS[evo[0]]) {
+            const to = DATA.MONSTERS[evo[0]], from = me.name;
+            this.queue.splice(1, 0, this.msgStep(`おや…！？ ${from}の ようすが…！`), this.fnStep(() => {
+              const g = makeMonster(evo[0], me.level);
+              me.id = evo[0]; me.name = to.name; me.type = to.type; me.maxHp = g.maxHp; me.hp = Math.min(me.maxHp, me.hp + 10); me.atk = g.atk; me.def = g.def; me.spd = g.spd;
+              this.shownHp.p = me.hp;
+            }), this.msgStep(`${from}は ${to.name}に しんかした！`));
+          }
         }
       });
       this.queue.push(() => this.finish('win'));
@@ -205,12 +214,12 @@ class BattleScene {
 
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     // 敵：右上
-    ctx.drawImage(Gfx.get(DATA.MONSTERS[en.id].sprite, 2), 124 + sx, 14);
+    drawMonster(ctx, en, 124 + sx, 14, 48);
     Text.box(ctx, 6, 8, 100, 30);
     Text.draw(ctx, en.name, 14, 13); Text.draw(ctx, `Lv${en.level}`, 76, 13, THEME.textDim);
     Text.draw(ctx, 'HP', 14, 24, THEME.green); drawHpBar(ctx, 28, 25, 70, this.shownHp.e, en.maxHp);
     // 自分：左下
-    ctx.drawImage(Gfx.get(DATA.MONSTERS[me.id].sprite, 2), 24, 90);
+    drawMonster(ctx, me, 24, 90, 48, true);   // 自分側は左右反転（敵と向き合う）
     Text.box(ctx, 86, 100, 100, 40);
     Text.draw(ctx, me.name, 94, 105); Text.draw(ctx, `Lv${me.level}`, 156, 105, THEME.textDim);
     Text.draw(ctx, 'HP', 94, 116, THEME.green); drawHpBar(ctx, 108, 117, 70, this.shownHp.p, me.maxHp);

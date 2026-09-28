@@ -95,7 +95,7 @@ class PartyScene {
     Game.state.party.forEach((m, i) => {
       const y = 22 + i * 40;
       Text.box(ctx, 8, y, CONFIG.W - 16, 36);
-      ctx.drawImage(Gfx.get(DATA.MONSTERS[m.id].sprite), 14, y + 6);
+      drawMonster(ctx, m, 14, y + 6, 24);
       Text.draw(ctx, m.name, 44, y + 8);
       Text.draw(ctx, `Lv${m.level}`, 124, y + 8);
       drawHpBar(ctx, 52, y + 22, 64, m.hp, m.maxHp);
@@ -146,6 +146,15 @@ class ItemScene {
     Text.draw(ctx, 'やめる', x + 18, 12 + L.length * 16);
     Text.cursor(ctx, x + 9, 12 + this.sel * 16);
   }
+}
+
+// ---- モンスターの絵（図鑑スプライト優先、無ければ文字列アート）----
+//   x,y は左上。size は論理px（24=等倍, 48=戦闘）。
+function drawMonster(ctx, m, x, y, size = 24, flip = false) {
+  const id = m.id || m;
+  if (Mon.draw(ctx, id, x, y, size / 24, flip)) return;
+  const sp = DATA.MONSTERS[id] && DATA.MONSTERS[id].sprite;
+  if (sp) ctx.drawImage(Gfx.get(sp, Math.max(1, Math.round(size / 24)), flip), x, y);
 }
 
 // ---- HPバー ----

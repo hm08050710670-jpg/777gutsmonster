@@ -3,12 +3,7 @@
 //   モンスター・技・アイテム・マップ・イベント・冒険ノート
 // ============================================================
 const DATA = {
-  TYPES: {
-    'くさ':   { 'みず': 2, 'ほのお': 0.5 },
-    'ほのお': { 'くさ': 2, 'みず': 0.5 },
-    'みず':   { 'ほのお': 2, 'くさ': 0.5 },
-    'ノーマル': {},
-  },
+  TYPES: TYPE_CHART,
 
   MOVES: {
     'たいあたり':   { type: 'ノーマル', power: 35, pp: 35 },
@@ -17,19 +12,35 @@ const DATA = {
     'はっぱカッター': { type: 'くさ',   power: 45, pp: 25 },
     'ひのこ':       { type: 'ほのお',   power: 40, pp: 25 },
     'あまごい':     { type: 'みず',     power: 40, pp: 25 },
+    'でんきショック': { type: 'でんき', power: 40, pp: 25 },
+    'かぜおこし':   { type: 'かぜ',     power: 40, pp: 30 },
+    'すなかけ':     { type: 'じめん',   power: 40, pp: 30 },
+    'ひかりのつぶ': { type: 'ひかり',   power: 40, pp: 25 },
+    'かげうち':     { type: 'やみ',     power: 40, pp: 25 },
   },
 
   // 御三家（Lv7スタート、Lv14・Lv28で進化：進化は未実装）
-  MONSTERS: {
-    kokegame:   { name: 'コケガメ', type: 'くさ',   sprite: 'm_kokegame',   base: { hp: 50, atk: 45, def: 55, spd: 38 }, moves: ['たいあたり', 'はっぱカッター'],
-      desc: '甲羅が ゴルフボールみたいな 小さなリクガメ。\n苔が生えていて ちょっと ねむそう' },
-    hinoshishi: { name: 'ヒノシシ', type: 'ほのお', sprite: 'm_hinoshishi', base: { hp: 44, atk: 54, def: 42, spd: 52 }, moves: ['たいあたり', 'ひのこ'],
-      desc: '背中に ディンプルもようの イノシシのこ。\nしっぽの先に 小さな炎' },
-    amepiyo:    { name: 'アメピヨ', type: 'みず',   sprite: 'm_amepiyo',    base: { hp: 46, atk: 45, def: 48, spd: 55 }, moves: ['たいあたり', 'あまごい'],
-      desc: '頭に 雨粒をのせた 黄色いヒヨコ。\n雨の日だけ やけに テンションが高い' },
-    bubu:       { name: 'ブブ',     type: 'ノーマル', sprite: 'm_bubu',     base: { hp: 50, atk: 55, def: 50, spd: 45 }, moves: ['たいあたり', 'かみつく'],
-      desc: '王冠をかぶった ちょっと悪そうな フレンチブルドッグ' },
-  },
+  // MONSTERS は DEX（js/dex.js）から生成。stage でステータスを決め、下の TUNED で個別に上書き。
+  MONSTERS: (() => {
+    const STAGE_BASE = { 1: { hp: 45, atk: 48, def: 46, spd: 48 }, 2: { hp: 60, atk: 63, def: 60, spd: 62 }, 3: { hp: 80, atk: 85, def: 80, spd: 80 } };
+    const TUNED = {
+      kokegame:   { base: { hp: 50, atk: 45, def: 55, spd: 38 }, desc: '甲羅が ゴルフボールみたいな 小さなリクガメ。\n苔が生えていて ちょっと ねむそう' },
+      hinoshishi: { base: { hp: 44, atk: 54, def: 42, spd: 52 }, desc: '背中に ディンプルもようの イノシシのこ。\nしっぽの先に 小さな炎' },
+      amepiyo:    { base: { hp: 46, atk: 45, def: 48, spd: 55 }, desc: '頭に 雨粒をのせた 黄色いヒヨコ。\n雨の日だけ やけに テンションが高い' },
+      morigame:   { desc: '背中に 草木が育ちはじめたカメ' }, nushigame: { desc: '大樹を背負う 森の主' },
+      shishiburn: { desc: '炎のたてがみを持つ 勇猛なイノシシ' }, shishivolke: { desc: '火山のような力を宿す 最終形態' },
+      amegamo:    { desc: '雨をまとったカモ' }, doshagamo: { desc: '豪雨を呼ぶ 大きなカモ' },
+      bubu:       { base: { hp: 50, atk: 55, def: 50, spd: 45 }, desc: '王冠をかぶった ちょっと悪そうな フレンチブルドッグ' },
+      mantou:     { desc: 'いつも そばにいる ふわふわの相棒' },
+    };
+    const out = {};
+    for (const d of DEX) {
+      const t = TUNED[d.id] || {};
+      out[d.id] = { name: d.name, type: d.type, no: d.no, stage: d.stage, evo: d.evo || null, special: !!d.special,
+        base: t.base || STAGE_BASE[d.stage], moves: TYPE_MOVES[d.type], desc: t.desc || `${d.type}タイプの GUTS MONSTER` };
+    }
+    return out;
+  })(),
   STARTERS: ['kokegame', 'hinoshishi', 'amepiyo'],
 
   // ---- BGM（assets/bgm/README_BGM.txt 参照）----
@@ -205,9 +216,10 @@ const DATA = {
         'WWWWWWWPWWWWWW',
       ],
       encounters: [
-        { id: 'kokegame', level: [3, 5], weight: 4 },
-        { id: 'hinoshishi', level: [3, 5], weight: 3 },
-        { id: 'amepiyo',  level: [3, 5], weight: 3 },
+        { id: 'kokemogu', level: [3, 5], weight: 4 }, { id: 'shibatta', level: [3, 5], weight: 4 },
+        { id: 'yotsubausa', level: [3, 5], weight: 2 }, { id: 'hatakon', level: [2, 4], weight: 5 },
+        { id: 'birisu', level: [3, 5], weight: 2 }, { id: 'tsuchidango', level: [3, 5], weight: 3 },
+        { id: 'mizugamo', level: [3, 5], weight: 3 }, { id: 'atsuzemi', level: [3, 5], weight: 2 },
       ],
       events: [
         { x: 7, y: 21, kind: 'warp', to: { map: 'town', x: 9, y: 1, dir: 'down' } },
