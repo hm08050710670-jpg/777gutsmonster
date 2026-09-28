@@ -58,6 +58,10 @@ mon_png = mon_json = None
 if os.path.exists('assets/monsters.png'):
     mon_png = 'data:image/png;base64,' + base64.b64encode(open('assets/monsters.png', 'rb').read()).decode()
     mon_json = open('assets/monsters.json', encoding='utf-8').read()
+back_png = back_json = None
+if os.path.exists('assets/monsters_back.png'):
+    back_png = 'data:image/png;base64,' + base64.b64encode(open('assets/monsters_back.png', 'rb').read()).decode()
+    back_json = open('assets/monsters_back.json', encoding='utf-8').read()
 
 bg_imgs = {}
 if os.path.isdir('assets/bg'):
@@ -78,6 +82,8 @@ def inline_js(m):
     for path, uri in bgm_b64.items(): code = code.replace(f"'{path}'", f"'{uri}'")
     if src == 'js/config.js' and mon_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  MON_IMG: '{mon_png}',\n  MON_META: {mon_json},\n  TITLE: 'GUTS MONSTERS',")
+    if src == 'js/config.js' and back_png:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  MON_BACK_IMG: '{back_png}',\n  MON_BACK_META: {back_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and bg_imgs:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  BG_IMAGES: {json.dumps(bg_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:

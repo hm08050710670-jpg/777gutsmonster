@@ -235,7 +235,7 @@ class BattleScene {
     this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 30, false);
     // 自分：左下（左右反転で敵と向き合う）
     if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);
-    drawMonster(ctx, me, 24, 90, 48, true);
+    drawMonster(ctx, me, 24, 90, 48, true, true);   // 後ろ姿（無ければ反転）
     this.drawStatus(ctx, me, this.shownHp.p, 84, 98, 104, 38, true);
 
     // 下部ウィンドウ

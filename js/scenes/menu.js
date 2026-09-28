@@ -174,9 +174,10 @@ class ItemScene {
 
 // ---- モンスターの絵（図鑑スプライト優先、無ければ文字列アート）----
 //   x,y は左上。size は論理px（24=等倍, 48=戦闘）。
-function drawMonster(ctx, m, x, y, size = 24, flip = false) {
+//   back=true で後ろ姿（戦闘の自分側）。後ろ姿の素材が無ければ正面を反転して使う
+function drawMonster(ctx, m, x, y, size = 24, flip = false, back = false) {
   const id = m.id || m;
-  if (Mon.draw(ctx, id, x, y, size / 24, flip)) return;
+  if (Mon.draw(ctx, id, x, y, size / 24, flip, back)) return;
   const sp = DATA.MONSTERS[id] && DATA.MONSTERS[id].sprite;
   if (sp) ctx.drawImage(Gfx.get(sp, Math.max(1, Math.round(size / 24)), flip), x, y);
 }
