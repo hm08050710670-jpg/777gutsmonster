@@ -226,11 +226,11 @@ class BattleScene {
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     // 敵：右上
     drawMonster(ctx, en, 124 + sx, 14, 48);
-    this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 32, false);
+    this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 30, false);
     // 自分：左下（左右反転で敵と向き合う）
     if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);
     drawMonster(ctx, me, 24, 90, 48, true);
-    this.drawStatus(ctx, me, this.shownHp.p, 84, 92, 104, 44, true);
+    this.drawStatus(ctx, me, this.shownHp.p, 84, 98, 104, 38, true);
 
     // 下部ウィンドウ
     const by = H - 56;
@@ -276,10 +276,10 @@ class BattleScene {
   //   実機Safariは文字が下に2〜3px伸びるので、文字の下は余裕を取る
   drawStatus(ctx, m, hp, x, y, w, h, mine) {
     Text.box(ctx, x, y, w, h, { tab: true });
-    Text.draw(ctx, m.name, x + 8, y + 5);
+    Text.draw(ctx, m.name, x + 8, y + 4);
     const lv = `Lv.${m.level}`;
-    Text.draw(ctx, lv, x + w - 8 - Text.width(lv), y + 5);
-    const ry = y + 17;
+    Text.draw(ctx, lv, x + w - 8 - Text.width(lv), y + 4);
+    const ry = y + 15;
     const icon = Gfx.get(`type_${m.type}`, 1);
     if (icon) ctx.drawImage(icon, x + 8, ry);
     // 「HP」の金文字ピル
@@ -288,7 +288,7 @@ class BattleScene {
     drawHpBar(ctx, x + 33, ry + 1, w - 41, hp, m.maxHp, true);
     if (mine) {
       const s = `${hp} / ${m.maxHp}`;
-      Text.draw(ctx, s, x + w - 8 - Text.width(s), y + 30);
+      Text.draw(ctx, s, x + w - 8 - Text.width(s), y + 25);
     }
   }
 
