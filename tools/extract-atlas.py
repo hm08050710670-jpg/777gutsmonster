@@ -6,11 +6,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image
 import numpy as np
 from cut import keyout
+from cut2 import keyout_dark, keyout_blur
 
-U = int(os.environ.get('TILE_PX', '32'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
+U = int(os.environ.get('TILE_PX', '24'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
 SHEETS = os.path.join(OUT, 'sheets')
 sheets = {n: keyout(f'{SHEETS}/{n}.png')[0] for n in ['terrain', 'props', 'objects', 'chars']}
+sheets['trees2'] = keyout_dark(f'{SHEETS}/trees2.png')[0]
+sheets['bld2'] = keyout_blur(f'{SHEETS}/bld2.png', close=8)[0]
+_t2 = Image.open(f'{SHEETS}/terrain2.png').convert('RGBA'); sheets['terrain2'] = _t2
 
 def tight(img, box):
     """箱内の不透明ピクセルの外接矩形（黒ラベルは除外）"""
@@ -44,7 +48,7 @@ def add(name, sheet, box, tw, th, mode='fit', align='bottom'):
     if mode == 'fit': img = tight(sheets[sheet], box)
     else:
         # 地形：素材の外枠線（濃い縁）を落とすため内側 5% を使う
-        x0, y0, x1, y1 = box; mx = int((x1 - x0) * 0.05); my = int((y1 - y0) * 0.05)
+        x0, y0, x1, y1 = box; mx = int((x1 - x0) * 0.08); my = int((y1 - y0) * 0.08)
         img = sheets[sheet].crop((x0 + mx, y0 + my, x1 - mx, y1 - my))
     items[name] = fit(img, int(tw * U), int(th * U), align, mode)
 
@@ -132,6 +136,35 @@ add('flag', O, (932, 835, 1011, 996), 1, 2)
 add('planter_round', O, (1018, 874, 1127, 990), 1, 1)
 add('planter_long', O, (1153, 889, 1302, 995), 2, 1)
 add('statue', O, (1374, 829, 1499, 995), 2, 2)
+
+# ---------------- 第2弾：地形（terrain2、グリッド指定） ----------------
+T2 = 'terrain2'
+_rows = {1: (90, 264, [58, 296, 542, 800, 1048, 1298], 174), 2: (343, 467, [57, 223, 383, 545, 705, 863, 1023, 1183, 1345], 124),
+         3: (538, 690, [58, 246, 428, 610, 793, 973, 1145, 1325], 150), 4: (757, 907, [62, 244, 426, 610, 793, 973, 1146], 150)}
+def t2box(r, i): y0, y1, xs, w = _rows[r]; return (xs[i], y0, xs[i] + w, y1)
+add('grass', T2, t2box(1, 0), 1, 1, 'fill'); add('grass2', T2, t2box(1, 1), 1, 1, 'fill'); add('grass3', T2, t2box(1, 2), 1, 1, 'fill')
+add('flower_w', T2, t2box(1, 3), 1, 1, 'fill'); add('flower_y', T2, t2box(1, 4), 1, 1, 'fill'); add('tall', T2, t2box(1, 5), 1, 1, 'fill')
+add('path', T2, t2box(2, 0), 1, 1, 'fill')
+for n, i in zip(['path_n', 'path_s', 'path_w', 'path_e', 'path_nw', 'path_ne', 'path_sw', 'path_se'], range(1, 9)): add(n, T2, t2box(2, i), 1, 1, 'fill')
+for i in range(4): add(f'water{i}', T2, t2box(3, 0), 1, 1, 'fill')
+add('shore_n', T2, t2box(3, 1), 1, 1, 'fill'); add('shore_s', T2, t2box(3, 2), 1, 1, 'fill'); add('shore_w', T2, t2box(3, 3), 1, 1, 'fill'); add('shore_e', T2, t2box(3, 4), 1, 1, 'fill')
+add('shore_nw', T2, t2box(3, 5), 1, 1, 'fill'); add('shore_ne', T2, t2box(3, 6), 1, 1, 'fill'); add('shore_sw', T2, t2box(4, 4), 1, 1, 'fill'); add('shore_se', T2, t2box(4, 6), 1, 1, 'fill')
+
+# ---------------- 第2弾：木・柵・街灯（trees2） ----------------
+R = 'trees2'
+add('bigtree', R, (20, 57, 308, 376), 2, 2.5); add('bigtree2', R, (324, 57, 603, 376), 2, 2.5); add('bigtree3', R, (619, 68, 900, 376), 2, 2.5)
+add('pine', R, (919, 144, 1053, 363), 1, 1.5); add('pine2', R, (1062, 144, 1197, 363), 1, 1.5); add('pine3', R, (1211, 145, 1348, 372), 1, 1.5)
+add('tree', R, (1367, 172, 1491, 364), 1, 1.5); add('tree2', R, (1492, 174, 1618, 368), 1, 1.5); add('tree3', R, (1618, 174, 1745, 368), 1, 1.5)
+add('fence_v', R, (768, 410, 856, 613), 1, 1); add('lamp', R, (1268, 399, 1358, 652), 1, 1.5)
+add('fence', R, (96, 495, 280, 613), 1, 1); add('fence_post', R, (322, 472, 405, 612), 1, 1); add('fence2', R, (461, 474, 692, 614), 2, 1)
+add('fence_corner', R, (916, 476, 1034, 614), 1, 1); add('fence_end', R, (1090, 519, 1178, 613), 1, 1)
+add('bush', R, (95, 682, 279, 825), 1, 1); add('tuft', R, (328, 682, 498, 825), 1, 1); add('bush_flower', R, (550, 697, 699, 825), 1, 1)
+add('bush_flower_y', R, (760, 698, 906, 825), 1, 1); add('tuft2', R, (971, 684, 1135, 825), 1, 1)
+
+# ---------------- 第2弾：建物（bld2） ----------------
+Bd = 'bld2'
+add('lab', Bd, (40, 75, 622, 583), 7, 5); add('house', Bd, (626, 75, 892, 583), 3, 3); add('heal', Bd, (895, 75, 1179, 583), 3, 3); add('shop', Bd, (1184, 276, 1497, 565), 3, 3)
+add('board_monster', Bd, (514, 655, 813, 932), 2, 2); add('stone_sign', Bd, (92, 702, 466, 870), 2, 1)
 
 # ---------------- キャラクター（chars） ----------------
 C = 'chars'

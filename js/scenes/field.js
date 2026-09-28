@@ -295,6 +295,14 @@ class FieldScene {
     if (n) return 'shore_n'; if (s) return 'shore_s'; if (wl) return 'shore_w'; if (e) return 'shore_e';
     return null;
   }
+  // 道の自動タイル：芝に接する辺・角で境界タイルを選ぶ
+  pathTile(tx, ty) {
+    const p = (x, y) => { const t = this.tileAt(x, y); return t === 'P' || t === 'B' || t === ' '; };
+    const n = !p(tx, ty - 1), s = !p(tx, ty + 1), w = !p(tx - 1, ty), e = !p(tx + 1, ty);
+    if (n && w) return 'path_nw'; if (n && e) return 'path_ne'; if (s && w) return 'path_sw'; if (s && e) return 'path_se';
+    if (n) return 'path_n'; if (s) return 'path_s'; if (w) return 'path_w'; if (e) return 'path_e';
+    return 'path';
+  }
   fenceTile(tx, ty) {
     const f = (x, y) => this.tileAt(x, y) === '=';
     const l = f(tx - 1, ty), r = f(tx + 1, ty);
@@ -338,6 +346,7 @@ class FieldScene {
         // 下地
         const base = DATA.ATLAS_BASE[t];
         if (base === 'water') { Atlas.draw(ctx, this.waterTile(tx, ty) || `water${waterFrame}`, px, py); }
+        else if (base === 'path') { const pt = this.pathTile(tx, ty); Atlas.draw(ctx, Atlas.has(pt) ? pt : 'path', px, py); }
         else if (base) Atlas.draw(ctx, base, px, py);
         else Atlas.draw(ctx, 'grass', px, py);
         // 上に載る小物（奥行き順）
@@ -353,7 +362,7 @@ class FieldScene {
     // 大きな建物・オブジェクト（足元の y で並べる）
     for (const o of (this.map.objects || [])) {
       const px = o.x * T - camX + bx, py = o.y * T - camY + by;
-      if (useAtlas && Atlas.has(o.art)) sprites.push({ y: (o.y + o.h) * T - 1, fn: () => Atlas.draw(ctx, o.art, px, py) });
+      if (useAtlas && Atlas.has(o.art)) { const sz = Atlas.size(o.art); const dy = (o.y + o.h) * T - camY + by - sz.h; sprites.push({ y: (o.y + o.h) * T - 1, fn: () => Atlas.draw(ctx, o.art, px, dy) }); }
       else ctx.drawImage(Gfx.get(o.art), px, py, o.w * T, o.h * T);
     }
     // イベント（ボール・NPC）

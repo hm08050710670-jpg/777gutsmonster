@@ -67,7 +67,7 @@ const server = http.createServer((req, res) => {
   await page.evaluate(() => { Game.state.x = 16; Game.state.y = 3; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(400); await shot('09_blocked'); await advance();
   // 研究所へ
-  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 4; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 9; Game.state.y = 6; Game.state.dir = 'up'; });
   await walk('up'); await page.waitForTimeout(400); await shot('10_lab'); console.log('lab:', await st()); await page.waitForTimeout(800); console.log('bgm@lab:', await snd()); await advance(40); await shot('10b_lab_after_intro');
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
   await walk('left'); await tap('a'); await page.waitForTimeout(600); await shot('12_starter_ask');
@@ -90,7 +90,7 @@ const server = http.createServer((req, res) => {
   // ガーデンロードへ
   await page.evaluate(() => { Game.state.x = 16; Game.state.y = 2; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('22_road'); console.log('road:', await st());
-  await page.evaluate(() => { CONFIG.ENCOUNTER_RATE = 100; Game.state.grace = 0; Game.state.x = 2; Game.state.y = 3; Game.state.dir = 'down'; });
+  await page.evaluate(() => { CONFIG.ENCOUNTER_RATE = 100; Game.state.grace = 0; Game.state.x = 4; Game.state.y = 3; Game.state.dir = 'down'; });
   await walk('down'); await page.waitForTimeout(500); await shot('23_wild'); console.log('wild:', await st()); console.log('bgm@wild:', await snd());
   await finishBattle(); await advance(); console.log('after wild:', await st()); await page.waitForTimeout(600); console.log('bgm@after wild:', await snd());
   // 回復の家
