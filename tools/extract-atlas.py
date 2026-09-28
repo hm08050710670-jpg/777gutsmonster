@@ -15,6 +15,7 @@ sheets = {n: keyout(f'{SHEETS}/{n}.png')[0] for n in ['terrain', 'props', 'objec
 sheets['trees2'] = keyout_dark(f'{SHEETS}/trees2.png')[0]
 sheets['bld2'] = keyout_blur(f'{SHEETS}/bld2.png', close=8)[0]
 _t2 = Image.open(f'{SHEETS}/terrain2.png').convert('RGBA'); sheets['terrain2'] = _t2
+sheets['heal2'] = keyout(f'{SHEETS}/heal2.png')[0]
 
 def tight(img, box):
     """箱内の不透明ピクセルの外接矩形（黒ラベルは除外）"""
@@ -165,6 +166,8 @@ add('bush_flower_y', R, (760, 698, 906, 825), 1, 1); add('tuft2', R, (971, 684, 
 Bd = 'bld2'
 add('lab', Bd, (40, 75, 622, 583), 7, 5); add('house', Bd, (626, 75, 892, 583), 3, 3); add('heal', Bd, (895, 75, 1179, 583), 3, 3); add('shop', Bd, (1184, 276, 1497, 565), 3, 3)
 add('board_monster', Bd, (514, 655, 813, 932), 2, 2); add('stone_sign', Bd, (92, 702, 466, 870), 2, 1)
+# 回復の家（ゴルフボール型ドーム）
+add('heal', 'heal2', (0, 0, 1243, 1247), 3, 3)
 
 # ---------------- キャラクター（chars） ----------------
 C = 'chars'
