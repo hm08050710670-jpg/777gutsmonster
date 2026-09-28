@@ -96,7 +96,11 @@ def to_native(img):
             blk = arr[max(0, cy - 2):cy + 3, max(0, cx - 2):cx + 3].reshape(-1, 4)
             out[j, i] = np.median(blk, axis=0)
     out[out[:, :, 3] < 128] = 0; out[out[:, :, 3] >= 128, 3] = 255
-    o = Image.fromarray(out, 'RGBA'); return o.crop(o.getbbox())
+    o = Image.fromarray(out, 'RGBA'); o = o.crop(o.getbbox())
+    # 元絵のドットが縦横で違う大きさ（縦長・横長）なら、見た目の比率を保つよう高さを補正
+    if abs(px - py) / px > 0.05:
+        o = o.resize((o.width, max(1, round(o.height * py / px))), Image.NEAREST)
+    return o
 nf = to_native(im.crop((0, 0, split, H))); nb = to_native(im.crop((split, 0, W, H)))
 CELL = 80
 pmeta = {}; patlas = Image.new('RGBA', (CELL * 8, CELL), (0, 0, 0, 0))
