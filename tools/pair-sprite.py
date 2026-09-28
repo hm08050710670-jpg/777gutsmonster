@@ -26,8 +26,15 @@ if a[:, :, 3].min() == 255:
             if 0 <= ny < H and 0 <= nx < W and light[ny, nx] and not bg[ny, nx]: bg[ny, nx] = True; dq.append((ny, nx))
     a[bg, 3] = 0
 a[a[:, :, 3] < 128] = 0
+# 小さなゴミ（チェッカーの取り残し等）を消す：面積50px未満の成分
+from scipy import ndimage
+lab, n = ndimage.label(a[:, :, 3] > 0)
+if n:
+    sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+    small = np.isin(lab, [i + 1 for i, sz in enumerate(sizes) if sz < 50])
+    a[small] = 0
 # 左右に分ける（最も広い空白列で）
-cols = (a[:, :, 3] > 0).sum(0); xs = [x for x in range(W) if cols[x] > 0]
+cols = (a[:, :, 3] > 0).sum(0); xs = [x for x in range(W) if cols[x] > 2]
 best = (0, None); prev = None
 for x in xs:
     if prev is not None and x - prev > best[0]: best = (x - prev, (prev + x) // 2)
