@@ -205,6 +205,9 @@ def keyout_pale(img):
     edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))); edge.discard(0)
     mask &= ~np.isin(lab, list(edge))
     mask = ndimage.binary_closing(mask, iterations=2)
+    # 凸包のうち「インクから離れた部分」（角の背景）は削る：インクの近傍6pxだけ残す
+    mask &= ndimage.binary_dilation(ink, iterations=6)
+    mask = ndimage.binary_fill_holes(ndimage.binary_closing(mask, iterations=3))
     alpha = (mask * 255).astype(np.uint8)
     return Image.fromarray(np.dstack([a.astype(np.uint8), alpha]), 'RGBA')
 

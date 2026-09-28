@@ -28,11 +28,50 @@ const Mon = (() => {
     const r = meta[id]; if (!r || !ready) return false;
     return drawFrom(ctx, img, r, x, y, scale, flip);
   }
+  // ---- 高解像度端末向け：Scale2x（EPX）を2回かけた4倍画像をキャッシュして描く ----
+  //   48px素材を6倍などに単純拡大すると階段状に荒れるため、斜め線をなめらかにした192pxを用意し、
+  //   そこから滑らか補間で縮小・拡大する。
+  const hqCache = new Map();
+  function scale2x(src, w, h) {
+    const dst = new Uint32Array(w * h * 4), W2 = w * 2;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const P = src[y * w + x];
+      const A = y > 0 ? src[(y - 1) * w + x] : P, D = y < h - 1 ? src[(y + 1) * w + x] : P;
+      const C = x > 0 ? src[y * w + x - 1] : P, B = x < w - 1 ? src[y * w + x + 1] : P;
+      let p1 = P, p2 = P, p3 = P, p4 = P;
+      if (C === A && C !== D && A !== B) p1 = A;
+      if (A === B && A !== C && B !== D) p2 = B;
+      if (D === C && D !== B && C !== A) p3 = C;
+      if (B === D && B !== A && D !== C) p4 = D;
+      const o = (y * 2) * W2 + x * 2;
+      dst[o] = p1; dst[o + 1] = p2; dst[o + W2] = p3; dst[o + W2 + 1] = p4;
+    }
+    return dst;
+  }
+  function hqImage(image, r, key) {
+    if (hqCache.has(key)) return hqCache.get(key);
+    const [sx, sy, sw, sh] = r;
+    const c0 = document.createElement('canvas'); c0.width = sw; c0.height = sh;
+    const g0 = c0.getContext('2d'); g0.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
+    let px = new Uint32Array(g0.getImageData(0, 0, sw, sh).data.buffer), w = sw, h = sh;
+    for (let i = 0; i < 2; i++) { px = scale2x(px, w, h); w *= 2; h *= 2; }
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const id = c.getContext('2d').createImageData(w, h); new Uint8ClampedArray(px.buffer).forEach((v, i) => { id.data[i] = v; });
+    c.getContext('2d').putImageData(id, 0, 0);
+    hqCache.set(key, c);
+    return c;
+  }
   function drawFrom(ctx, image, r, x, y, scale, flip) {
     const [sx, sy, sw, sh] = r; const w = sw / S * scale, h = sh / S * scale;
-    ctx.save(); ctx.imageSmoothingEnabled = false;
-    if (flip) { ctx.translate(x + w, y); ctx.scale(-1, 1); ctx.drawImage(image, sx, sy, sw, sh, 0, 0, w, h); }
-    else ctx.drawImage(image, sx, sy, sw, sh, x, y, w, h);
+    ctx.save();
+    // 実描画が素材の2倍を超えるときだけ高解像度版を使う
+    const dpr = ctx.getTransform ? ctx.getTransform().a : 1;
+    const useHq = dpr * scale > 2;
+    let img = image, ssx = sx, ssy = sy, ssw = sw, ssh = sh;
+    if (useHq) { img = hqImage(image, r, `${image === bimg ? 'b' : 'f'}:${sx},${sy}`); ssx = 0; ssy = 0; ssw = sw * 4; ssh = sh * 4; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
+    else ctx.imageSmoothingEnabled = false;
+    if (flip) { ctx.translate(x + w, y); ctx.scale(-1, 1); ctx.drawImage(img, ssx, ssy, ssw, ssh, 0, 0, w, h); }
+    else ctx.drawImage(img, ssx, ssy, ssw, ssh, x, y, w, h);
     ctx.restore();
     return true;
   }

@@ -246,7 +246,7 @@ const Gfx = (() => {
     'type_ほのお': ['   f    ', '  ff    ', '  fff f ', ' ffOff  ', ' fOOff  ', ' fOyOff ', '  fOOf  ', '   ff   '],
     'type_くさ':   ['      G ', '    GGg ', '   Ghhg ', '  Ghhgg ', ' GhhggG ', ' GhggG  ', 'GGGG    ', 'G       '],
     'type_でんき': ['    yy  ', '   yy   ', '  yy    ', ' yyyyy  ', '   yyy  ', '   yy   ', '  yy    ', '  y     '],
-    'type_かぜ':   ['  xxxx  ', ' x    x ', '      x ', '  xxxx  ', ' x      ', '        ', '  xxxxx ', '        '],
+    'type_かぜ':   ['  WWWW  ', ' W    W ', '      W ', 'WWWWWWW ', '        ', ' WWWWW  ', '      W ', '  WWWW  '],
     'type_じめん': ['        ', '   BB   ', '  BbbB  ', ' BbbbbB ', ' BbbjbB ', 'KBBBBBK ', 'KKKKKKK ', '        '],
     'type_ひかり': ['   y    ', '   y    ', '  yIy   ', 'yyIIIyy ', '  yIy   ', ' y y y  ', '   y    ', '        '],
     'type_やみ':   ['  nnn   ', ' nn  n  ', 'nn      ', 'nn      ', 'nn      ', ' nn  n  ', '  nnn   ', '        '],
