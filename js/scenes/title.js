@@ -2,10 +2,39 @@
 // タイトル画面 → 主人公設定（なまえ → せいべつ → プレビュー）
 // ============================================================
 class TitleScene {
-  constructor() { this.overlay = false; this.sel = 0; this.menu = false; }
+  constructor() { this.overlay = false; this.sel = 0; this.menu = false; this.code = 0; this.debug = false; }
   enter() { Sound.stop(); }
-  items() { return Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい']; }
+  items() {
+    const it = Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい'];
+    if (this.debug) it.push('バトルテスト');
+    return it;
+  }
+  // 裏技：タイトルで ↑↑↓↓BA → 「バトルテスト」が出る（いきなり野生戦。セーブは変えない）
+  checkCode() {
+    const seq = ['up', 'up', 'down', 'down', 'b', 'a'];
+    const k = ['up', 'down', 'left', 'right', 'a', 'b', 'start'].find(x => Input.pressed(x));
+    if (!k) return false;
+    this.code = k === seq[this.code] ? this.code + 1 : (k === seq[0] ? 1 : 0);
+    if (this.code >= seq.length) { this.code = 0; this.debug = true; this.menu = true; this.sel = this.items().length - 1; return true; }
+    return false;
+  }
+  battleTest() {
+    let st = Save.load();
+    if (!st || !st.party.length) {
+      st = Save.newGame('テスト', 'm');
+      st.party = DATA.STARTERS.map(id => makeMonster(id, 7));
+      st.items = { 'きずぐすり': 5 };
+      st.flags = { labIntro: true, starter: true };
+    }
+    st.map = 'road'; st.x = 7; st.y = 5;
+    Game.state = st;
+    const ids = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
+    const enemy = makeMonster(ids[Game.rand(0, ids.length - 1)], Game.rand(5, 12));
+    Game.replace(new FieldScene());
+    Game.push(new BattleScene({ enemy, onEnd: () => Game.replace(new TitleScene()) }));
+  }
   update(frame) {
+    if (this.checkCode()) return;
     if (!this.menu) {
       if (Input.pressed('a') || Input.pressed('start')) this.menu = true;
       return;
@@ -16,7 +45,9 @@ class TitleScene {
     if (Input.pressed('b')) { this.menu = false; return; }
     if (Input.pressed('a')) {
       const label = it[this.sel];
-      if (label === 'つづきから') {
+      if (label === 'バトルテスト') {
+        this.battleTest();
+      } else if (label === 'つづきから') {
         Game.state = Save.load() || Save.newGame();
         Game.replace(new FieldScene());
       } else if (label === 'せってい') {
