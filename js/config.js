@@ -4,7 +4,8 @@
 const CONFIG = {
   W: 192,            // フィールド内部解像度（屋外16マス）
   H: 208,            // 屋外 約17マス
-  TILE: 12,          // 屋外1マス（論理px）。素材は24pxで2倍描画。画面は横16マス
+  TILE: 12,          // 屋外1マス（論理px）。画面は横16マス
+  ATLAS_TILE: 48,    // アトラスの1マスpx（48/12 = 4倍で描画）
   TILE_INDOOR: 16,
   FPS: 60,
   WALK_FRAMES: 8,
@@ -14,7 +15,7 @@ const CONFIG = {
   SAVE_KEY: 'guts-monsters-save-v1',
   FONT: 'DotGothic16',
   FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf',
-  RENDER_SCALE: 2,   // 内部描画を2倍解像度にして文字を読みやすくする
+  RENDER_SCALE: 4,   // 内部描画の倍率（高DPI端末でドットを潰さない）
   TITLE: 'GUTS MONSTERS',
   TAGLINE: 'A LITTLE STEP, A BIG ADVENTURE.',
 };

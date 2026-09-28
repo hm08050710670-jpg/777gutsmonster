@@ -6,7 +6,7 @@
 // ============================================================
 const Atlas = (() => {
   let img = null, meta = {}, ready = false;
-  const S = 2; // 素材px → 論理px の縮小率
+  const S = (CONFIG.ATLAS_TILE || 24) / CONFIG.TILE; // 素材px → 論理px の縮小率
 
   async function load() {
     try {

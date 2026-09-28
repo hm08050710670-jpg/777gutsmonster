@@ -8,7 +8,7 @@ import numpy as np
 from cut import keyout
 from cut2 import keyout_dark, keyout_blur
 
-U = int(os.environ.get('TILE_PX', '24'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
+U = int(os.environ.get('TILE_PX', '48'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
 SHEETS = os.path.join(OUT, 'sheets')
 sheets = {n: keyout(f'{SHEETS}/{n}.png')[0] for n in ['terrain', 'props', 'objects', 'chars']}
@@ -183,7 +183,7 @@ for name, (bx, by) in blocks.items():
 
 # ---------------- アトラス化 ----------------
 names = sorted(items, key=lambda n: (-items[n].height, -items[n].width, n))
-W = 1024
+W = 2048
 x = y = rowh = 0; meta = {}
 for n in names:
     im = items[n]
