@@ -67,7 +67,7 @@ const server = http.createServer((req, res) => {
   await page.evaluate(() => { Game.state.x = 16; Game.state.y = 3; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(400); await shot('09_blocked'); await advance();
   // 研究所へ
-  await page.evaluate(() => { Game.state.x = 9; Game.state.y = 5; Game.state.dir = 'up'; });
+  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 4; Game.state.dir = 'up'; });
   await walk('up'); await page.waitForTimeout(400); await shot('10_lab'); console.log('lab:', await st()); await page.waitForTimeout(800); console.log('bgm@lab:', await snd()); await advance(40); await shot('10b_lab_after_intro');
   await walk('up'); await walk('up'); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
   await walk('left'); await tap('a'); await page.waitForTimeout(600); await shot('12_starter_ask');

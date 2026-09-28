@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from cut import keyout
 
-U = int(os.environ.get('TILE_PX', '24'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
+U = int(os.environ.get('TILE_PX', '32'))   # 1タイルのpx（画面は2倍描画なので論理px = U/2）
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets')
 SHEETS = os.path.join(OUT, 'sheets')
 sheets = {n: keyout(f'{SHEETS}/{n}.png')[0] for n in ['terrain', 'props', 'objects', 'chars']}
@@ -87,11 +87,11 @@ add('planter_p', P, (420, 727, 582, 858), 1, 1)
 
 # ---------------- 建物・オブジェクト（objects） ----------------
 O = 'objects'
-add('lab', O, (27, 65, 474, 359), 6, 4)
-add('house', O, (480, 66, 800, 353), 3, 3)
-add('heal', O, (800, 66, 1061, 353), 3, 3)
-add('shop', O, (1062, 106, 1305, 355), 3, 3)
-add('house2', O, (1315, 106, 1514, 355), 3, 3)
+add('lab', O, (27, 65, 474, 359), 5, 3)
+add('house', O, (480, 66, 800, 353), 3, 2)
+add('heal', O, (800, 66, 1061, 353), 3, 2)
+add('shop', O, (1062, 106, 1305, 355), 3, 2)
+add('house2', O, (1315, 106, 1514, 355), 3, 2)
 add('tree_pink', O, (579, 374, 712, 531), 2, 2)
 add('tree_orange', O, (712, 374, 844, 531), 2, 2)
 add('tree_small', O, (280, 400, 385, 534), 1, 1.5)
