@@ -230,7 +230,7 @@ class BattleScene {
     // 自分：左下（左右反転で敵と向き合う）
     if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);
     drawMonster(ctx, me, 24, 90, 48, true);
-    this.drawStatus(ctx, me, this.shownHp.p, 84, 98, 104, 44, true);
+    this.drawStatus(ctx, me, this.shownHp.p, 84, 92, 104, 44, true);
 
     // 下部ウィンドウ
     const by = H - 56;
@@ -246,25 +246,25 @@ class BattleScene {
         if (i === this.cmd) Text.cursor(ctx, x + 5, y + 10);
       });
     } else if (this.mode === 'move') {
-      const py = H - 70;
-      Text.box(ctx, 0, py, W, 70, { fill: THEME.green });
+      const py = H - 72;
+      Text.box(ctx, 0, py, W, 72, { fill: THEME.green });
       me.moves.forEach((mv, i) => {
-        const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 32;
-        Text.box(ctx, x, y, 68, 30);
-        Text.draw(ctx, mv.name, x + 8, y + 7);
-        Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 18, THEME.textDim);
-        if (i === this.mv) Text.cursor(ctx, x + 3, y + 7);
+        const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 33;
+        Text.box(ctx, x, y, 68, 31);
+        Text.draw(ctx, mv.name, x + 8, y + 5);
+        Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 16, THEME.textDim);
+        if (i === this.mv) Text.cursor(ctx, x + 3, y + 5);
       });
       // 右：技の説明（タイプ・いりょく・めいちゅう）
       const cur = DATA.MOVES[me.moves[this.mv].name];
       const dx = 140, dw = 50;
-      Text.box(ctx, dx, py + 4, dw, 62);
-      Text.draw(ctx, cur.type, dx + 5, py + 9, THEME.green);
-      Text.rule(ctx, dx + 5, py + 20, dw - 10);
-      Text.draw(ctx, 'いりょく', dx + 5, py + 24);
-      Text.draw(ctx, String(cur.power), dx + dw - 6 - Text.width(String(cur.power)), py + 33);
-      Text.draw(ctx, 'めいちゅう', dx + 5, py + 44);
-      Text.draw(ctx, '100', dx + dw - 6 - 12, py + 53);
+      Text.box(ctx, dx, py + 4, dw, 64);
+      Text.draw(ctx, cur.type, dx + 5, py + 8, THEME.green);
+      Text.rule(ctx, dx + 5, py + 19, dw - 10);
+      Text.draw(ctx, 'いりょく', dx + 5, py + 22);
+      Text.draw(ctx, String(cur.power), dx + dw - 6 - Text.width(String(cur.power)), py + 31);
+      Text.draw(ctx, 'めいちゅう', dx + 5, py + 42);
+      Text.draw(ctx, '100', dx + dw - 6 - 12, py + 51);
     } else {
       Text.box(ctx, 0, by, W, 56);
     }
@@ -272,26 +272,23 @@ class BattleScene {
     if (this.mode === 'stats') this.drawStats(ctx, me, frame);
   }
 
-  // HP窓：名前 / Lv. / タイプアイコン / HPピル＋バー / (自分のみ) EXPバー＋現在/最大
+  // HP窓：名前 / Lv. / タイプアイコン / HPピル＋バー / (自分のみ) 現在/最大
+  //   実機Safariは文字が下に2〜3px伸びるので、文字の下は余裕を取る
   drawStatus(ctx, m, hp, x, y, w, h, mine) {
     Text.box(ctx, x, y, w, h, { tab: true });
-    Text.draw(ctx, m.name, x + 8, y + 6);
+    Text.draw(ctx, m.name, x + 8, y + 5);
     const lv = `Lv.${m.level}`;
-    Text.draw(ctx, lv, x + w - 8 - Text.width(lv), y + 6);
-    const ry = y + 18;
+    Text.draw(ctx, lv, x + w - 8 - Text.width(lv), y + 5);
+    const ry = y + 17;
     const icon = Gfx.get(`type_${m.type}`, 1);
     if (icon) ctx.drawImage(icon, x + 8, ry);
     // 「HP」の金文字ピル
-    ctx.fillStyle = THEME.greenDark; ctx.fillRect(x + 19, ry - 1, 14, 10);
+    ctx.fillStyle = THEME.greenDark; ctx.fillRect(x + 19, ry - 2, 14, 12);
     Text.draw(ctx, 'HP', x + 22, ry, '#f2d27a');
     drawHpBar(ctx, x + 33, ry + 1, w - 41, hp, m.maxHp, true);
     if (mine) {
-      // EXP（次のレベルまで）
-      const need = m.level * 20, r = Math.min(1, (m.exp || 0) / need);
-      ctx.fillStyle = THEME.greenDark; ctx.fillRect(x + 8, y + 33, 44, 5);
-      ctx.fillStyle = '#9fd0f2'; ctx.fillRect(x + 9, y + 34, Math.floor(42 * r), 3);
       const s = `${hp} / ${m.maxHp}`;
-      Text.draw(ctx, s, x + w - 8 - Text.width(s), y + 31);
+      Text.draw(ctx, s, x + w - 8 - Text.width(s), y + 30);
     }
   }
 
@@ -309,7 +306,7 @@ class BattleScene {
   // のうりょく表（レベルアップ後）
   drawStats(ctx, m, frame) {
     const g = this.grow; if (!g) return;
-    const x = 12, y = 36, w = 168, h = 104;
+    const x = 12, y = 42, w = 168, h = 100;
     Text.box(ctx, x, y, w, h);
     Text.draw(ctx, `${m.name}の`, x + 8, y + 7);
     Text.draw(ctx, 'のうりょくが あがった！', x + 8, y + 18);
