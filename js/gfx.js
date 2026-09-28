@@ -332,7 +332,7 @@ const Gfx = (() => {
     // ---------- NPC ----------
     npc_prof: [
       '     aaaaaa     ', '    aaaaaaaa    ', '   aaaaaaaaaa   ', '   aassssssaa   ',
-      '   aDssDDssDa   ', '   aD#sDD#sDa   ', '    ssssssss    ', '    sSSSSSSs    ',
+      '   as##ss##sa   ', '   a#s####s#a   ', '   as##ss##sa   ', '    ssssssss    ',
       '   #eeeeeeee#   ', '  seeeewweeees  ', '  seeeeweeeees  ', '   eeeeeeeeee   ',
       '    NNNNNNNN    ', '    NNN  NNN    ', '    aaa  aaa    ', '   AAA    AAA   ',
     ],
