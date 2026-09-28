@@ -20,6 +20,9 @@ const Save = {
       if (st && st.party) {  // 旧IDの移行（御三家の入れ替え）
         const MIG = { shibamog: 'kokegame', hinokapi: 'hinoshishi' };
         st.party.forEach(m => { if (MIG[m.id]) { m.id = MIG[m.id]; m.name = DATA.MONSTERS[m.id].name; m.type = DATA.MONSTERS[m.id].type; } });
+        // 使わなくなったモンスターは手持ちから外す（空になったらコケガメ Lv7 を入れる）
+        st.party = st.party.filter(m => DATA.MONSTERS[m.id]);
+        if (!st.party.length && st.flags && st.flags.starter) st.party.push(makeMonster('kokegame', 7));
       }
       return st;
     } catch (e) { return null; }

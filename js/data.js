@@ -34,9 +34,12 @@ const DATA = {
       mantou:     { desc: 'いつも そばにいる ふわふわの相棒' },
     };
     const out = {};
+    const on = id => !DEX_ENABLED || DEX_ENABLED.includes(id);
     for (const d of DEX) {
+      if (!on(d.id)) continue;
       const t = TUNED[d.id] || {};
-      out[d.id] = { name: d.name, type: d.type, no: d.no, stage: d.stage, evo: d.evo || null, special: !!d.special,
+      const evo = d.evo && on(d.evo[0]) ? d.evo : null;   // 進化先が無効なら進化しない
+      out[d.id] = { name: d.name, type: d.type, no: d.no, stage: d.stage, evo, special: !!d.special,
         base: t.base || STAGE_BASE[d.stage], moves: TYPE_MOVES[d.type], desc: t.desc || `${d.type}タイプの GUTS MONSTER` };
     }
     return out;
@@ -215,11 +218,10 @@ const DATA = {
         'WGGGGGGPGGGGGW',
         'WWWWWWWPWWWWWW',
       ],
+      // ※ 御三家以外を外している間の仮テーブル。野生の個体が増えたら差し替える
       encounters: [
-        { id: 'kokemogu', level: [3, 5], weight: 4 }, { id: 'shibatta', level: [3, 5], weight: 4 },
-        { id: 'yotsubausa', level: [3, 5], weight: 2 }, { id: 'hatakon', level: [2, 4], weight: 5 },
-        { id: 'birisu', level: [3, 5], weight: 2 }, { id: 'tsuchidango', level: [3, 5], weight: 3 },
-        { id: 'mizugamo', level: [3, 5], weight: 3 }, { id: 'atsuzemi', level: [3, 5], weight: 2 },
+        { id: 'kokegame', level: [3, 5], weight: 1 }, { id: 'hinoshishi', level: [3, 5], weight: 1 },
+        { id: 'amepiyo', level: [3, 5], weight: 1 },
       ],
       events: [
         { x: 7, y: 21, kind: 'warp', to: { map: 'town', x: 9, y: 1, dir: 'down' } },

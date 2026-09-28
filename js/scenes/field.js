@@ -225,7 +225,7 @@ class FieldScene {
     say('おーい！ ちょっと まてよ！', () => {
       this.walkActor(actor, ['up', 'up', 'up', 'up', 'up', 'up'], () => {
         say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
-          say('ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ブブ！', () => this.rivalBattle(() => {
+          say(`ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ${this.rivalMon().name}！`, () => this.rivalBattle(() => {
             // 勝負のあと、来た道を もどる
             this.walkActor(actor, ['down', 'down', 'down', 'down', 'down', 'down'], () => { this.actor = null; Save.auto(st); });
           }), 'ノブオ');
@@ -233,13 +233,21 @@ class FieldScene {
       });
     }, 'ノブオ');
   }
+  // ノブオの手持ち：主人公の御三家に有利なタイプの御三家（ブブは絵ができるまで外している）
+  rivalMon() {
+    const mine = Game.state.party[0] ? Game.state.party[0].id : 'kokegame';
+    const counter = { kokegame: 'hinoshishi', hinoshishi: 'amepiyo', amepiyo: 'kokegame' };
+    const id = DATA.MONSTERS.bubu ? 'bubu' : (counter[mine] || 'kokegame');
+    return DATA.MONSTERS[id] ? { id, name: DATA.MONSTERS[id].name } : { id: 'kokegame', name: 'コケガメ' };
+  }
   rivalBattle(after) {
     const st = Game.state;
-    const enemy = makeMonster('bubu', 5);
+    const rm = this.rivalMon();
+    const enemy = makeMonster(rm.id, 5);
     Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
       Game.setFlag('rival1');
       if (result === 'lose') { st.party.forEach(m => { m.hp = m.maxHp; }); say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', after, 'ノブオ'); }
-      else say('くっ… ブブが まけるなんて！\nガーデンロードは ゆずってやるよ。', after, 'ノブオ');
+      else say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, after, 'ノブオ');
     } }));
   }
 
@@ -248,15 +256,16 @@ class FieldScene {
     const st = Game.state;
     ev.face = FACE[st.dir];
     say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
-      say('じゃあ さっそく しょうぶだ！\nいけっ ブブ！', () => {
-        const enemy = makeMonster('bubu', 5);
+      const rm = this.rivalMon();
+      say(`じゃあ さっそく しょうぶだ！\nいけっ ${rm.name}！`, () => {
+        const enemy = makeMonster(rm.id, 5);
         Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
           Game.setFlag('rival1');
           if (result === 'lose') {
             st.party.forEach(m => { m.hp = m.maxHp; });
             say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', () => Save.auto(st), 'ノブオ');
           } else {
-            say('くっ… ブブが まけるなんて！\nガーデンロードは ゆずってやるよ。', () => Save.auto(st), 'ノブオ');
+            say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, () => Save.auto(st), 'ノブオ');
           }
         } }));
       }, 'ノブオ');
