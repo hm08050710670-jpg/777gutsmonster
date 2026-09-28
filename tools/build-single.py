@@ -39,6 +39,10 @@ for name in ['guts_town', 'okumura_lab', 'wild_adventure', 'rival_battle']:
         bgm_b64[path] = 'data:audio/mpeg;base64,' + base64.b64encode(open(path, 'rb').read()).decode()
 print('bgm embedded:', len(bgm_b64), 'tracks')
 
+# アトラスを埋め込み
+atlas_png = 'data:image/png;base64,' + base64.b64encode(open('assets/atlas.png', 'rb').read()).decode()
+atlas_json = open('assets/atlas.json', encoding='utf-8').read()
+
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
@@ -49,6 +53,8 @@ def inline_js(m):
     code = open(src, encoding='utf-8').read()
     code = code.replace("FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf'", f"FONT_FILE: 'data:font/ttf;base64,{font_b64}'")
     for path, uri in bgm_b64.items(): code = code.replace(f"'{path}'", f"'{uri}'")
+    if src == 'js/config.js':
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline_js, html)
 

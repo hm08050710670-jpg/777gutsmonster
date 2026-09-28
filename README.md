@@ -38,6 +38,19 @@ iPhone縦画面を最優先。**依存ゼロ・ビルド不要**。`index.html` 
 - 戦闘：たたかう／なかま（交代）／どうぐ／にげる、タイプ相性、初代式ダメージ計算、HPバーアニメ、経験値とレベルアップ、全滅時の復帰
 - スマホ対応：整数倍スケーリング、縦・横レイアウト、セーフエリア、マルチタッチ（ボタン間スライド対応）
 
+## 画像素材（アトラス）
+
+`assets/sheets/` の生成素材シート（terrain / props / objects / chars）から、`tools/extract-atlas.py` で
+`assets/atlas.png` + `assets/atlas.json` を生成する（1タイル=32px、画面は2倍描画なので論理16px）。
+
+- 地形は `DATA.ATLAS_BASE`、その上に載る小物は `DATA.ATLAS_DECOR`（`js/data.js`）
+- 建物や池などの大きな物は `map.objects`（`art, x, y, w, h, doors`）
+- 水は隣接で岸タイルを自動選択、柵は左右の有無で端タイルを自動選択
+- 人物は `名前_方向コマ`（例 `hm_down1`）。歩行は 1→0→2→0
+- 屋内タイル・モンスターはまだ旧描画（`js/gfx.js` の文字列アート）
+
+素材を差し替えるときは、シートを置き換えて `python3 tools/extract-atlas.py`（要 Pillow / numpy / scipy）。切り出し座標は同スクリプト内。
+
 ## BGM
 
 `assets/bgm/` に採用4曲（MP3・192kbps）。詳細は `assets/bgm/README_BGM.txt` と `manifest.json`。
