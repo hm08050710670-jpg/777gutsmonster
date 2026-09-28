@@ -40,9 +40,10 @@ const Text = (() => {
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = color;
     const by = y + 1 + ascent;
+    const bold = CONFIG.TEXT_BOLD || 0;   // 横にずらして重ね描きし、線を太らせる（0.33 ≒ 1.7倍）
     let cx = x;
     for (const ch of str) {
-      if (ch !== ' ' && ch !== '　') ctx.fillText(ch, cx, by);
+      if (ch !== ' ' && ch !== '　') { ctx.fillText(ch, cx, by); if (bold) ctx.fillText(ch, cx + bold, by); }
       cx += charW(ch);
     }
     return cx;
