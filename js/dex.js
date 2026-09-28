@@ -5,7 +5,7 @@
 // ============================================================
 // 使用するモンスター。null にすると図鑑の全員が使われる。
 //   （2026-09-28：御三家以外はいったん外す。新しいドット絵ができた個体から追加していく）
-const DEX_ENABLED = ['kokegame', 'hinoshishi', 'amepiyo'];
+const DEX_ENABLED = ['kokegame', 'hinoshishi', 'amepiyo', 'bubu', 'mantou'];
 
 const DEX = [
   // ---- 御三家 ----
