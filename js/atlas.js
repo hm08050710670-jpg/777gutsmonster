@@ -28,3 +28,15 @@ const Atlas = (() => {
   const size = n => { const r = meta[n]; return r ? { w: r[2] / S, h: r[3] / S } : null; };
   return { load, has, draw, size, isReady: () => ready };
 })();
+
+// ---- 一枚絵マップの画像（遅延読込） ----
+const MapImages = (() => {
+  const cache = {};
+  function get(src) {
+    const url = (CONFIG.MAP_IMAGES && CONFIG.MAP_IMAGES[src]) || src;
+    if (cache[src]) return cache[src].complete && cache[src].naturalWidth ? cache[src] : null;
+    const img = new Image(); img.src = url; cache[src] = img; return null;
+  }
+  function preload(list) { list.forEach(get); }
+  return { get, preload };
+})();

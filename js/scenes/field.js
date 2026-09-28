@@ -228,13 +228,14 @@ class FieldScene {
   rivalApproach(ev) {
     const st = Game.state;
     st.dir = 'down';
-    const actor = { x: st.x, y: st.y + 7, sprite: 'rival' };
+    const spec = ev.rival || { x: st.x, y: st.y + 7, path: ['up', 'up', 'up', 'up', 'up', 'up'] };
+    const actor = { x: spec.x, y: spec.y, sprite: 'rival' };
+    const back = [...spec.path].reverse().map(d => ({ up: 'down', down: 'up', left: 'right', right: 'left' }[d]));
     say('おーい！ ちょっと まてよ！', () => {
-      this.walkActor(actor, ['up', 'up', 'up', 'up', 'up', 'up'], () => {
+      this.walkActor(actor, spec.path, () => {
         say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
           say('ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ブブ！', () => this.rivalBattle(() => {
-            // 勝負のあと、来た道を もどる
-            this.walkActor(actor, ['down', 'down', 'down', 'down', 'down', 'down'], () => { this.actor = null; Save.auto(st); });
+            this.walkActor(actor, back, () => { this.actor = null; Save.auto(st); });
           }), 'ノブオ');
         }, 'ノブオ');
       });
@@ -329,12 +330,21 @@ class FieldScene {
     ctx.fillStyle = this.map.indoor ? '#1a1410' : '#173a1c';
     ctx.fillRect(0, 0, W, H);
     const useAtlas = Atlas.isReady() && !this.map.indoor;
+    const bgImg = this.map.image ? MapImages.get(this.map.image) : null;
     const sprites = []; // 奥行き順に描くもの { y, fn }
     const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
     const waterFrame = Math.floor(frame / 24) % 4;
 
+    if (bgImg) {
+      // 一枚絵：画像のマス(px) → 論理マス(T) の比で切り出して描く
+      const kx = this.map.imageW / this.mapW / T, ky = this.map.imageH / this.mapH / T;
+      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bgImg, (camX - bx) * kx, (camY - by) * ky, W * kx, H * ky, 0, 0, W, H);
+      ctx.restore();
+    }
     for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
       for (let tx = cx0 - 1; tx <= cx0 + Math.ceil(W / T) + 1; tx++) {
+        if (bgImg) break;
         const t = this.tileAt(tx, ty);
         if (t === ' ') continue;
         const px = tx * T - camX + bx, py = ty * T - camY + by;
