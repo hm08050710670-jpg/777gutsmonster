@@ -257,7 +257,7 @@ class BattleScene {
       me.moves.forEach((mv, i) => {
         const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 33;
         Text.box(ctx, x, y, 68, 31);
-        Text.draw(ctx, mv.name, x + 7, y + 5);
+        Text.draw(ctx, mv.name, x + 6, y + 5);   // 7文字（56px）が枠内に収まる位置
         Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 16, THEME.textDim);
         if (i === this.mv) Text.cursor(ctx, x + 2, y + 5);
       });
