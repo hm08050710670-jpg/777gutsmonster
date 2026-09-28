@@ -235,11 +235,11 @@ const Gfx = (() => {
       'BKEEEEEEEEEEEEKB', 'BKKKKKKKKKKKKKKB', 'BBKKBBBBBBBBKKBB', 'BBKKBBBBBBBBKKBB',
       'BBKKBBBBBBBBKKBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB',
     ],
-    ball: [ // テーブルの上のボール（透明背景）
-      '                ', '                ', '      ####      ', '     #eeee#     ',
-      '    #eeUeee#    ', '    #eeeeee#    ', '    #eEeeEe#    ', '    #eeeeee#    ',
-      '    #EeEeEE#    ', '     #EEEE#     ', '      ####      ', '                ',
-      '                ', '                ', '                ', '                ',
+    ball: [
+      '                ', '     ######     ', '   ##eeeeee##   ', '  #eeEeeeeEee#  ',
+      '  #eeeeEeeeee#  ', ' #eEeeeeeeEeee# ', ' #eeeeeeeeeeee# ', ' #####eeee##### ',
+      ' ####ee##ee#### ', ' #####eeee##### ', ' #eeeeeeeeeeee# ', ' #eEeeeeeeEeee# ',
+      '  #eeeEeeeeeE#  ', '  #eeeeeeEeee#  ', '   ##eeeeee##   ', '     ######     ',
     ],
     machine: [ // 研究所の装置
       'eeeeeeeeeeeeeeee', 'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED', 'DE#wwww##yyyy#ED',
@@ -330,11 +330,11 @@ const Gfx = (() => {
     ],
 
     // ---------- NPC ----------
-    npc_prof: [ // オクムラ博士（白衣・白髪）
-      '     eeeeee     ', '    eeeeeeee    ', '   eeEeeeeeEe   ', '   eessssssee   ',
-      '   ess#ss#sse   ', '    ssssssss    ', '    sSSSSSSs    ', '   #eeeeeeee#   ',
-      '  seeeCCCCeees  ', '  seeeCyyCeees  ', '  seeeCCCCeees  ', '   eeeeeeeeee   ',
-      '    nnnnnnnn    ', '    nnn  nnn    ', '    aaa  aaa    ', '   AAA    AAA   ',
+    npc_prof: [
+      '     aaaaaa     ', '    aaaaaaaa    ', '   aaaaaaaaaa   ', '   aassssssaa   ',
+      '   a#s##s#ssa   ', '   assssssssa   ', '    ssssssss    ', '    sSSSSSSs    ',
+      '   #eeeeeeee#   ', '  seeeewweeees  ', '  seeeeweeeees  ', '   eeeeeeeeee   ',
+      '    NNNNNNNN    ', '    NNN  NNN    ', '    aaa  aaa    ', '   AAA    AAA   ',
     ],
     npc_rival: [ // ノブオ（赤いキャップ・青ジャケット）
       '     rrrrrr     ', '    rrrrrrrr    ', '   rrrrrrrrrrrr ', '   aassssssaa   ',

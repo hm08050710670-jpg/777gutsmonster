@@ -166,7 +166,7 @@ class FieldScene {
     const st = Game.state, n = ev.name;
     if (!st.flags.starter) {
       if (!st.flags.labIntro) this.profIntro();
-      else say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', null, n);
+      else say('テーブルの 3つの ガッツボールから\nすきな 1つを えらびなさい。', null, n);
     } else if (!st.flags.rival1) {
       say('その子と いっしょに 冒険を はじめよう。\n町の北から ガーデンロードへ いける。', null, n);
     } else {
@@ -206,9 +206,11 @@ class FieldScene {
     say(`おお ${st.name}くん、よく来たね！\nきみに GUTS MONSTERSの せかいを おしえよう。`, () => {
       say('この せかいには ゴルフ場の しぜんと\nゴルフボールが とけこんだ', () => {
         say('GUTS MONSTERSが すんでいる。\nなかまにして いっしょに 冒険するんだ。', () => {
-          say('テーブルの 3つの ボールから\nすきな 1匹を えらびなさい。', () => {
+          say('これが ガッツボールだ！\nゴルフの魂が つまった 特別なボールなんだよ。', () => {
+          say('テーブルの 3つの ガッツボールから\nすきな 1つを えらびなさい。', () => {
             Game.setFlag('labIntro'); Save.auto(st);
             then && then();
+          }, n);
           }, n);
         }, n);
       }, n);
