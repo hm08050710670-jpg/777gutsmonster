@@ -19,14 +19,16 @@ class TitleScene {
     return false;
   }
   battleTest() {
-    let st = Save.load();
-    if (!st || !st.party.length) {
-      st = Save.newGame('テスト', 'm');
-      // テスト用パーティ：御三家＋2匹（最大5匹）
-      st.party = ['kokegame', 'hinoshishi', 'amepiyo', 'bubu', 'shibatta'].filter(id => DATA.MONSTERS[id]).slice(0, CONFIG.PARTY_MAX).map(id => makeMonster(id, 7)); Party.full(st);
-      st.items = { 'きずぐすり': 5 };
-      st.flags = { labIntro: true, starter: true };
-    }
+    // テスト用パーティ：毎回ランダム5匹。大きい（最終進化）・中くらい・小さい（進化前）が必ず混ざるようにする
+    const st = Save.newGame('テスト', 'm');
+    const all = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Game.rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const pick = [];
+    for (const stage of [3, 2, 1]) { const c = shuffle(all.filter(id => DATA.MONSTERS[id].stage === stage && !pick.includes(id))); if (c.length) pick.push(c[0]); }
+    for (const id of shuffle(all.slice())) { if (pick.length >= CONFIG.PARTY_MAX) break; if (!pick.includes(id)) pick.push(id); }
+    st.party = shuffle(pick).map(id => makeMonster(id, 7)); Party.full(st);
+    st.items = { 'きずぐすり': 5 };
+    st.flags = { labIntro: true, starter: true };
     st.map = 'road'; st.x = 7; st.y = 5;
     Game.state = st;
     const ids = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
