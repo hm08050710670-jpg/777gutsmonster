@@ -13,6 +13,18 @@ for _a in sys.argv[3:]:
 DIRS = ['down', 'up', 'left', 'right']
 
 # ドット化（town-tiles.py と同じ考え方）：1ドットにつき元のブロック中心付近の中央値を拾う
+# 1pxの濃い縁取り（縮小で元絵の輪郭線が落ちるので、外側に付け直す）
+OUTLINE = (34, 30, 38, 255)
+def outline(img):
+    a = np.asarray(img).copy(); h, w = a.shape[:2]
+    out = np.zeros((h + 2, w + 2, 4), dtype=np.uint8); out[1:-1, 1:-1] = a
+    solid = out[:, :, 3] > 127
+    near = np.zeros_like(solid)
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        near |= np.roll(np.roll(solid, dy, 0), dx, 1)
+    out[near & ~solid] = OUTLINE
+    return Image.fromarray(out, 'RGBA')
+
 def pixelize(img, tw, th):
     arr = np.asarray(img.convert('RGBA')).astype(int); h, w = arr.shape[:2]
     bx, by = w / tw, h / th
@@ -58,7 +70,7 @@ def extract(path, prefix):
         out.setdefault(r, []).append((cx, sl, i))
     # 全コマ共通の倍率（立ちコマの高さ基準）。コマごとに倍率が変わると帽子のロゴ等がズレて見える
     ref_h = max(sl[0].stop - sl[0].start for r in range(4) for (_, sl, _) in out[r])
-    k = H_OUT / ref_h
+    k = (H_OUT - 2) / ref_h   # 上下1pxずつ縁取りを足すぶん小さく取る
     sprites = {}
     for r in range(4):
         for c, (cx, sl, i) in enumerate(sorted(out[r])):
@@ -66,9 +78,9 @@ def extract(path, prefix):
             rgba = np.dstack([crop, np.where(m, 255, 0)]).astype(np.uint8)
             s = Image.fromarray(rgba, 'RGBA')
             wo = max(8, round(s.width * k)); ho = max(8, round(s.height * k))
-            px = pixelize(s, wo, ho)
+            px = outline(pixelize(s, wo, ho))
             # 高さ H_OUT の枠に上端（帽子）を揃えて入れる。足が長いコマは下を切る
-            fr = Image.new('RGBA', (wo, H_OUT), (0, 0, 0, 0)); fr.paste(px, (0, 0))
+            fr = Image.new('RGBA', (px.width, H_OUT), (0, 0, 0, 0)); fr.paste(px, (0, 0))
             sprites[f'{prefix}_{DIRS[r]}{c}'] = fr
     return sprites
 
