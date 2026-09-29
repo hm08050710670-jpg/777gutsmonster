@@ -295,6 +295,11 @@ class FieldScene {
     return Gfx.get(ev.sprite); // NPCは正面のみ（方向別スプライトは未実装）
   }
 
+  // 小物：マスの下中央に置く（絵の大きさが16×16でなくてもよい。街灯など背の高いものは上にはみ出す）
+  drawProp(ctx, name, px, py) {
+    const im = Tiles.get(name); if (!im) return;
+    ctx.drawImage(im, px + Math.floor((CONFIG.TILE - im.width) / 2), py + CONFIG.TILE - im.height);
+  }
   // 画像タイル（屋外）。描けたら true。木は後でまとめて描くので trees に積む
   drawImgTile(ctx, t, tx, ty, px, py, trees) {
     const T = CONFIG.TILE;
@@ -309,12 +314,12 @@ class FieldScene {
       case 'W': grass(); trees.push([px, py]); return true;
       case 'T': ctx.drawImage(Tiles.get('tall'), px, py); return true;
       case 'F': grass(); ctx.drawImage(Tiles.variant('flower', 2, tx, ty), px, py); return true;
-      case 'H': grass(); ctx.drawImage(Tiles.get('hedge'), px, py); return true;
-      case 'S': grass(); ctx.drawImage(Tiles.get('sign'), px, py); return true;
-      case '=': grass(); ctx.drawImage(Tiles.get('fence'), px, py); return true;
+      case 'H': grass(); this.drawProp(ctx, 'hedge', px, py); return true;
+      case 'S': grass(); this.drawProp(ctx, 'sign', px, py); return true;
+      case '=': grass(); this.drawProp(ctx, 'fence', px, py); return true;
       case 'Q': ctx.drawImage(Tiles.variant('stone', 5, tx, ty), px, py); return true;
-      case 'L': grass(); ctx.drawImage(Gfx.get('lamp', 1, false, 'gGh'), px, py); return true;   // 街灯（旧アート、地の草を抜く）
-      case 'B': ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); return false;   // 橋：水の上に従来の橋を重ねる
+      case 'L': grass(); if (Tiles.has('lamp')) this.drawProp(ctx, 'lamp', px, py); else ctx.drawImage(Gfx.get('lamp', 1, false, 'gGh'), px, py); return true;
+      case 'B': ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); if (Tiles.has('bridge')) { ctx.drawImage(Tiles.get('bridge'), px, py); return true; } return false;   // 橋
     }
     return false;
   }

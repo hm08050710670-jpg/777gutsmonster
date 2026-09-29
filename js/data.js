@@ -76,7 +76,7 @@ const DATA = {
   },
   WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
-  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 5, h: 3, door: [2, 2] } },
+  OBJECTS: { house: { w: 7, h: 4, door: [3, 3] }, heal: { w: 7, h: 4, door: [3, 3] }, shop: { w: 7, h: 4, door: [3, 3] }, lab: { w: 7, h: 5, door: [3, 4] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -93,7 +93,7 @@ const DATA = {
         'XXXXXXXXXX',
       ],
       events: [
-        { x: 5, y: 6, kind: 'warp', to: { map: 'town', x: 3, y: 5, dir: 'down' } },
+        { x: 5, y: 6, kind: 'warp', to: { map: 'town', x: 4, y: 5, dir: 'down' } },
         { x: 2, y: 1, kind: 'look', text: 'じぶんの ベッド。\nきょうは よく ねむれた。' },
         { x: 7, y: 1, kind: 'look', text: 'テレビ。ゴルフ中継が ながれている。' },
         { x: 2, y: 3, kind: 'look', text: 'つくえ。ゴルフの スコアカードが おいてある。' },
@@ -102,20 +102,21 @@ const DATA = {
     },
     town: {
       name: 'ガッツタウン', bgm: 'town',
-      // 建物は objects で置く（画像タイル）。文字は地面だけ
+      // 建物は objects で置く（画像タイル 7×4 / 研究所 7×5）。文字は地面だけ
       rows: [
         'WWWWWWWWWPWWWWWWWWWW',
         'WGGGGGGGGPGGGGGGGGGW',
         'WGGGGGGGGPGGGGGGGGGW',
-        'WGGGGGFGGPGGGGGGGGGW',
         'WGGGGGGGGPGGGGGGGGGW',
-        'WGGPGGGSGPGGGGQPQGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
         'WGGGPPPPPPPPPPPPGGGW',
         'WGFGGGGGGPGGGGGGLGGW',
         'WGGGGGGGGPGGGGGGGGGW',
         'WGGGGGGGGPGGGGGGGGGW',
-        'WGGGGGLGGPGGGGGGGGGW',
-        'WGGPPPPPPPPPPPPPGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGPPPPPPPPPPPPGGGW',
         'WGGGGGGGGGGGG~~~GGGW',
         'WGFFGGGGGGGGG~~~GGGW',
         'WGGGGHHHHGGGGGGGGGGW',
@@ -124,18 +125,18 @@ const DATA = {
         'WWWWWWWWWWWWWWWWWWWW',
       ],
       objects: [
-        { sprite: 'house', x: 1, y: 2 }, { sprite: 'lab', x: 13, y: 2 },
-        { sprite: 'house', x: 1, y: 8 }, { sprite: 'shop', x: 13, y: 8 },
+        { sprite: 'house', x: 1, y: 2 }, { sprite: 'lab', x: 12, y: 1 },
+        { sprite: 'heal', x: 1, y: 8 }, { sprite: 'shop', x: 12, y: 8 },
       ],
       events: [
-        { x: 3, y: 4, kind: 'warp', to: { map: 'home', x: 5, y: 5, dir: 'up' } },
-        { x: 15, y: 4, kind: 'warp', to: { map: 'lab', x: 5, y: 5, dir: 'up' } },
-        { x: 3, y: 10, kind: 'warp', to: { map: 'heal', x: 4, y: 4, dir: 'up' } },
-        { x: 15, y: 10, kind: 'warp', to: { map: 'shop', x: 4, y: 4, dir: 'up' } },
+        { x: 4, y: 5, kind: 'warp', to: { map: 'home', x: 5, y: 5, dir: 'up' } },
+        { x: 15, y: 5, kind: 'warp', to: { map: 'lab', x: 5, y: 5, dir: 'up' } },
+        { x: 4, y: 11, kind: 'warp', to: { map: 'heal', x: 4, y: 4, dir: 'up' } },
+        { x: 15, y: 11, kind: 'warp', to: { map: 'shop', x: 4, y: 4, dir: 'up' } },
         { x: 9, y: 0, kind: 'warp', to: { map: 'road', x: 7, y: 20, dir: 'up' } },
-        { x: 7, y: 5, kind: 'sign', text: 'ガッツタウン\nゴルフ場の となりの しずかな町' },
-        { x: 14, y: 5, kind: 'sign', text: 'オクムラ モンスター研究所' },
-        { x: 11, y: 7, kind: 'npc', sprite: 'npc_woman', dir: 'down',
+        { x: 7, y: 7, kind: 'sign', text: 'ガッツタウン\nゴルフ場の となりの しずかな町' },
+        { x: 13, y: 7, kind: 'sign', text: 'オクムラ モンスター研究所' },
+        { x: 11, y: 8, kind: 'npc', sprite: 'npc_woman', dir: 'down',
           text: '北の ガーデンロードには\nやせいの GUTS MONSTERSが いるのよ。' },
         { x: 6, y: 13, kind: 'npc', sprite: 'npc_man', dir: 'right',
           text: 'ここの 芝は ゴルフ場と おなじ\n手入れを しているんだ。' },
@@ -177,7 +178,7 @@ const DATA = {
         'XXXXXXXXXX',
       ],
       events: [
-        { x: 5, y: 5, kind: 'warp', to: { map: 'town', x: 3, y: 11, dir: 'down' } },
+        { x: 5, y: 5, kind: 'warp', to: { map: 'town', x: 4, y: 11, dir: 'down' } },
         { x: 4, y: 2, kind: 'npc', sprite: 'npc_nurse', dir: 'down', heal: true, name: 'うけつけ',
           text: 'ようこそ かいふくの いえへ。\nなかまを げんきに してあげますね。' },
       ],
