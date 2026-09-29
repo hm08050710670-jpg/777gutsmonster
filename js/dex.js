@@ -8,7 +8,7 @@
 const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou', 'nidomu', 'nyakimi', 'nyakimino', 'nyakiageha', 'kinomushi', 'kinomino', 'honeybal'];
 
 // 表示の大きさ（枠に対する割合、既定 1.0）。小さい生き物は小さく見せる
-const DEX_SIZE = { kokemogu: 0.55, nyakimi: 0.5, nyakimino: 0.55, kinomushi: 0.5, kinomino: 0.55 };
+const DEX_SIZE = { kokemogu: 0.55, nyakimi: 0.5, nyakimino: 0.55, kinomushi: 0.5, kinomino: 0.55, shibatta: 0.55, rafubatta: 0.65, amepiyo: 0.6 };
 
 const DEX = [
   // ---- 御三家 ----
