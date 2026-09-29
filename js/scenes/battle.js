@@ -27,7 +27,7 @@ const Puzzle = (() => {
   function fit() {
     if (!inst || el().hidden) return;
     const app = document.getElementById('app'), board = document.getElementById('pz-board');
-    const used = 154 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 12;
+    const used = 136 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 8;
     const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
     board.style.width = w + 'px';
     inst.layout();
@@ -44,7 +44,7 @@ const Puzzle = (() => {
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = document.getElementById('pad');
     if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
-    Game.setViewH(padScene ? CONFIG.H : 154);
+    Game.setViewH(padScene ? CONFIG.H : 136);
   }
   return { show, hide, fit, setEnabled, sync, get busy() { return inst ? inst.busy : false; } };
 })();
@@ -73,15 +73,17 @@ class BattleScene {
     Sound.play(this.trainer ? 'rival' : 'wild');
     Puzzle.show(this);
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`, () => { this.mode = 'command'; }); }
-    else this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`, () => { this.mode = 'command'; });
+    else this.msg(`やせいの ${this.enemy.name}が とびだしてきた！`, () => { this.mode = 'command'; });
     this.next();
   }
 
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step は末尾に積む。途中に差し込むときは queue.unshift。
   static get MSG_BOX() { return { x: 0, y: 120, w: 192, h: 34 }; }   // 戦闘中の会話窓（盤面を出すぶん小さい）
-  say(text, onDone) { Game.push(new DialogScene({ text, onDone, box: BattleScene.MSG_BOX, plain: true })); }
+  // 戦闘中の文章は枠なし：舞台の下に浮かぶ文字で、時間で自動的に進む（タップで早送り）
+  say(text, onDone) { this.toast = { text, t: 0, onDone }; this.mode = 'toast'; }
   msgStep(text, after) { return () => { this.say(text, () => { after && after(); this.next(); }); }; }
+  static get TOAST_FRAMES() { return 66; }
   fnStep(fn) { return () => { fn(); this.next(); }; }
   animStep(who) { return () => { this.anim = who; this.mode = 'anim'; }; }
   msg(text, after) { this.queue.push(this.msgStep(text, after)); }
@@ -93,7 +95,7 @@ class BattleScene {
     const en = this.enemy, st = Game.state;
     const move = en.moves[Game.rand(0, en.moves.length - 1)], m = DATA.MOVES[move.name];
     return [
-      this.msgStep(`${this.foe()}${en.name}の\n${move.name}！`),
+      this.msgStep(`${this.foe()}${en.name}の ${move.name}！`),
       this.fnStep(() => {
         const stab = en.type === m.type ? 1.5 : 1;
         const def = Party.def(st);
@@ -138,7 +140,7 @@ class BattleScene {
     const names = [...attackers].map(i => party[i].name);
     if (total > 0) {
       this.step(() => { this.hit = [...attackers]; });
-      this.msg(names.length === 1 ? `${names[0]}の こうげき！\n${r.combo}コンボ！` : `なかまの こうげき！\n${r.combo}コンボ！`);
+      this.msg(names.length === 1 ? `${names[0]}の こうげき！` : `なかまの こうげき！`);
       this.step(() => { en.hp = Math.max(0, en.hp - total); this.shake = 12; });
       this.queue.push(this.animStep('e'));
       if (bestEff > 1) this.msg('こうかは ばつぐんだ！');
@@ -176,10 +178,10 @@ class BattleScene {
   checkEnd() {
     const st = Game.state, party = this.party(), en = this.enemy;
     if (en.hp <= 0) {
-      this.msg(`${this.foe()}${en.name}を\nたおした！`);
+      this.msg(`${this.foe()}${en.name}を たおした！`);
       if (this.trainer) this.msg(`${this.trainer.name}との しょうぶに かった！`);
       const gain = en.level * 10;
-      this.msg(`なかまは ${gain}の\nけいけんちを もらった！`);
+      this.msg(`けいけんち ${gain} を もらった！`);
       // 全員に経験値。レベルアップした仲間は順に表示
       party.forEach((me, idx) => {
         this.queue.push(() => {
@@ -194,7 +196,7 @@ class BattleScene {
             const grow = { before, after: { maxHp: me.maxHp, atk: me.atk, def: me.def, spd: me.spd } };
             const steps = [
               this.fnStep(() => { this.sparkle = 90; this.sparkleIdx = idx; }),
-              this.msgStep(`……！\n${me.name}は Lv.${me.level}に あがった！`),
+              this.msgStep(`${me.name}は Lv.${me.level}に あがった！`),
               () => { this.grow = grow; this.statsMon = me; this.mode = 'stats'; },
             ];
             const evo = DATA.MONSTERS[me.id].evo;
@@ -214,7 +216,6 @@ class BattleScene {
       });
       this.queue.push(() => this.finish('win'));
     } else if (Party.hp(st) <= 0) {
-      this.msg('なかまは みんな たおれた！');
       this.msg('めのまえが まっくらに なった！');
       this.queue.push(() => this.finish('lose'));
     } else {
@@ -253,8 +254,16 @@ class BattleScene {
       if (Input.pressed('b') || Input.pressed('a')) { Game.pop(); this.onEnd && this.onEnd('view'); }
       return;
     }
-    if (this.mode === 'stats') {
-      if (Input.pressed('a') || Input.pressed('b')) { this.mode = 'busy'; this.next(); }
+    if (this.mode === 'stats') {   // のうりょく表：約2.5秒で自動で閉じる（タップでも閉じる）
+      this.statsT = (this.statsT || 0) + 1;
+      if (this.statsT >= 150 || Input.pressed('a') || Input.pressed('b')) { this.statsT = 0; this.mode = 'busy'; this.next(); }
+      return;
+    }
+    if (this.mode === 'toast') {
+      const t = this.toast; t.t++;
+      if (t.t >= BattleScene.TOAST_FRAMES || (t.t > 12 && (Input.pressed('a') || Input.pressed('b')))) {
+        this.toast = null; this.mode = 'busy'; const f = t.onDone; f && f();
+      }
       return;
     }
     if (this.mode === 'anim') {
@@ -275,9 +284,9 @@ class BattleScene {
   draw(ctx, frame) {
     const en = this.enemy, st = Game.state;
     const W = CONFIG.W, H = CONFIG.H;
-    const AH = 154;
+    const AH = this.viewer ? 154 : 136;
     const bgImg = Bg.get(this.bg);
-    if (bgImg) ctx.drawImage(bgImg, 0, 0, W, AH);
+    if (bgImg) ctx.drawImage(bgImg, 0, 0, W, 152);
     else {
       const sky = ctx.createLinearGradient(0, 0, 0, 80);
       sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
@@ -310,8 +319,17 @@ class BattleScene {
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 100, 30, false);
     if (this.mode !== 'end') this.drawCount(ctx, 160, 14);
 
-    // なかま列（6枠）＋ 共通HP
+    // なかま列 ＋ 共通HP
     this.drawParty(ctx, frame);
+    // 浮かぶ文章（枠なし・縁取り）
+    if (this.toast) {
+      const lines = this.toast.text.split('\n'); const y0 = 123;
+      lines.forEach((l, i) => {
+        const w = Text.width(l), x = Math.floor((W - w) / 2), y = y0 + i * 12;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1]]) Text.draw(ctx, l, x + dx, y + dy, '#1b2418');
+        Text.draw(ctx, l, x, y, '#fff6d8');
+      });
+    }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
   }
 
@@ -400,7 +418,6 @@ class BattleScene {
       Text.draw(ctx, String(a).padStart(3), x + 94, ry);
       Text.draw(ctx, `(+${a - b})`, x + 126, ry, THEME.green);
     });
-    Text.moreArrow(ctx, x + w - 16, y + h - 11, frame);
   }
 }
 
