@@ -34,7 +34,7 @@ const Mon = (() => {
   const hasPx = id => !!(pimg && pmeta[id]);
   // 表示倍率：相手側（正面）は進化段階／個別指定で変える。味方側（後ろ姿）は全員同じ大きさ
   function sizeOf(id, back) {
-    if (back) return 1;
+    if (back) return CONFIG.PARTY_BACK_SIZE || 1;   // 味方側は全員同じ倍率
     const d = DATA.MONSTERS[id];
     return (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
   }
