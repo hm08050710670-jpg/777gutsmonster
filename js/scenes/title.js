@@ -26,7 +26,7 @@ class TitleScene {
   }
   // 裏技：町へワープ。セーブがあればその手持ちで、無ければテスト用パーティで
   warpMenu() {
-    const places = [['ガッツタウン', 'town', 9, 7], ['バーディタウン', 'town2', 9, 12]];
+    const places = [['ガッツタウン', 'town', 9, 9], ['バーディタウン', 'town2', 9, 10]];
     ask('どこへ とぶ？', [...places.map(p => p[0]), 'やめる'], i => {
       if (i < 0 || i >= places.length) return;
       const [, map, x, y] = places[i];
