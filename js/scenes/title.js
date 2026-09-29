@@ -22,7 +22,8 @@ class TitleScene {
     let st = Save.load();
     if (!st || !st.party.length) {
       st = Save.newGame('テスト', 'm');
-      st.party = DATA.STARTERS.map(id => makeMonster(id, 7)); Party.full(st);
+      // テスト用パーティ：御三家＋2匹（最大5匹）
+      st.party = ['kokegame', 'hinoshishi', 'amepiyo', 'bubu', 'shibatta'].filter(id => DATA.MONSTERS[id]).slice(0, CONFIG.PARTY_MAX).map(id => makeMonster(id, 7)); Party.full(st);
       st.items = { 'きずぐすり': 5 };
       st.flags = { labIntro: true, starter: true };
     }
