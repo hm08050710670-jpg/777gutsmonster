@@ -2,21 +2,45 @@
 // タイトル画面 → 主人公設定（なまえ → せいべつ → プレビュー）
 // ============================================================
 class TitleScene {
-  constructor() { this.overlay = false; this.sel = 0; this.menu = false; this.code = 0; this.debug = false; }
+  constructor() { this.overlay = false; this.sel = 0; this.menu = false; this.code = 0; this.codeWait = 0; this.debug = false; }
   enter() { Sound.stop(); }
   items() {
     const it = Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい'];
     if (this.debug) it.push('バトルテスト', 'モンスターみる');
     return it;
   }
-  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」が出る（いきなり野生戦。セーブは変えない）
+  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」「モンスターみる」が出る（セーブは変えない）
+  //        ↑↓B↓↓ のあと続けて ↑ → 町へワープ（ガッツタウン／バーディタウン）
   checkCode() {
     const seq = ['up', 'down', 'b', 'down', 'down'];
     const k = ['up', 'down', 'left', 'right', 'a', 'b', 'start'].find(x => Input.pressed(x));
+    if (this.codeWait > 0) {   // 5つ目まで入った直後：少し待って ↑ ならワープ、来なければデバッグメニュー
+      if (k === 'up') { this.codeWait = 0; this.warpMenu(); return true; }
+      if (--this.codeWait === 0 || (k && k !== 'up')) { this.codeWait = 0; this.debug = true; this.menu = true; this.sel = this.items().length - 1; }
+      return true;
+    }
     if (!k) return false;
     this.code = k === seq[this.code] ? this.code + 1 : (k === seq[0] ? 1 : 0);
-    if (this.code >= seq.length) { this.code = 0; this.debug = true; this.menu = true; this.sel = this.items().length - 1; return true; }
+    if (this.code >= seq.length) { this.code = 0; this.codeWait = 45; return true; }
     return false;
+  }
+  // 裏技：町へワープ。セーブがあればその手持ちで、無ければテスト用パーティで
+  warpMenu() {
+    const places = [['ガッツタウン', 'town', 9, 7], ['バーディタウン', 'town2', 9, 12]];
+    ask('どこへ とぶ？', [...places.map(p => p[0]), 'やめる'], i => {
+      if (i < 0 || i >= places.length) return;
+      const [, map, x, y] = places[i];
+      let st = Save.load();
+      if (!st || !st.party.length) {
+        st = Save.newGame('テスト', 'm');
+        const ids = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
+        st.party = ['kokegame', 'hinoshishi', 'amepiyo'].filter(id => DATA.MONSTERS[id]).map(id => makeMonster(id, 10)); Party.full(st);
+        st.items = { 'きずぐすり': 5 }; st.flags = { labIntro: true, starter: true, rival1: true };
+      }
+      st.map = map; st.x = x; st.y = y; st.dir = 'down';
+      Game.state = st;
+      Game.replace(new FieldScene());
+    });
   }
   battleTest() {
     // テスト用パーティ：毎回ランダム5匹。大きい（最終進化）・中くらい・小さい（進化前）が必ず混ざるようにする
