@@ -6,7 +6,7 @@ const CONFIG = {
   H: 208,            // 13マス
   TILE: 16,
   FPS: 60,
-  WALK_FRAMES: 8,
+  WALK_FRAMES: 16,   // 1歩のコマ数（16＝1コマ1px。速いと画面のスクロールがにじんで見える）
   TEXT_SPEED: 2,
   ENCOUNTER_RATE: 12,
   GRACE_STEPS: 4,    // 戦闘直後はこの歩数だけ遭遇しない

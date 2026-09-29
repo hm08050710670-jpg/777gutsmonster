@@ -7,7 +7,7 @@ import sys, json
 from PIL import Image
 import numpy as np
 from scipy import ndimage
-H_OUT = 20          # 出力の高さ（--h=N で変更。幅は比率から）
+H_OUT = 18          # 出力の高さ（--h=N で変更。幅は比率から）
 for _a in sys.argv[3:]:
     if _a.startswith('--h='): H_OUT = int(_a[4:])
 DIRS = ['down', 'up', 'left', 'right']
