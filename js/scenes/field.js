@@ -59,6 +59,7 @@ class FieldScene {
     }
     return false;
   }
+  doorAt(x, y) { return this.objects().some(o => { const d = DATA.OBJECTS[o.sprite]; return d && x === o.x + d.door[0] && y === o.y + d.door[1]; }); }
   canWalk(x, y) {
     if (!DATA.WALKABLE.has(this.tileAt(x, y))) return false;
     if (this.objectBlocks(x, y)) return false;
@@ -284,8 +285,10 @@ class FieldScene {
 
   heroSprite(dir, step) {
     const g = Game.state.gender === 'f' ? 'hf' : 'hm';
+    // 画像スプライト（立ち・歩き1・歩き2、4方向）があればそれを使う
+    if (Tiles.has(`${g}_${dir}${step}`)) return Tiles.get(`${g}_${dir}${step}`);
     const base = dir === 'left' ? 'right' : dir;
-    return Gfx.get(`${g}_${base}${step}`, 1, dir === 'left');
+    return Gfx.get(`${g}_${base}${Math.min(step, 1)}`, 1, dir === 'left');
   }
   npcSprite(ev) {
     const dir = ev.face || ev.dir || 'down';
@@ -295,7 +298,8 @@ class FieldScene {
   // 画像タイル（屋外）。描けたら true。木は後でまとめて描くので trees に積む
   drawImgTile(ctx, t, tx, ty, px, py, trees) {
     const T = CONFIG.TILE;
-    const same = (dx, dy) => this.tileAt(tx + dx, ty + dy) === t;
+    // 道は建物のドアにも繋がる（ドア前の道が丸い孤島にならないように）
+    const same = (dx, dy) => this.tileAt(tx + dx, ty + dy) === t || (t === 'P' && this.doorAt(tx + dx, ty + dy));
     const mask = () => (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0);
     const grass = () => ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py);
     switch (t) {
@@ -309,6 +313,7 @@ class FieldScene {
       case 'S': grass(); ctx.drawImage(Tiles.get('sign'), px, py); return true;
       case '=': grass(); ctx.drawImage(Tiles.get('fence'), px, py); return true;
       case 'Q': ctx.drawImage(Tiles.variant('stone', 5, tx, ty), px, py); return true;
+      case 'L': grass(); ctx.drawImage(Gfx.get('lamp', 1, false, 'gGh'), px, py); return true;   // 街灯（旧アート、地の草を抜く）
       case 'B': ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); return false;   // 橋：水の上に従来の橋を重ねる
     }
     return false;
@@ -369,7 +374,9 @@ class FieldScene {
       ctx.drawImage(Gfx.get(a.sprite), a.x * T - ax - camX + bx, a.y * T - ay - camY - 2 + by);
     }
     // 主人公
-    const step = this.moving > 0 && (this.moving % 8) < 4 ? this.animStep : 0;
-    ctx.drawImage(this.heroSprite(st.dir, step), st.x * T - ox - camX + bx, st.y * T - oy - camY - 2 + by);
+    // 歩き：立ち→歩き1→立ち→歩き2 の順（animStep が1歩ごとに切り替わる）
+    const step = this.moving > 0 && (this.moving % 8) < 4 ? 1 + this.animStep : 0;
+    const hs = this.heroSprite(st.dir, step);
+    ctx.drawImage(hs, st.x * T - ox - camX + bx + Math.floor((T - hs.width) / 2), st.y * T - oy - camY + by + T - hs.height - 1);
   }
 }

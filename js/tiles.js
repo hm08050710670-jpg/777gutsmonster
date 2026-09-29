@@ -6,22 +6,29 @@
 const Tiles = (() => {
   let img = null, meta = {};
   const cache = new Map();
-  async function load() {
-    if (CONFIG.TILES_META_INLINE) meta = CONFIG.TILES_META_INLINE;
-    else { try { meta = await (await fetch('assets/tiles.json')).json(); } catch (e) { meta = {}; } }
-    try {
-      img = new Image();
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = CONFIG.TILES_IMG || 'assets/tiles.png'; });
-    } catch (e) { img = null; }
+  // アトラス（画像＋位置表）を読む。inline は単一ファイル版で埋め込んだ位置表
+  async function loadAtlas(imgSrc, metaSrc, inline) {
+    let m = inline;
+    if (!m) { try { m = await (await fetch(metaSrc)).json(); } catch (e) { return; } }
+    const im = new Image();
+    try { await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = imgSrc; }); } catch (e) { return; }
+    for (const k of Object.keys(m)) meta[k] = { img: im, r: m[k] };
+    img = img || im;
   }
-  const has = name => !!(img && meta[name]);
+  async function load() {
+    await Promise.all([
+      loadAtlas(CONFIG.TILES_IMG || 'assets/tiles.png', 'assets/tiles.json', CONFIG.TILES_META_INLINE),
+      loadAtlas(CONFIG.HERO_IMG || 'assets/hero.png', 'assets/hero.json', CONFIG.HERO_META_INLINE),
+    ]);
+  }
+  const has = name => !!meta[name];
   function get(name) {
     if (!has(name)) return null;
     const key = 't:' + name;
     if (!cache.has(key)) {
-      const [x, y, w, h] = meta[name];
+      const { img: im, r: [x, y, w, h] } = meta[name];
       const c = document.createElement('canvas'); c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, w, h);
+      c.getContext('2d').drawImage(im, x, y, w, h, 0, 0, w, h);
       cache.set(key, c);
     }
     return cache.get(key);
@@ -61,5 +68,5 @@ const Tiles = (() => {
     }
     return cache.get(key);
   }
-  return { load, has, get, variant, auto, get ready() { return !!img; } };
+  return { load, has, get, variant, auto, get ready() { return has('grass0'); } };
 })();

@@ -30,7 +30,7 @@ const PALETTE = {
 const Gfx = (() => {
   const cache = new Map();
 
-  function build(rows, scale = 1, flip = false) {
+  function build(rows, scale = 1, flip = false, skip = '') {
     const h = rows.length, w = Math.max(...rows.map(r => r.length));
     const c = document.createElement('canvas');
     c.width = w * scale; c.height = h * scale;
@@ -38,7 +38,7 @@ const Gfx = (() => {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const ch = rows[y][x];
       const col = PALETTE[ch];
-      if (!col) continue;
+      if (!col || skip.includes(ch)) continue;
       g.fillStyle = col;
       g.fillRect((flip ? w - 1 - x : x) * scale, y * scale, scale, scale);
     }
@@ -78,11 +78,11 @@ const Gfx = (() => {
     return rows;
   }
 
-  function get(name, scale = 1, flip = false) {
-    const key = `${name}:${scale}:${flip}`;
+  function get(name, scale = 1, flip = false, skip = '') {
+    const key = `${name}:${scale}:${flip}:${skip}`;
     if (!cache.has(key)) {
       const rows = ART[name] || genTile(name);
-      cache.set(key, build(rows, scale, flip));
+      cache.set(key, build(rows, scale, flip, skip));
     }
     return cache.get(key);
   }
