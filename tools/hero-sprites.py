@@ -7,7 +7,9 @@ import sys, json
 from PIL import Image
 import numpy as np
 from scipy import ndimage
-H_OUT = 22          # 出力の高さ（幅は比率から。1マス16pxより少し背が高い）
+H_OUT = 20          # 出力の高さ（--h=N で変更。幅は比率から）
+for _a in sys.argv[3:]:
+    if _a.startswith('--h='): H_OUT = int(_a[4:])
 DIRS = ['down', 'up', 'left', 'right']
 
 # ドット化（town-tiles.py と同じ考え方）：1ドットにつき元のブロック中心付近の中央値を拾う
@@ -54,14 +56,20 @@ def extract(path, prefix):
     for cy, cx, sl, i in comps:
         r = min(range(4), key=lambda k: abs(rows[k] - cy))
         out.setdefault(r, []).append((cx, sl, i))
+    # 全コマ共通の倍率（立ちコマの高さ基準）。コマごとに倍率が変わると帽子のロゴ等がズレて見える
+    ref_h = max(sl[0].stop - sl[0].start for r in range(4) for (_, sl, _) in out[r])
+    k = H_OUT / ref_h
     sprites = {}
     for r in range(4):
         for c, (cx, sl, i) in enumerate(sorted(out[r])):
             crop = a[sl]; m = lab2[sl] == i
             rgba = np.dstack([crop, np.where(m, 255, 0)]).astype(np.uint8)
             s = Image.fromarray(rgba, 'RGBA')
-            k = H_OUT / s.height; wo = max(8, round(s.width * k))
-            sprites[f'{prefix}_{DIRS[r]}{c}'] = pixelize(s, wo, H_OUT)
+            wo = max(8, round(s.width * k)); ho = max(8, round(s.height * k))
+            px = pixelize(s, wo, ho)
+            # 高さ H_OUT の枠に上端（帽子）を揃えて入れる。足が長いコマは下を切る
+            fr = Image.new('RGBA', (wo, H_OUT), (0, 0, 0, 0)); fr.paste(px, (0, 0))
+            sprites[f'{prefix}_{DIRS[r]}{c}'] = fr
     return sprites
 
 sprites = {}
