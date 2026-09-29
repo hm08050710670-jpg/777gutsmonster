@@ -374,8 +374,9 @@ class FieldScene {
       ctx.drawImage(Gfx.get(a.sprite), a.x * T - ax - camX + bx, a.y * T - ay - camY - 2 + by);
     }
     // 主人公
-    // 歩き：立ち→歩き1→立ち→歩き2 の順（animStep が1歩ごとに切り替わる）
-    const step = this.moving > 0 && (this.moving % 8) < 4 ? 1 + this.animStep : 0;
+    // 歩き：1歩の間ずっと歩きコマ（1歩ごとに歩き1／歩き2を交互）。止まったら立ち
+    //   ※以前は1歩8コマのうち3コマしか歩きコマが出ず、滑って見えた
+    const step = this.moving > 0 ? 1 + this.animStep : 0;
     const hs = this.heroSprite(st.dir, step);
     ctx.drawImage(hs, st.x * T - ox - camX + bx + Math.floor((T - hs.width) / 2), st.y * T - oy - camY + by + T - hs.height - 1);
   }
