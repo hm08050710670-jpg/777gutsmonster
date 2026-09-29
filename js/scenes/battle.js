@@ -2,6 +2,56 @@
 // 戦闘（1対1・ターン制・初代風レイアウト）
 //   new BattleScene({ enemy, onEnd(result) })  result: 'win'|'lose'|'run'
 // ============================================================
+// ボールの色 → タイプ（pink は回復）
+const BALL_TYPE = { red: 'ほのお', blue: 'みず', green: 'くさ', yellow: 'でんき', purple: 'じめん' };
+const ENEMY_COUNT = 3;   // 相手は 3 ターンごとに攻撃
+
+// 盤面（DOM）の管理：戦闘中だけパッドの代わりに表示する
+const Puzzle = (() => {
+  let inst = null, scene = null;
+  const el = () => document.getElementById('puzzle');
+  function show(s) {
+    scene = s;
+    el().hidden = false; document.getElementById('pad').hidden = true;
+    if (!inst) {
+      inst = PazugoruPuzzle.mount(document.getElementById('pz-board'), {
+        images: CONFIG.BALL_IMAGES || {},
+        onResolve: r => { if (scene) scene.onPuzzle(r); },
+      });
+      document.getElementById('pz-item').addEventListener('click', () => scene && scene.pressItem());
+      document.getElementById('pz-party').addEventListener('click', () => scene && scene.pressParty());
+      document.getElementById('pz-run').addEventListener('click', () => scene && scene.pressRun());
+    } else { inst.reset(); }
+    inst.lock();
+    fit();
+  }
+  function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; }
+  // 盤面の大きさ：残りの高さに収まる幅にする（6×5）
+  function fit() {
+    if (!inst || el().hidden) return;
+    const app = document.getElementById('app'), board = document.getElementById('pz-board');
+    const used = document.getElementById('note').offsetHeight + document.getElementById('screen').getBoundingClientRect().height + 18 + 60;
+    const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
+    board.style.width = w + 'px';
+    inst.layout();
+  }
+  function setEnabled(on) {
+    if (!inst) return;
+    if (on) inst.unlock(); else inst.lock();
+    ['pz-item', 'pz-party', 'pz-run'].forEach(id => { document.getElementById(id).disabled = !on; });
+  }
+  window.addEventListener('resize', () => setTimeout(fit, 50));
+  // 毎フレーム：どうぐ・なかまの画面が上に乗っている間だけパッドに切り替える（十字キーが必要なため）
+  function sync(scenes) {
+    if (!scene || !scenes.includes(scene)) return;
+    const top = scenes[scenes.length - 1];
+    const padScene = top instanceof ItemScene || top instanceof PartyScene;
+    const pz = el(), pad = document.getElementById('pad');
+    if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
+  }
+  return { show, hide, fit, setEnabled, sync, get busy() { return inst ? inst.busy : false; } };
+})();
+
 class BattleScene {
   constructor(opt) {
     this.overlay = false;
@@ -16,6 +66,7 @@ class BattleScene {
     this.bg = opt.bg || Bg.pick(Game.state.map);          // 背景（場所・時刻で決まる）
     this.viewer = !!opt.viewer;                            // 裏技：モンスター閲覧（戦わない）
     this.shake = 0;
+    this.count = ENEMY_COUNT;   // 相手の攻撃までのターン数
   }
   me() { return Game.state.party[this.pidx]; }
 
@@ -23,6 +74,7 @@ class BattleScene {
   enter() {
     if (this.viewer) { this.mode = 'view'; this.ids = Object.keys(DATA.MONSTERS); this.vi = this.ids.indexOf(this.enemy.id); this.bi = Bg.NAMES.indexOf(this.bg); return; }
     Sound.play(this.trainer ? 'rival' : 'wild');
+    Puzzle.show(this);
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`); }
     else this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`);
     this.msg(`いけっ！ ${this.me().name}！`, () => { this.mode = 'command'; });
@@ -62,6 +114,86 @@ class BattleScene {
         this.next();
       },
     ];
+  }
+
+  // 盤面を消したときの処理：色ごとに攻撃（pinkは回復）→ 相手のカウント → 相手の攻撃
+  onPuzzle(r) {
+    if (this.mode !== 'command') return;
+    this.mode = 'busy'; Puzzle.setEnabled(false);
+    const me = this.me(), en = this.enemy;
+    const comboMul = 1 + 0.25 * (r.combo - 1);
+    let total = 0, bestEff = 1, worstEff = 1, heal = 0;
+    for (const [color, n] of Object.entries(r.counts)) {
+      if (color === 'pink') { heal += Math.round(me.maxHp * 0.05 * n); continue; }
+      const type = BALL_TYPE[color]; if (!type) continue;
+      const eff = (DATA.TYPES[type] || {})[en.type] ?? 1;
+      const stab = me.type === type ? 1.5 : 1;
+      const power = n * 13;   // 3個 ≒ たいあたり1回ぶん
+      const base = Math.floor(Math.floor(Math.floor(2 * me.level / 5 + 2) * power * me.atk / en.def) / 50) + 2;
+      total += Math.max(1, Math.floor(base * stab * eff * comboMul * Game.rand(217, 255) / 255));
+      bestEff = Math.max(bestEff, eff); worstEff = Math.min(worstEff, eff);
+    }
+    if (total > 0) {
+      this.msg(`${me.name}の こうげき！\n${r.combo}コンボ！`);
+      this.step(() => { en.hp = Math.max(0, en.hp - total); this.shake = 12; });
+      this.queue.push(this.animStep('e'));
+      if (bestEff > 1) this.msg('こうかは ばつぐんだ！');
+      else if (worstEff < 1 && bestEff <= 1) this.msg('こうかは いまひとつの ようだ。');
+    }
+    if (heal > 0) {
+      this.step(() => { me.hp = Math.min(me.maxHp, me.hp + heal); });
+      this.msg(`${me.name}の HPが かいふくした！`);
+      this.step(() => { this.shownHp.p = me.hp; });
+    }
+    // 相手の番（倒れていなければ）
+    this.queue.push(() => {
+      if (en.hp > 0 && me.hp > 0) {
+        this.count--;
+        if (this.count <= 0) {
+          this.count = ENEMY_COUNT;
+          this.queue.unshift(...this.moveSteps(en, me, en.moves[Game.rand(0, en.moves.length - 1)], false));
+        }
+      }
+      this.next();
+    });
+    this.queue.push(() => { this.checkEnd(); this.next(); });
+    this.next();
+  }
+  // 盤面の上のボタン
+  pressItem() {
+    if (this.mode !== 'command') return;
+    Game.push(new ItemScene({ inBattle: true, onUse: name => {
+      const me = this.me();
+      if (me.hp >= me.maxHp) { say(`${me.name}の HPは まんたんだ。`); return; }
+      this.mode = 'busy';
+      this.step(() => { Game.state.items[name]--; me.hp = Math.min(me.maxHp, me.hp + DATA.ITEMS[name].heal); this.shownHp.p = me.hp; });
+      this.msg(`${me.name}の HPが かいふくした！`);
+      this.queue.push(() => { this.enemyTurnOnly(); });
+      this.next();
+    } }));
+  }
+  pressParty() {
+    if (this.mode !== 'command') return;
+    Game.push(new PartyScene({ onPick: i => {
+      const m = Game.state.party[i];
+      if (m.hp <= 0) { say(`${m.name}は たたかえない！`); return; }
+      if (i === this.pidx) { say(`${m.name}は もう でている！`); return; }
+      this.mode = 'busy';
+      this.msg(`もどれ！ ${this.me().name}！`);
+      this.step(() => { this.pidx = i; this.shownHp.p = m.hp; });
+      this.msg(`いけっ！ ${m.name}！`);
+      this.queue.push(() => { this.enemyTurnOnly(); });
+      this.next();
+    } }));
+  }
+  pressRun() { if (this.mode !== 'command') return; this.mode = 'busy'; this.tryRun(); }
+  // どうぐ・交代のあと：相手のカウントを進める（0なら攻撃）
+  enemyTurnOnly() {
+    const en = this.enemy, me = this.me();
+    this.count--;
+    if (this.count <= 0) { this.count = ENEMY_COUNT; this.queue.unshift(...this.moveSteps(en, me, en.moves[Game.rand(0, en.moves.length - 1)], false)); }
+    this.queue.push(() => { this.checkEnd(); this.next(); });
+    this.next();
   }
 
   playerTurn(move) {
@@ -134,7 +266,7 @@ class BattleScene {
     if (this.trainer) { this.msg('しょうぶの さいちゅうに にげられない！'); this.queue.push(() => { this.mode = 'command'; }); this.next(); return; }
     const ok = me.spd >= en.spd || Math.random() < 0.7;
     if (ok) { this.msg('うまく にげきれた！'); this.queue.push(() => this.finish('run')); }
-    else { this.msg('にげられない！'); this.queue.push(() => { this.playerTurnEnemyOnly(); }); }
+    else { this.msg('にげられない！'); this.queue.push(() => { this.enemyTurnOnly(); }); }
     this.next();
   }
   playerTurnEnemyOnly() {
@@ -146,6 +278,7 @@ class BattleScene {
 
   finish(result) {
     this.mode = 'end';
+    Puzzle.hide();
     Game.pop();
     const m = DATA.MAPS[Game.state.map]; Sound.play(m && m.bgm);
     this.onEnd && this.onEnd(result);
@@ -177,6 +310,10 @@ class BattleScene {
       return;
     }
     if (this.mode === 'command') {
+      Puzzle.setEnabled(Game.top() === this);
+      return;
+    }
+    if (this.mode === 'command_old') {
       if (Input.pressed('up') || Input.pressed('down')) this.cmd ^= 2;
       if (Input.pressed('left') || Input.pressed('right')) this.cmd ^= 1;
       if (Input.pressed('a')) {
@@ -254,6 +391,11 @@ class BattleScene {
     // 下部ウィンドウ
     const by = H - 56;
     if (this.mode === 'command') {
+      Text.box(ctx, 0, by, W, 56);
+      Text.draw(ctx, 'ボールを うごかして こうげき！', 8, by + 12);
+      Text.draw(ctx, `${this.foe()}${en.name}の こうげきまで`, 8, by + 28, THEME.textDim);
+      Text.draw(ctx, `あと ${this.count}`, 8, by + 40, this.count <= 1 ? THEME.hpLow : THEME.green);
+    } else if (this.mode === 'command_old') {
       Text.box(ctx, 0, by, 90, 56);
       Text.draw(ctx, `${me.name}は`, 8, by + 14);
       Text.draw(ctx, 'どうする？', 8, by + 30);

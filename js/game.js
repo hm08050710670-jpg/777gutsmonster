@@ -48,6 +48,7 @@ const Game = (() => {
   function update() {
     const s = top();
     if (s) s.update(frame);
+    if (typeof Puzzle !== 'undefined') Puzzle.sync(scenes);
     Input.update();
     frame++;
   }

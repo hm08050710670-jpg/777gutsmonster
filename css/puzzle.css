@@ -1,0 +1,29 @@
+/* パズゴル パズル部分 スタイル */
+.pz-board{position:relative;width:100%;border-radius:6px;border:1.5px solid rgba(255,255,255,.22);overflow:hidden;
+  background:repeating-conic-gradient(#1f5c31 0 25%,#174a29 0 50%) 0 0/calc(200%/6) calc(200%/5);   /* 市松（6×5用） */
+  box-shadow:0 0 0 1px rgba(0,0,0,.35),inset 0 0 0 1px rgba(0,0,0,.25);touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.pz-ball{position:absolute;left:0;top:0;transition:transform .09s ease-out;will-change:transform;background-size:100% 100%;background-repeat:no-repeat;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+.pz-ball.held{transition:none;z-index:10;filter:drop-shadow(0 10px 8px rgba(0,0,0,.5))}
+.pz-ball.pop{animation:pz-pop .26s ease-in forwards}
+@keyframes pz-pop{0%{transform:var(--t) scale(1)}40%{transform:var(--t) scale(1.25);filter:brightness(1.6)}100%{transform:var(--t) scale(0);opacity:0}}
+.pz-ball.nofx{transition:none}
+
+/* ---- 画像が届くまでの仮ボール（CSS描画） ---- */
+.pz-ball{border-radius:50%;box-sizing:border-box}
+.pz-ball.red   {background:radial-gradient(circle at 35% 30%,#ffb0a0 0,#ff5a3c 35%,#b91d10 100%)}
+.pz-ball.blue  {background:radial-gradient(circle at 35% 30%,#b8e6ff 0,#3d9cf0 35%,#0f4fa8 100%)}
+.pz-ball.green {background:radial-gradient(circle at 35% 30%,#c9f5a8 0,#5fc94c 35%,#237a22 100%)}
+.pz-ball.yellow{background:radial-gradient(circle at 35% 30%,#fff5b0 0,#f7d23c 35%,#b58a0c 100%)}
+.pz-ball.purple{background:radial-gradient(circle at 35% 30%,#e0d0f5 0,#9a7bc8 35%,#4c2f7a 100%)}
+.pz-ball.pink  {background:radial-gradient(circle at 35% 30%,#ffe0ee 0,#ff8fc0 35%,#c2397e 100%)}
+.pz-ball[style*="background-image"]{background-color:transparent;border-radius:0}
+
+/* ---- 戦闘中のパズル領域（仮想パッドの場所に出す） ---- */
+#puzzle[hidden]{display:none}
+#puzzle{flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 6px 0;box-sizing:border-box;min-height:140px}
+#pz-actions{display:flex;gap:8px;width:100%;justify-content:center}
+#pz-actions .pz-btn{background:var(--btn);color:var(--btn-text);border:none;border-bottom:3px solid var(--btn-edge);height:32px;padding:0 16px;border-radius:16px;font-size:13px;font-weight:700;letter-spacing:.05em;touch-action:manipulation}
+#pz-actions .pz-btn:active{background:var(--btn-active);color:var(--text)}
+#pz-actions .pz-btn:disabled{opacity:.4}
+#pz-board{width:100%}

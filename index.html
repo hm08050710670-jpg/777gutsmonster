@@ -10,6 +10,7 @@
 <title>GUTS MONSTERS</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/puzzle.css">
 </head>
 <body>
 <div id="app">
@@ -37,6 +38,16 @@
     <button class="pbtn pill" id="menu-btn" data-key="start" aria-label="メニュー">MENU</button>
   </div>
 
+  <!-- ③' 戦闘中のパズル（パッドの代わりに表示） -->
+  <div id="puzzle" hidden>
+    <div id="pz-actions">
+      <button class="pz-btn" id="pz-item" type="button">どうぐ</button>
+      <button class="pz-btn" id="pz-party" type="button">なかま</button>
+      <button class="pz-btn" id="pz-run" type="button">にげる</button>
+    </div>
+    <div id="pz-board"></div>
+  </div>
+
   <!-- ④ 補助表示 -->
   <div id="aux"><span id="saved">AUTO SAVE ✓</span></div>
 
@@ -58,6 +69,7 @@
 <script src="js/bg.js"></script>
 <script src="js/dex.js"></script>
 <script src="js/data.js"></script>
+<script src="js/puzzle.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/save.js"></script>

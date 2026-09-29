@@ -77,6 +77,8 @@ print('battle backgrounds embedded:', len(bg_imgs))
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
+if os.path.exists('css/puzzle.css'):
+    html = html.replace('<link rel="stylesheet" href="css/puzzle.css">', '<style>\n' + open('css/puzzle.css', encoding='utf-8').read() + '\n</style>')
 
 # JS を読み込み順にインライン化（フォントURLは data: に差し替え）
 def inline_js(m):
