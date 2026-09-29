@@ -27,7 +27,7 @@ const Puzzle = (() => {
   function fit() {
     if (!inst || el().hidden) return;
     const app = document.getElementById('app'), board = document.getElementById('pz-board');
-    const used = 136 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 8;
+    const used = 122 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 8;
     const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
     board.style.width = w + 'px';
     inst.layout();
@@ -44,7 +44,7 @@ const Puzzle = (() => {
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = document.getElementById('pad');
     if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
-    Game.setViewH(padScene ? CONFIG.H : 136);
+    Game.setViewH(padScene ? CONFIG.H : 122);
   }
   return { show, hide, fit, setEnabled, sync, get busy() { return inst ? inst.busy : false; } };
 })();
@@ -80,10 +80,10 @@ class BattleScene {
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step は末尾に積む。途中に差し込むときは queue.unshift。
   static get MSG_BOX() { return { x: 0, y: 120, w: 192, h: 34 }; }   // 戦闘中の会話窓（盤面を出すぶん小さい）
-  // 戦闘中の文章は枠なし：舞台の下に浮かぶ文字で、時間で自動的に進む（タップで早送り）
-  say(text, onDone) { this.toast = { text, t: 0, onDone }; this.mode = 'toast'; }
+  // 戦闘中は文章を出さない。msgStep は短い間（pause）を置くだけ（テンポ用）
+  say(text, onDone) { this.pauseT = 0; this.pauseDone = onDone; this.mode = 'pause'; }
   msgStep(text, after) { return () => { this.say(text, () => { after && after(); this.next(); }); }; }
-  static get TOAST_FRAMES() { return 66; }
+  static get PAUSE_FRAMES() { return 22; }
   fnStep(fn) { return () => { fn(); this.next(); }; }
   animStep(who) { return () => { this.anim = who; this.mode = 'anim'; }; }
   msg(text, after) { this.queue.push(this.msgStep(text, after)); }
@@ -101,7 +101,7 @@ class BattleScene {
         const def = Party.def(st);
         const base = Math.floor(Math.floor(Math.floor(2 * en.level / 5 + 2) * m.power * en.atk / def) / 50) + 2;
         const dmg = Math.max(1, Math.floor(base * stab * Game.rand(217, 255) / 255));
-        Party.set(st, Party.hp(st) - dmg);
+        Party.set(st, Party.hp(st) - dmg); this.pshake = 12;
       }),
       this.animStep('p'),
     ];
@@ -259,13 +259,11 @@ class BattleScene {
       if (this.statsT >= 150 || Input.pressed('a') || Input.pressed('b')) { this.statsT = 0; this.mode = 'busy'; this.next(); }
       return;
     }
-    if (this.mode === 'toast') {
-      const t = this.toast; t.t++;
-      if (t.t >= BattleScene.TOAST_FRAMES || (t.t > 12 && (Input.pressed('a') || Input.pressed('b')))) {
-        this.toast = null; this.mode = 'busy'; const f = t.onDone; f && f();
-      }
+    if (this.mode === 'pause') {
+      if (++this.pauseT >= BattleScene.PAUSE_FRAMES) { this.mode = 'busy'; const f = this.pauseDone; this.pauseDone = null; f && f(); }
       return;
     }
+    if (this.pshake > 0) this.pshake--;
     if (this.mode === 'anim') {
       const key = this.anim, target = key === 'p' ? Party.hp(Game.state) : this.enemy.hp;
       const spd = key === 'p' ? Math.max(1, Math.ceil(Party.maxHp(Game.state) / 60)) : 1;
@@ -284,7 +282,7 @@ class BattleScene {
   draw(ctx, frame) {
     const en = this.enemy, st = Game.state;
     const W = CONFIG.W, H = CONFIG.H;
-    const AH = this.viewer ? 154 : 136;
+    const AH = this.viewer ? 154 : 122;
     const bgImg = Bg.get(this.bg);
     if (bgImg) ctx.drawImage(bgImg, 0, 0, W, 152);
     else {
@@ -313,23 +311,14 @@ class BattleScene {
     }
 
     // 敵：中央やや右、大きめ（60px）
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(120, 80, 40, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(120, 82, 34, 5);
-    drawMonster(ctx, en, 90 + sx, 22, 60);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(120, 82, 40, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(120, 84, 34, 5);
+    drawMonster(ctx, en, 90 + sx, 24, 60);
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 100, 30, false);
     if (this.mode !== 'end') this.drawCount(ctx, 160, 14);
 
     // なかま列 ＋ 共通HP
     this.drawParty(ctx, frame);
-    // 浮かぶ文章（枠なし・縁取り）
-    if (this.toast) {
-      const lines = this.toast.text.split('\n'); const y0 = 123;
-      lines.forEach((l, i) => {
-        const w = Text.width(l), x = Math.floor((W - w) / 2), y = y0 + i * 12;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1]]) Text.draw(ctx, l, x + dx, y + dy, '#1b2418');
-        Text.draw(ctx, l, x, y, '#fff6d8');
-      });
-    }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
   }
 
@@ -337,11 +326,12 @@ class BattleScene {
   drawParty(ctx, frame) {
     const st = Game.state, party = this.party();
     // 後ろ姿で相手を見上げる。枠なし。人数に応じて中央寄せ（1匹28px）
-    const n = party.length, size = 28, gap = 2, y = 82;
+    const n = party.length, size = 28, gap = 2, y = 84;
+    const px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
     const x0 = Math.floor((CONFIG.W - (n * size + (n - 1) * gap)) / 2);
     const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     party.forEach((m, i) => {
-      const x = x0 + i * (size + gap);
+      const x = x0 + i * (size + gap) + px;
       const lit = this.hit.includes(i);
       ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + size / 2, y + size - 1, size / 2, 4);
       const bob = lit ? -2 : 0;
@@ -404,14 +394,14 @@ class BattleScene {
   // のうりょく表（レベルアップ後）
   drawStats(ctx, m, frame) {
     const g = this.grow; if (!g) return;
-    const x = 12, y = 8, w = 168, h = 100;
+    const x = 12, y = 6, w = 168, h = 96;
     Text.box(ctx, x, y, w, h);
     Text.draw(ctx, `${m.name}の`, x + 8, y + 7);
     Text.draw(ctx, 'のうりょくが あがった！', x + 8, y + 18);
     Text.rule(ctx, x + 6, y + 30, w - 12);
     const rows = [['HP', 'maxHp'], ['こうげき', 'atk'], ['ぼうぎょ', 'def'], ['すばやさ', 'spd']];
     rows.forEach(([label, key], i) => {
-      const ry = y + 36 + i * 13, b = g.before[key], a = g.after[key];
+      const ry = y + 34 + i * 13, b = g.before[key], a = g.after[key];
       Text.draw(ctx, label, x + 8, ry);
       Text.draw(ctx, String(b).padStart(3), x + 62, ry, THEME.textDim);
       Text.cursor(ctx, x + 84, ry);
