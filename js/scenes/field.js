@@ -67,8 +67,9 @@ class FieldScene {
   }
 
   enter() {
-    UI.refreshNote(Game.state);
     const st = Game.state;
+    if (this.map.flagOnEnter && !st.flags[this.map.flagOnEnter]) { Game.setFlag(this.map.flagOnEnter); Save.auto(st); }   // 入った時点で進行フラグ（冒険ノート用）
+    UI.refreshNote(st);
     Sound.play(this.map.bgm);
     // 研究所に初めて入ったら、まず博士の説明
     if (st.map === 'lab' && !st.flags.starter && !st.flags.labIntro) {

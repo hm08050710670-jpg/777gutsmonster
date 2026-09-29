@@ -359,7 +359,9 @@ class BattleScene {
     const total = boxes.reduce((s, b) => s + b.w, 0);
     const mL = CONFIG.PARTY_MARGIN_L || 0, mR = CONFIG.PARTY_MARGIN_R || 0;   // 左右の端からの余白
     const g = n > 1 ? (CONFIG.W - mL - mR - total) / (n - 1) : 0;
-    let cx = n > 1 ? mL : (CONFIG.W - boxes[0].w) / 2;
+    // 1匹のとき：5匹並べたときの「左から2匹目」の位置に置く（同じ幅の5匹が並ぶと仮定して計算）
+    const solo = () => { const w = boxes[0].w, g5 = (CONFIG.W - mL - mR - 5 * w) / 4; return mL + w + g5; };
+    let cx = n > 1 ? mL : solo();
     const oval = (ox, oy, rx, ry) => { ctx.beginPath(); ctx.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     party.forEach((m, i) => {
       const b = boxes[i];
