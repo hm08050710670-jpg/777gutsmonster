@@ -86,7 +86,7 @@ class PartyScene {
     if (Input.pressed('b')) { Game.pop(); return; }
     if (Input.pressed('a')) {
       if (this.onPick) { const i = this.sel; Game.pop(); this.onPick(i); }
-      else { const m = p[this.sel]; say(`${m.name}  Lv${m.level}\nHP ${m.hp}/${m.maxHp}  タイプ:${m.type}`); }
+      else { const m = p[this.sel]; say(`${m.name}  Lv${m.level}  タイプ:${m.type}\nこうげき${m.atk} ぼうぎょ${m.def} すばやさ${m.spd}`); }
     }
   }
   draw(ctx) {
@@ -98,12 +98,13 @@ class PartyScene {
       drawMonster(ctx, m, 14, y + 6, 24);
       Text.draw(ctx, m.name, 44, y + 8);
       Text.draw(ctx, `Lv${m.level}`, 124, y + 8);
-      drawHpBar(ctx, 52, y + 22, 64, m.hp, m.maxHp);
-      Text.draw(ctx, `${String(m.hp).padStart(3)}/${String(m.maxHp).padStart(3)}`, 124, y + 19);
+      Text.draw(ctx, `${m.type}  HP${m.maxHp}`, 52, y + 20, THEME.textDim);
+      const need = m.level * 20; drawHpBar(ctx, 124, y + 22, 50, m.exp || 0, need);
       if (i === this.sel) Text.cursor(ctx, 2, y + 12);
     });
     Text.box(ctx, 0, CONFIG.H - 32, CONFIG.W, 32);
-    Text.draw(ctx, this.onPick ? 'だれに つかう？' : 'Aで くわしく  Bで もどる', 10, CONFIG.H - 20);
+    if (Game.state.party.length) { const st = Game.state; Text.draw(ctx, 'HP', 10, CONFIG.H - 24, THEME.green); drawHpBar(ctx, 26, CONFIG.H - 23, 70, Party.hp(st), Party.maxHp(st)); Text.draw(ctx, `${Party.hp(st)} / ${Party.maxHp(st)}`, 102, CONFIG.H - 24); }
+    Text.draw(ctx, this.onPick ? 'だれに つかう？' : 'Aで くわしく  Bで もどる', 10, CONFIG.H - 12, THEME.textDim);
   }
 }
 
@@ -126,13 +127,11 @@ class ItemScene {
       const [name] = L[this.sel];
       if (this.inBattle) { Game.pop(); this.onUse && this.onUse(name); return; }
       if (!Game.state.party.length) { say('まだ なかまが いない。'); return; }
-      Game.push(new PartyScene({ onPick: i => {
-        const m = Game.state.party[i];
-        if (m.hp >= m.maxHp) { say(`${m.name}の HPは まんたんだ。`); return; }
-        m.hp = Math.min(m.maxHp, m.hp + DATA.ITEMS[name].heal);
-        Game.state.items[name]--;
-        say(`${m.name}の HPが かいふくした！`);
-      } }));
+      const st = Game.state;
+      if (Party.hp(st) >= Party.maxHp(st)) { say('HPは まんたんだ。'); return; }
+      Party.set(st, Party.hp(st) + DATA.ITEMS[name].heal);
+      st.items[name]--;
+      say('なかまの HPが かいふくした！');
     }
   }
   draw(ctx) {

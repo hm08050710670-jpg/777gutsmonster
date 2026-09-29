@@ -23,6 +23,7 @@ const Save = {
         // 使わなくなったモンスターは手持ちから外す（空になったらコケガメ Lv7 を入れる）
         st.party = st.party.filter(m => DATA.MONSTERS[m.id]);
         if (!st.party.length && st.flags && st.flags.starter) st.party.push(makeMonster('kokegame', 7));
+        if (st.hp == null) st.hp = st.party.reduce((n, m) => n + (m.hp ?? m.maxHp), 0);   // 旧セーブ：個別HPの合計を共通HPに
       }
       return st;
     } catch (e) { return null; }

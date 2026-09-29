@@ -22,7 +22,7 @@ class TitleScene {
     let st = Save.load();
     if (!st || !st.party.length) {
       st = Save.newGame('テスト', 'm');
-      st.party = DATA.STARTERS.map(id => makeMonster(id, 7));
+      st.party = DATA.STARTERS.map(id => makeMonster(id, 7)); Party.full(st);
       st.items = { 'きずぐすり': 5 };
       st.flags = { labIntro: true, starter: true };
     }
@@ -37,7 +37,7 @@ class TitleScene {
   monsterView() {
     const st = Save.newGame('テスト', 'm');
     const id = Object.keys(DATA.MONSTERS)[0];
-    st.party = [makeMonster(id, 10)]; st.map = 'road';
+    st.party = [makeMonster(id, 10)]; Party.full(st); st.map = 'road';
     Game.state = st;
     Game.replace(new FieldScene());
     Game.push(new BattleScene({ enemy: makeMonster(id, 10), bg: 'fairway', viewer: true, onEnd: () => Game.replace(new TitleScene()) }));

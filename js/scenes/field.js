@@ -102,7 +102,7 @@ class FieldScene {
     if (ev && ev.kind === 'warp') { this.warp(ev.to); return; }
     if (ev && ev.kind === 'trigger') { this.runTrigger(ev); return; }
     if (this.tileAt(st.x, st.y) === 'T' && this.map.encounters && st.grace === 0 && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
-      if (st.party.some(m => m.hp > 0)) {
+      if (st.party.length && Party.hp(st) > 0) {
         startWildBattle(st.map, result => {
           st.grace = CONFIG.GRACE_STEPS;
           if (result === 'lose') this.wipeOut();
@@ -115,7 +115,7 @@ class FieldScene {
   // 全滅：回復して自宅へ
   wipeOut() {
     const st = Game.state;
-    st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
+    Party.full(st);
     say('なかまを かいふくして\nいえに もどった。', () => this.warp({ map: 'home', x: 4, y: 4, dir: 'down' }));
   }
 
@@ -148,7 +148,7 @@ class FieldScene {
     if (ev.prof) { this.talkProf(ev); return; }
     if (ev.heal) {
       say(ev.text, () => {
-        st.party.forEach(m => { m.hp = m.maxHp; m.moves.forEach(mv => { mv.pp = mv.maxPp; }); });
+        Party.full(st);
         say(st.party.length ? 'なかまは げんきに なった！' : 'なかまが いないみたいですね。', () => Save.auto(st), ev.name);
       }, ev.name);
       return;
@@ -179,7 +179,7 @@ class FieldScene {
     if (!st.flags.labIntro) { this.profIntro(() => this.pickStarter(ev)); return; }
     ask(`${sp.name}（${sp.type}タイプ）\n${sp.desc}\n${sp.name}を えらびますか？`, ['はい', 'いいえ'], i => {
       if (i !== 0) return;
-      st.party = [makeMonster(ev.id, 7)];
+      st.party = [makeMonster(ev.id, 7)]; Party.full(st);
       Game.setFlag('starter');
       say(`${st.name}は ${sp.name}を なかまにした！`, () => {
         say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => Save.auto(st), 'オクムラ博士');
@@ -246,7 +246,7 @@ class FieldScene {
     const enemy = makeMonster(rm.id, 5);
     Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
       Game.setFlag('rival1');
-      if (result === 'lose') { st.party.forEach(m => { m.hp = m.maxHp; }); say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', after, 'ノブオ'); }
+      if (result === 'lose') { Party.full(st); say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', after, 'ノブオ'); }
       else say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, after, 'ノブオ');
     } }));
   }
@@ -262,7 +262,7 @@ class FieldScene {
         Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
           Game.setFlag('rival1');
           if (result === 'lose') {
-            st.party.forEach(m => { m.hp = m.maxHp; });
+            Party.full(st);
             say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', () => Save.auto(st), 'ノブオ');
           } else {
             say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, () => Save.auto(st), 'ノブオ');

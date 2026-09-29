@@ -232,6 +232,17 @@ const DATA = {
   },
 };
 
+// パーティ共通HP（パズドラ風）。最大＝仲間の最大HPの合計。現在値は state.hp に持つ
+const Party = {
+  maxHp: st => st.party.reduce((n, m) => n + m.maxHp, 0),
+  hp: st => { const mx = Party.maxHp(st); if (st.hp == null) st.hp = mx; return Math.max(0, Math.min(mx, st.hp)); },
+  set(st, v) { st.hp = Math.max(0, Math.min(Party.maxHp(st), Math.round(v))); },
+  full(st) { st.hp = Party.maxHp(st); st.party.forEach(m => { m.hp = m.maxHp; m.moves && m.moves.forEach(mv => { mv.pp = mv.maxPp; }); }); },
+  // 防御・素早さは仲間の平均（いなければ 5）
+  def: st => st.party.length ? Math.round(st.party.reduce((n, m) => n + m.def, 0) / st.party.length) : 5,
+  spd: st => st.party.length ? Math.round(st.party.reduce((n, m) => n + m.spd, 0) / st.party.length) : 5,
+};
+
 function makeMonster(id, level) {
   const sp = DATA.MONSTERS[id];
   const stat = b => Math.floor(((b * 2) * level) / 100) + 5;
