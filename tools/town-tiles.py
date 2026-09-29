@@ -30,17 +30,34 @@ def key_bg(crop):
     arr[bg, 3] = 0
     return Image.fromarray(arr)
 OBJ = {'tree', 'hedge', 'hedge_v', 'flower0', 'flower1', 'sign', 'mailbox', 'fence'}
+# ドット化：縮小フィルタ（LANCZOS等）だと中間色でぼやけるので、
+# 出力の1ドットにつき元画像の「ブロックの中心付近」を中央値で1色だけ拾う（輪郭がくっきり残る）
+def pixelize(img, tw, th):
+    arr = np.asarray(img.convert('RGBA')).astype(int); h, w = arr.shape[:2]
+    bx, by = w / tw, h / th
+    r = max(1, int(min(bx, by) * 0.25))   # 中央値を取る窓（ブロックの半分）
+    out = np.zeros((th, tw, 4), dtype=np.uint8)
+    for j in range(th):
+        cy = int((j + 0.5) * by)
+        for i in range(tw):
+            cx = int((i + 0.5) * bx)
+            win = arr[max(0, cy - r):cy + r + 1, max(0, cx - r):cx + r + 1].reshape(-1, 4)
+            a_ = win[:, 3]
+            if (a_ > 127).mean() < 0.5: out[j, i] = (0, 0, 0, 0); continue
+            win = win[a_ > 127]
+            out[j, i] = (*np.median(win[:, :3], axis=0).astype(int), 255)
+    return Image.fromarray(out, 'RGBA')
+
 def cut(i, tw=None, th=None, inner=0.0, obj=False):
     y, x, w, h = cells[i]
     tw = tw or max(1, round(w / CW)); th = th or max(1, round(h / CH))
     ix, iy = int(w * inner), int(h * inner)
     crop = src.crop((x + 2 + ix, y + 2 + iy, x + w - 2 - ix, y + h - 2 - iy))
-    if obj: crop = key_bg(crop)
-    t = crop.resize((tw * 16, th * 16), Image.LANCZOS).convert('RGBA')
-    arr = np.asarray(t).copy()
-    m = (arr[:, :, 0] > 150) & (arr[:, :, 1] < 130) & (arr[:, :, 2] > 150) & (arr[:, :, 0] - arr[:, :, 1] > 60)
+    crop = key_bg(crop) if obj else crop.convert('RGBA')
+    arr = np.asarray(crop).copy()
+    m = (arr[:, :, 0] > 150) & (arr[:, :, 1] < 130) & (arr[:, :, 2] > 150) & (arr[:, :, 0] - arr[:, :, 1] > 60)   # マゼンタ余白
     arr[m, 3] = 0
-    return Image.fromarray(arr)
+    return pixelize(Image.fromarray(arr), tw * 16, th * 16)
 # 茶色（岸）の少ない水マスを中央用に選ぶ
 def brown(i):
     y, x, w, h = cells[i]; c = a[y:y + h, x:x + w]
@@ -65,8 +82,7 @@ def water_center():
             v = br[yy:yy + wh, xx:xx + ww].mean()
             if best is None or v < best[0]: best = (v, xx, yy)
     _, xx, yy = best
-    t = src.crop((x + xx, y + yy, x + xx + ww, y + yy + wh)).resize((20, 20), Image.LANCZOS).convert('RGBA')
-    return t.crop((2, 2, 18, 18))   # 端の明るい縁を落として継ぎ目を目立たなくする
+    return pixelize(src.crop((x + xx, y + yy, x + xx + ww, y + yy + wh)), 16, 16)
 tiles['water'] = water_center()
 # シートに並べる
 items = sorted(tiles.items(), key=lambda kv: (-kv[1].height, -kv[1].width))

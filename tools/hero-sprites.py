@@ -10,6 +10,23 @@ from scipy import ndimage
 H_OUT = 22          # 出力の高さ（幅は比率から。1マス16pxより少し背が高い）
 DIRS = ['down', 'up', 'left', 'right']
 
+# ドット化（town-tiles.py と同じ考え方）：1ドットにつき元のブロック中心付近の中央値を拾う
+def pixelize(img, tw, th):
+    arr = np.asarray(img.convert('RGBA')).astype(int); h, w = arr.shape[:2]
+    bx, by = w / tw, h / th
+    r = max(1, int(min(bx, by) * 0.25))
+    out = np.zeros((th, tw, 4), dtype=np.uint8)
+    for j in range(th):
+        cy = int((j + 0.5) * by)
+        for i in range(tw):
+            cx = int((i + 0.5) * bx)
+            win = arr[max(0, cy - r):cy + r + 1, max(0, cx - r):cx + r + 1].reshape(-1, 4)
+            a_ = win[:, 3]
+            if (a_ > 127).mean() < 0.5: continue
+            win = win[a_ > 127]
+            out[j, i] = (*np.median(win[:, :3], axis=0).astype(int), 255)
+    return Image.fromarray(out, 'RGBA')
+
 def extract(path, prefix):
     im = Image.open(path).convert('RGB'); a = np.asarray(im).astype(int)
     h, w = a.shape[:2]
@@ -44,7 +61,7 @@ def extract(path, prefix):
             rgba = np.dstack([crop, np.where(m, 255, 0)]).astype(np.uint8)
             s = Image.fromarray(rgba, 'RGBA')
             k = H_OUT / s.height; wo = max(8, round(s.width * k))
-            sprites[f'{prefix}_{DIRS[r]}{c}'] = s.resize((wo, H_OUT), Image.LANCZOS)
+            sprites[f'{prefix}_{DIRS[r]}{c}'] = pixelize(s, wo, H_OUT)
     return sprites
 
 sprites = {}

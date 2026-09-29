@@ -44,26 +44,31 @@ const Tiles = (() => {
       const c = document.createElement('canvas'); c.width = 16; c.height = 16;
       const g = c.getContext('2d');
       g.drawImage(variant('grass', 3, x, y), 0, 0);
+      // ドット単位で内外を決める（曲線のアンチエイリアスでぼやけないように）
       const inset = kind === 'water' ? 2 : 3, r = kind === 'water' ? 3 : 5;
       const N = mask & 1, E = mask & 2, S = mask & 4, W = mask & 8;
-      const x0 = W ? -8 : inset, y0 = N ? -8 : inset, x1 = E ? 24 : 16 - inset, y1 = S ? 24 : 16 - inset;
-      const rr = (open1, open2) => (open1 || open2) ? 0 : r;   // 両側が閉じている角だけ丸める
-      const path = () => {
-        g.beginPath();
-        const tl = rr(N, W), tr = rr(N, E), br = rr(S, E), bl = rr(S, W);
-        g.moveTo(x0 + tl, y0); g.lineTo(x1 - tr, y0); g.quadraticCurveTo(x1, y0, x1, y0 + tr);
-        g.lineTo(x1, y1 - br); g.quadraticCurveTo(x1, y1, x1 - br, y1);
-        g.lineTo(x0 + bl, y1); g.quadraticCurveTo(x0, y1, x0, y1 - bl);
-        g.lineTo(x0, y0 + tl); g.quadraticCurveTo(x0, y0, x0 + tl, y0);
-        g.closePath();
+      const x0 = W ? -8 : inset, y0 = N ? -8 : inset, x1 = E ? 24 : 16 - inset, y1 = S ? 24 : 16 - inset;   // [x0,x1) の範囲
+      const inside = (px, py) => {
+        if (px < x0 || px >= x1 || py < y0 || py >= y1) return false;
+        // 両側が閉じた角だけ丸める：角の中心からの距離で判定
+        const corner = (cx, cy) => (px + 0.5 - cx) ** 2 + (py + 0.5 - cy) ** 2 <= r * r;
+        if (!N && !W && px < x0 + r && py < y0 + r) return corner(x0 + r, y0 + r);
+        if (!N && !E && px >= x1 - r && py < y0 + r) return corner(x1 - r, y0 + r);
+        if (!S && !W && px < x0 + r && py >= y1 - r) return corner(x0 + r, y1 - r);
+        if (!S && !E && px >= x1 - r && py >= y1 - r) return corner(x1 - r, y1 - r);
+        return true;
       };
-      g.save(); path(); g.clip();
-      g.drawImage(get(kind), 0, 0);
-      g.restore();
-      // 縁取り（内側に1px）
-      g.save(); path(); g.clip();
-      path(); g.lineWidth = 2; g.strokeStyle = kind === 'water' ? 'rgba(20,60,120,0.75)' : 'rgba(150,110,40,0.45)'; g.stroke();
-      g.restore();
+      const tex = get(kind).getContext('2d').getImageData(0, 0, 16, 16).data;
+      const out = g.getImageData(0, 0, 16, 16), d = out.data;
+      const edge = kind === 'water' ? [24, 70, 130] : [150, 110, 40], ea = kind === 'water' ? 0.8 : 0.45;
+      for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+        if (!inside(px, py)) continue;
+        const i = (py * 16 + px) * 4;
+        const rim = !inside(px - 1, py) || !inside(px + 1, py) || !inside(px, py - 1) || !inside(px, py + 1);
+        for (let k = 0; k < 3; k++) d[i + k] = rim ? Math.round(tex[i + k] * (1 - ea) + edge[k] * ea) : tex[i + k];
+        d[i + 3] = 255;
+      }
+      g.putImageData(out, 0, 0);
       cache.set(key, c);
     }
     return cache.get(key);
