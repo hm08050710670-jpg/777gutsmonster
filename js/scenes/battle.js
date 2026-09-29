@@ -326,18 +326,24 @@ class BattleScene {
   drawParty(ctx, frame) {
     const st = Game.state, party = this.party();
     // 後ろ姿で相手を見上げる。枠なし。人数に応じて中央寄せ（1匹28px）
-    const n = party.length, size = CONFIG.PARTY_SPRITE || 40, gap = Math.floor((CONFIG.W - n * size) / Math.max(1, n - 1)), y = 116 - size;   // 足元は HP バーで少し隠れてよい
+    const n = party.length, size = CONFIG.PARTY_SPRITE || 40, y = 116 - size + (CONFIG.PARTY_CLIP || 0);   // PARTY_CLIP: 足元を隠す量
     const px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
-    const g = Math.min(gap, 1);
-    const x0 = Math.floor((CONFIG.W - (n * size + (n - 1) * g)) / 2);
-    const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
+    // 絵の実際の幅（透明部分を除く）で、左端〜右端に均等に並べる
+    const boxes = party.map(m => Mon.drawnBox(m.id, size / 24, true));
+    const total = boxes.reduce((s, b) => s + b.w, 0);
+    const mL = CONFIG.PARTY_MARGIN_L || 0, mR = CONFIG.PARTY_MARGIN_R || 0;   // 左右の端からの余白
+    const g = n > 1 ? (CONFIG.W - mL - mR - total) / (n - 1) : 0;
+    let cx = n > 1 ? mL : (CONFIG.W - boxes[0].w) / 2;
+    const oval = (ox, oy, rx, ry) => { ctx.beginPath(); ctx.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     party.forEach((m, i) => {
-      const x = x0 + i * (size + g) + px;
+      const b = boxes[i];
+      const x = Math.round(cx - b.dx) + px;   // 絵の左端が cx に来るように箱をずらす
       const lit = this.hit.includes(i);
-      ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + size / 2, y + size - 1, size / 2, 4);
+      ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + b.dx + b.w / 2, y + size - 1, b.w / 2 + 2, 4);
       const bob = lit ? -2 : 0;
       drawMonster(ctx, m, x, y + bob, size, false, true);
-      if (this.sparkle > 0 && this.sparkleIdx === i) this.drawSparkle(ctx, x + size / 2, y + size / 2, frame, 12);
+      if (this.sparkle > 0 && this.sparkleIdx === i) this.drawSparkle(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, frame, 12);
+      cx += b.w + g;
     });
     // 共通HP
     const hp = Math.round(this.shownHp.p), max = Party.maxHp(st);
