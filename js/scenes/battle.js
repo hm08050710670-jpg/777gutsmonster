@@ -66,6 +66,12 @@ class BattleScene {
     this.sparkleIdx = -1;       // レベルアップした仲間のインデックス
   }
   party() { return Game.state.party; }
+  // 閲覧モード用：ランダムな5匹をなかまにする
+  shuffleParty() {
+    const ids = Object.keys(DATA.MONSTERS).slice();
+    for (let i = ids.length - 1; i > 0; i--) { const j = Game.rand(0, i); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    Game.state.party = ids.slice(0, CONFIG.PARTY_MAX).map(id => makeMonster(id, 10)); Party.full(Game.state); this.shownHp.p = Party.hp(Game.state);
+  }
 
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
@@ -249,9 +255,11 @@ class BattleScene {
       if (Input.pressed('left')) this.vi = (this.vi + n - 1) % n;
       if (Input.pressed('down')) this.bi = (this.bi + 1) % Bg.NAMES.length;
       if (Input.pressed('up')) this.bi = (this.bi + Bg.NAMES.length - 1) % Bg.NAMES.length;
-      if (Input.pressed('right') || Input.pressed('left')) { const m = makeMonster(this.ids[this.vi], 10); this.enemy = m; Game.state.party[0] = makeMonster(this.ids[this.vi], 10); Party.full(Game.state); this.shownHp = { p: m.hp, e: m.hp }; }
+      if (Input.pressed('a')) this.vi = (this.vi + 1) % n;
+      if (Input.pressed('right') || Input.pressed('left') || Input.pressed('a')) { const m = makeMonster(this.ids[this.vi], 10); this.enemy = m; this.shownHp.e = m.hp; }
+      if (Input.pressed('start')) { this.shuffleParty(); }
       this.bg = Bg.NAMES[this.bi];
-      if (Input.pressed('b') || Input.pressed('a')) { Game.pop(); this.onEnd && this.onEnd('view'); }
+      if (Input.pressed('b')) { Game.pop(); this.onEnd && this.onEnd('view'); }
       return;
     }
     if (this.mode === 'stats') {   // のうりょく表：約2.5秒で自動で閉じる（タップでも閉じる）
@@ -282,7 +290,7 @@ class BattleScene {
   draw(ctx, frame) {
     const en = this.enemy, st = Game.state;
     const W = CONFIG.W, H = CONFIG.H;
-    const AH = this.viewer ? 154 : 122;
+    const AH = 122;
     const bgImg = Bg.get(this.bg);
     if (bgImg) ctx.drawImage(bgImg, 0, 0, W, 152);
     else {
@@ -295,30 +303,23 @@ class BattleScene {
     const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
 
-    if (this.viewer) {
-      // 閲覧モード：敵側＝正面、自分側＝後ろ姿
-      ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, 74, 34, 8); oval(48, 114, 36, 8);
-      ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, 76, 30, 5); oval(48, 116, 32, 5);
-      drawMonster(ctx, en, 124, 24, 48);
-      this.drawStatus(ctx, en, en.hp, 4, 4, 104, 30, false);
-      drawMonster(ctx, en, 24, 66, 48, true, true);
-      Text.box(ctx, 0, AH, W, H - AH);
-      const d = DATA.MONSTERS[en.id];
-      Text.draw(ctx, `No.${d.no}  ${d.name}  ${d.type}`, 8, AH + 7);
-      Text.draw(ctx, `${this.vi + 1}/${this.ids.length}  はいけい:${this.bg}`, 8, AH + 19, THEME.textDim);
-      Text.draw(ctx, '←→ モンスター ↑↓ はいけい B もどる', 8, AH + 33, THEME.green);
-      return;
-    }
-
     // 敵：中央やや右、大きめ（60px）
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(140, 70, 40, 8);
     ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(140, 72, 34, 5);
     drawMonster(ctx, en, 110 + sx, 12, 60);
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 100, 30, false);
-    if (this.mode !== 'end') this.drawCount(ctx, 160, 14);
+    if (this.mode !== 'end' && !this.viewer) this.drawCount(ctx, 160, 14);
 
     // なかま列 ＋ 共通HP
     this.drawParty(ctx, frame);
+    if (this.viewer) {
+      Text.box(ctx, 0, AH, W, H - AH);
+      const d = DATA.MONSTERS[en.id];
+      Text.draw(ctx, `No.${d.no} ${d.name} (${d.type})  ${this.vi + 1}/${this.ids.length}`, 8, AH + 8);
+      Text.draw(ctx, `はいけい: ${this.bg}`, 8, AH + 20, THEME.textDim);
+      Text.draw(ctx, 'A/←→ あいて  ↑↓ はいけい', 8, AH + 36, THEME.green);
+      Text.draw(ctx, 'MENU なかまシャッフル  B もどる', 8, AH + 48, THEME.green);
+    }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
   }
 

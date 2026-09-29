@@ -41,7 +41,9 @@ class TitleScene {
     st.party = [makeMonster(id, 10)]; Party.full(st); st.map = 'road';
     Game.state = st;
     Game.replace(new FieldScene());
-    Game.push(new BattleScene({ enemy: makeMonster(id, 10), bg: 'fairway', viewer: true, onEnd: () => Game.replace(new TitleScene()) }));
+    const b = new BattleScene({ enemy: makeMonster(id, 10), bg: 'fairway', viewer: true, onEnd: () => Game.replace(new TitleScene()) });
+    b.shuffleParty();
+    Game.push(b);
   }
   update(frame) {
     if (this.checkCode()) return;
