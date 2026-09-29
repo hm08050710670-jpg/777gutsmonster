@@ -8,6 +8,8 @@ from PIL import Image
 from collections import deque
 
 mid, path = sys.argv[1], sys.argv[2]
+SMOOTH = '--smooth' in sys.argv          # ドット絵でない絵：格子検出をせず、縮小してドット化する
+SMOOTH_H = int([a for a in sys.argv if a.startswith('--h=')][0][4:]) if any(a.startswith('--h=') for a in sys.argv) else 56
 im = Image.open(path).convert('RGBA'); a = np.array(im); H, W = a.shape[:2]
 if a[:, :, 3].min() == 255:
     # チェッカー背景：明るくて彩度の低い画素を、外側からの塗りつぶしで背景にする
@@ -83,9 +85,16 @@ def grid_offset(arr, axis, p):
         if best is None or sc > best[0]: best = (sc, off)
     return best[1]
 _whole = np.array(im).astype(float)
-PX, PY = grid_period(_whole, 1), grid_period(_whole, 0)
-print('grid', PX, PY)
+PX = PY = 1
+if not SMOOTH:
+    PX, PY = grid_period(_whole, 1), grid_period(_whole, 0)
+    print('grid', PX, PY)
 def to_native(img):
+    if SMOOTH:
+        img = img.crop(img.getbbox()); k = SMOOTH_H / img.height
+        o = img.resize((max(1, round(img.width * k)), SMOOTH_H), Image.LANCZOS)
+        a2 = np.array(o); a2[a2[:, :, 3] < 128] = 0; a2[a2[:, :, 3] >= 128, 3] = 255
+        return Image.fromarray(a2, 'RGBA')
     arr = np.array(img).astype(float); H, W = arr.shape[:2]
     px, py = PX, PY; ox = grid_offset(arr, 1, px); oy = grid_offset(arr, 0, py)
     cols = int((W - ox) // px); rows = int((H - oy) // py)
