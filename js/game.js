@@ -9,7 +9,7 @@ const Game = (() => {
   let curScale = 1;
   // 内部解像度：表示倍率×端末のピクセル密度に合わせる（iPhoneなら 2×3=6倍）。文字が実ピクセルで描かれてくっきりする
   function setRenderScale(rs) {
-    rs = Math.max(2, Math.min(8, Math.round(rs)));
+    rs = Math.max(2, Math.min(6, Math.round(rs)));
     if (rs === RS) return;
     RS = rs;
     canvas.width = CONFIG.W * RS; canvas.height = CONFIG.H * RS;
