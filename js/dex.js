@@ -7,6 +7,9 @@
 //   （2026-09-28：御三家以外はいったん外す。新しいドット絵ができた個体から追加していく）
 const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou', 'nidomu', 'nyakimi', 'nyakimino', 'nyakiageha', 'kinomushi', 'kinomino', 'honeybal'];
 
+// 表示の大きさ（枠に対する割合、既定 1.0）。小さい生き物は小さく見せる
+const DEX_SIZE = { kokemogu: 0.55, nyakimi: 0.5, nyakimino: 0.55, kinomushi: 0.5, kinomino: 0.55 };
+
 const DEX = [
   // ---- 御三家 ----
   { no: 1, id: 'kokegame',   name: 'コケガメ',   type: 'くさ',   stage: 1, evo: ['morigame', 14] },
