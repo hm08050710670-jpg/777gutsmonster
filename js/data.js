@@ -78,7 +78,7 @@ const DATA = {
   },
   WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
-  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 11, h: 7, door: [5, 6] } },
+  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 11, h: 7, door: [5, 6] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -306,8 +306,8 @@ const DATA = {
         'WWWWWWWWWPWWWWWWWWWW',
       ],
       objects: [
-        { sprite: 'heal', x: 1, y: 1 }, { sprite: 'house', x: 14, y: 1 },
-        { sprite: 'shop', x: 1, y: 6 }, { sprite: 'house', x: 14, y: 6 },
+        { sprite: 'heal', x: 1, y: 1 }, { sprite: 'house2', x: 14, y: 1 },
+        { sprite: 'shop', x: 1, y: 6 }, { sprite: 'house2', x: 14, y: 6 },
       ],
       events: [
         { x: 9, y: 14, kind: 'warp', to: { map: 'forest', x: 8, y: 1, dir: 'down' } },
