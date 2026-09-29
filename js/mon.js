@@ -32,11 +32,12 @@ const Mon = (() => {
     } catch (e) { pimg = null; pmeta = {}; }
   }
   const hasPx = id => !!(pimg && pmeta[id]);
-  // 表示倍率：相手側（正面）は進化段階／個別指定で変える。味方側（後ろ姿）は全員同じ大きさ
+  // 表示倍率：進化段階／個別指定（DEX_SIZE）で決まる。味方側（後ろ姿）はそれをさらに PARTY_BACK_SIZE 倍
   function sizeOf(id, back) {
-    if (back) return CONFIG.PARTY_BACK_SIZE || 1;   // 味方側は全員同じ倍率
     const d = DATA.MONSTERS[id];
-    return (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
+    const base = (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
+    // 味方側（後ろ姿）は相手側と同じ比率のまま、全体を PARTY_BACK_SIZE 倍（最大サイズが 0.6）
+    return back ? base * (CONFIG.PARTY_BACK_SIZE || 1) : base;
   }
   // 実際に描かれる大きさと箱内のオフセット（配置計算用）
   function drawnBox(id, scale, back) {
