@@ -74,7 +74,9 @@ const DATA = {
     A: 'lab_roof', a: 'lab_roof_dish', E: 'lab_wall', e: 'lab_window', J: 'lab_logo', I: 'lab_door',
     '.': 'floor', X: 'wallin', b: 'bed', t: 'tv', d: 'desk', s: 'shelf', p: 'plant', m: 'mat', c: 'carpet', M: 'machine', C: 'counter', O: 'table',
   },
-  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', '.', 'm', 'c']),
+  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
+  // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
+  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 5, h: 3, door: [2, 2] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -100,25 +102,30 @@ const DATA = {
     },
     town: {
       name: 'ガッツタウン', bgm: 'town',
+      // 建物は objects で置く（画像タイル）。文字は地面だけ
       rows: [
         'WWWWWWWWWPWWWWWWWWWW',
         'WGGGGGGGGPGGGGGGGGGW',
-        'WG^^^GGGGPGGGAAaAAGW',
-        'WG#N#GFGGPGGGeEJEeGW',
-        'WG#D#GGGGPGGGeEIEeGW',
-        'WGPPPGGSGPGGGGGPGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGGGFGGPGGGGGGGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGPGGGSGPGGGGQPQGGW',
         'WGGGPPPPPPPPPPPPGGGW',
         'WGFGGGGGGPGGGGGGLGGW',
-        'WG^^^GGGGPGGGG^^^GGW',
-        'WG#N#GGGGPGGGG#N#GGW',
-        'WG#D#GLGGPGGGG#D#GGW',
-        'WGPPPPPPPPPPPPPPPGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGGGGGGPGGGGGGGGGW',
+        'WGGGGGLGGPGGGGGGGGGW',
+        'WGGPPPPPPPPPPPPPGGGW',
         'WGGGGGGGGGGGG~~~GGGW',
         'WGFFGGGGGGGGG~~~GGGW',
         'WGGGGHHHHGGGGGGGGGGW',
         'WGGGGGGGGGGGGGFFGGGW',
         'WGGGGGGGGGGGGGGGGGGW',
         'WWWWWWWWWWWWWWWWWWWW',
+      ],
+      objects: [
+        { sprite: 'house', x: 1, y: 2 }, { sprite: 'lab', x: 13, y: 2 },
+        { sprite: 'house', x: 1, y: 8 }, { sprite: 'shop', x: 13, y: 8 },
       ],
       events: [
         { x: 3, y: 4, kind: 'warp', to: { map: 'home', x: 5, y: 5, dir: 'up' } },

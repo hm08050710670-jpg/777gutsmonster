@@ -74,6 +74,12 @@ if os.path.isdir('assets/bg'):
             bg_imgs[f[:-4]] = 'data:image/png;base64,' + base64.b64encode(open(f'assets/bg/{f}', 'rb').read()).decode()
 print('battle backgrounds embedded:', len(bg_imgs))
 
+tiles_png = tiles_json = None
+if os.path.exists('assets/tiles.png') and os.path.exists('assets/tiles.json'):
+    tiles_png = 'data:image/png;base64,' + base64.b64encode(open('assets/tiles.png', 'rb').read()).decode()
+    tiles_json = open('assets/tiles.json', encoding='utf-8').read()
+    print('town tiles embedded')
+
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
@@ -94,6 +100,8 @@ def inline_js(m):
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  MON_BACK_IMG: '{back_png}',\n  MON_BACK_META: {back_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and bg_imgs:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  BG_IMAGES: {json.dumps(bg_imgs)},\n  TITLE: 'GUTS MONSTERS',")
+    if tiles_png:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  TILES_IMG: '{tiles_png}',\n  TILES_META_INLINE: {tiles_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'

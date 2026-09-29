@@ -50,8 +50,18 @@ class FieldScene {
   events() { return this.map.events.filter(e => this.eventActive(e)); }
   eventAt(x, y) { return this.events().find(e => e.x === x && e.y === y); }
   blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look'].includes(ev.kind); }
+  // 建物などの置き物（map.objects）：足元の範囲は通れない。ドアの1マスだけ通れる
+  objects() { return this.map.objects || []; }
+  objectBlocks(x, y) {
+    for (const o of this.objects()) {
+      const d = DATA.OBJECTS[o.sprite]; if (!d) continue;
+      if (x >= o.x && x < o.x + d.w && y >= o.y && y < o.y + d.h && !(x === o.x + d.door[0] && y === o.y + d.door[1])) return true;
+    }
+    return false;
+  }
   canWalk(x, y) {
     if (!DATA.WALKABLE.has(this.tileAt(x, y))) return false;
+    if (this.objectBlocks(x, y)) return false;
     return !this.blocksWalk(this.eventAt(x, y));
   }
 
@@ -282,6 +292,28 @@ class FieldScene {
     return Gfx.get(ev.sprite); // NPCは正面のみ（方向別スプライトは未実装）
   }
 
+  // 画像タイル（屋外）。描けたら true。木は後でまとめて描くので trees に積む
+  drawImgTile(ctx, t, tx, ty, px, py, trees) {
+    const T = CONFIG.TILE;
+    const same = (dx, dy) => this.tileAt(tx + dx, ty + dy) === t;
+    const mask = () => (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0);
+    const grass = () => ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py);
+    switch (t) {
+      case 'G': grass(); return true;
+      case 'P': ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
+      case '~': ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
+      case 'W': grass(); trees.push([px, py]); return true;
+      case 'T': ctx.drawImage(Tiles.get('tall'), px, py); return true;
+      case 'F': grass(); ctx.drawImage(Tiles.variant('flower', 2, tx, ty), px, py); return true;
+      case 'H': grass(); ctx.drawImage(Tiles.get('hedge'), px, py); return true;
+      case 'S': grass(); ctx.drawImage(Tiles.get('sign'), px, py); return true;
+      case '=': grass(); ctx.drawImage(Tiles.get('fence'), px, py); return true;
+      case 'Q': ctx.drawImage(Tiles.variant('stone', 5, tx, ty), px, py); return true;
+      case 'B': ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); return false;   // 橋：水の上に従来の橋を重ねる
+    }
+    return false;
+  }
+
   draw(ctx, frame) {
     const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
     // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
@@ -305,12 +337,23 @@ class FieldScene {
     ctx.fillStyle = this.map.indoor ? '#1a1410' : '#173a1c';
     ctx.fillRect(0, 0, W, H);
     const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
-    for (let ty = cy0; ty <= cy0 + Math.ceil(H / T); ty++) {
-      for (let tx = cx0; tx <= cx0 + Math.ceil(W / T); tx++) {
+    const useImg = Tiles.ready && !this.map.indoor;
+    const trees = [];
+    for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
+      for (let tx = cx0 - 1; tx <= cx0 + Math.ceil(W / T) + 1; tx++) {
         const t = this.tileAt(tx, ty);
         if (t === ' ') continue;
-        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), tx * T - camX + bx, ty * T - camY + by);
+        const px = tx * T - camX + bx, py = ty * T - camY + by;
+        if (useImg) { const done = this.drawImgTile(ctx, t, tx, ty, px, py, trees); if (done) continue; }
+        ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py);
       }
+    }
+    // 木（2×2、少し重ねて森らしく）。上の行から描いて手前を上に
+    for (const [px, py] of trees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
+    // 建物などの置き物
+    if (useImg) for (const o of this.objects()) {
+      const im = Tiles.get(o.sprite); if (!im) continue;
+      ctx.drawImage(im, o.x * T - camX + bx, o.y * T - camY + by);
     }
     // イベントの見た目（ボール・NPC）
     for (const ev of this.events()) {
