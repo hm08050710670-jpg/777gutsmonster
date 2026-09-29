@@ -6,7 +6,7 @@ class TitleScene {
   enter() { Sound.stop(); }
   items() {
     const it = Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい'];
-    if (this.debug) it.push('バトルテスト');
+    if (this.debug) it.push('バトルテスト', 'モンスターみる');
     return it;
   }
   // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」が出る（いきなり野生戦。セーブは変えない）
@@ -33,6 +33,15 @@ class TitleScene {
     Game.replace(new FieldScene());
     Game.push(new BattleScene({ enemy, bg: Bg.pick('road', { random: true }), onEnd: () => Game.replace(new TitleScene()) }));
   }
+  // 裏技：戦闘画面のレイアウトでモンスターの絵を見る（←→で切替）
+  monsterView() {
+    const st = Save.newGame('テスト', 'm');
+    const id = Object.keys(DATA.MONSTERS)[0];
+    st.party = [makeMonster(id, 10)]; st.map = 'road';
+    Game.state = st;
+    Game.replace(new FieldScene());
+    Game.push(new BattleScene({ enemy: makeMonster(id, 10), bg: 'fairway', viewer: true, onEnd: () => Game.replace(new TitleScene()) }));
+  }
   update(frame) {
     if (this.checkCode()) return;
     if (!this.menu) {
@@ -45,7 +54,9 @@ class TitleScene {
     if (Input.pressed('b')) { this.menu = false; return; }
     if (Input.pressed('a')) {
       const label = it[this.sel];
-      if (label === 'バトルテスト') {
+      if (label === 'モンスターみる') {
+        this.monsterView();
+      } else if (label === 'バトルテスト') {
         this.battleTest();
       } else if (label === 'つづきから') {
         Game.state = Save.load() || Save.newGame();

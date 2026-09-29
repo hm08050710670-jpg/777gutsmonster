@@ -14,12 +14,14 @@ class BattleScene {
     this.queue = [];       // 実行待ちのステップ
     this.shownHp = { p: this.me().hp, e: this.enemy.hp }; // 表示用（アニメ）
     this.bg = opt.bg || Bg.pick(Game.state.map);          // 背景（場所・時刻で決まる）
+    this.viewer = !!opt.viewer;                            // 裏技：モンスター閲覧（戦わない）
     this.shake = 0;
   }
   me() { return Game.state.party[this.pidx]; }
 
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
+    if (this.viewer) { this.mode = 'view'; this.ids = Object.keys(DATA.MONSTERS); this.vi = this.ids.indexOf(this.enemy.id); this.bi = Bg.NAMES.indexOf(this.bg); return; }
     Sound.play(this.trainer ? 'rival' : 'wild');
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`); }
     else this.msg(`あ！ やせいの\n${this.enemy.name}が とびだしてきた！`);
@@ -153,6 +155,17 @@ class BattleScene {
   update(frame) {
     if (this.shake > 0) this.shake--;
     if (this.sparkle > 0) this.sparkle--;
+    if (this.mode === 'view') {   // ←→でモンスター、↑↓で背景、Bで戻る
+      const n = this.ids.length;
+      if (Input.pressed('right')) this.vi = (this.vi + 1) % n;
+      if (Input.pressed('left')) this.vi = (this.vi + n - 1) % n;
+      if (Input.pressed('down')) this.bi = (this.bi + 1) % Bg.NAMES.length;
+      if (Input.pressed('up')) this.bi = (this.bi + Bg.NAMES.length - 1) % Bg.NAMES.length;
+      if (Input.pressed('right') || Input.pressed('left')) { const m = makeMonster(this.ids[this.vi], 10); this.enemy = m; Game.state.party[this.pidx] = makeMonster(this.ids[this.vi], 10); this.shownHp = { p: m.hp, e: m.hp }; }
+      this.bg = Bg.NAMES[this.bi];
+      if (Input.pressed('b') || Input.pressed('a')) { Game.pop(); this.onEnd && this.onEnd('view'); }
+      return;
+    }
     if (this.mode === 'stats') {
       if (Input.pressed('a') || Input.pressed('b')) { this.mode = 'busy'; this.next(); }
       return;
@@ -271,6 +284,13 @@ class BattleScene {
       Text.draw(ctx, String(cur.power), dx + dw - 6 - Text.width(String(cur.power)), py + 31);
       Text.draw(ctx, 'めいちゅう', dx + 5, py + 42);
       Text.draw(ctx, '100', dx + dw - 6 - 12, py + 51);
+    } else if (this.mode === 'view') {
+      Text.box(ctx, 0, by, W, 56);
+      const d = DATA.MONSTERS[en.id];
+      Text.draw(ctx, `No.${d.no}  ${d.name}  ${d.type}`, 8, by + 8);
+      Text.draw(ctx, `${this.vi + 1}/${this.ids.length}  はいけい:${this.bg}`, 8, by + 20, THEME.textDim);
+      Text.draw(ctx, '←→ モンスター  ↑↓ はいけい', 8, by + 34, THEME.green);
+      Text.draw(ctx, 'B もどる', 8, by + 44, THEME.green);
     } else {
       Text.box(ctx, 0, by, W, 56);
     }
