@@ -95,7 +95,7 @@ const Game = (() => {
   const setFlag = (k, v = true) => { if (state) { state.flags[k] = v; UI.refreshNote(state); } };
 
   return {
-    start, push, pop, replace, top, fit, setViewH, rand, setFlag,
+    start, push, pop, replace, top, fit, setViewH, rand, setFlag, get scale() { return curScale; }, get viewH() { return viewH; },
     get state() { return state; },
     set state(v) { state = v; UI.refreshNote(v); },
   };

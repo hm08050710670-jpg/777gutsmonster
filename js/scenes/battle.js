@@ -23,13 +23,26 @@ const Puzzle = (() => {
     fit();
   }
   function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; document.getElementById('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
-  // 盤面の大きさ：残りの高さに収まる幅にする（6×5）
+  // 舞台の高さ（論理px）：盤面を画面の下端に置き、残りをぜんぶ舞台に使う（122〜ARENA_MAX）
+  //   閲覧モード（裏技）も同じ値を使い、実戦と見た目を揃える
+  let arena = 122;
+  const ARENA_MIN = 122, ARENA_MAX = 160, BOARD_PAD = 12;   // BOARD_PAD: 盤面の上下の余白
+  function calc() {
+    const app = document.getElementById('app');
+    const cs = getComputedStyle(app);
+    const innerH = app.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    const scale = Game.scale || 1;
+    // 盤面：幅いっぱい。ただし舞台の最小高さを残せないときは縮める
+    const boardW = Math.max(180, Math.min(app.clientWidth - 12, 480, Math.floor((innerH - ARENA_MIN * scale - BOARD_PAD) * 6 / 5)));
+    const boardH = boardW * 5 / 6;
+    arena = Math.max(ARENA_MIN, Math.min(ARENA_MAX, Math.floor((innerH - boardH - BOARD_PAD) / scale)));
+    return boardW;
+  }
   function fit() {
+    const boardW = calc();
     if (!inst || el().hidden) return;
-    const app = document.getElementById('app'), board = document.getElementById('pz-board');
-    const used = 122 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 8;
-    const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
-    board.style.width = w + 'px';
+    document.getElementById('pz-board').style.width = boardW + 'px';
+    Game.setViewH(arena);
     inst.layout();
   }
   function setEnabled(on) {
@@ -37,6 +50,7 @@ const Puzzle = (() => {
     if (on) inst.unlock(); else inst.lock();
   }
   window.addEventListener('resize', () => setTimeout(fit, 50));
+  window.addEventListener('orientationchange', () => setTimeout(fit, 200));
   // 毎フレーム：どうぐ・なかまの画面が上に乗っている間だけパッドに切り替える（十字キーが必要なため）
   function sync(scenes) {
     if (!scene || !scenes.includes(scene)) return;
@@ -44,9 +58,9 @@ const Puzzle = (() => {
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = document.getElementById('pad');
     if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
-    Game.setViewH(padScene ? CONFIG.H : 122);
+    Game.setViewH(padScene ? CONFIG.H : arena);
   }
-  return { show, hide, fit, setEnabled, sync, get busy() { return inst ? inst.busy : false; } };
+  return { show, hide, fit, calc, setEnabled, sync, get arena() { return arena; }, get busy() { return inst ? inst.busy : false; } };
 })();
 
 class BattleScene {
@@ -82,7 +96,7 @@ class BattleScene {
 
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
-    if (this.viewer) { this.mode = 'view'; this.ids = Object.keys(DATA.MONSTERS); this.vi = this.ids.indexOf(this.enemy.id); this.bi = Bg.NAMES.indexOf(this.bg); return; }
+    if (this.viewer) { Puzzle.calc(); this.mode = 'view'; this.ids = Object.keys(DATA.MONSTERS); this.vi = this.ids.indexOf(this.enemy.id); this.bi = Bg.NAMES.indexOf(this.bg); return; }
     Sound.play(this.trainer ? 'rival' : 'wild');
     Puzzle.show(this);
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`, () => { this.mode = 'command'; }); }
@@ -297,9 +311,9 @@ class BattleScene {
   draw(ctx, frame) {
     const en = this.enemy, st = Game.state;
     const W = CONFIG.W, H = CONFIG.H;
-    const AH = 122;
+    const AH = Puzzle.arena;                 // 舞台の高さ（端末の縦幅で 122〜160）
     const bgImg = Bg.get(this.bg);
-    if (bgImg) ctx.drawImage(bgImg, 0, 0, W, 152);
+    if (bgImg) ctx.drawImage(bgImg, 0, 0, W, Math.max(152, AH));
     else {
       const sky = ctx.createLinearGradient(0, 0, 0, 80);
       sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
@@ -311,32 +325,34 @@ class BattleScene {
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
 
     // 敵：中央やや右、大きめ（60px）
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(140, 70, 40, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(140, 72, 34, 5);
-    drawMonster(ctx, en, 110 + sx, 12, 60);
+    const ey = 12 + Math.floor((AH - 122) / 3);   // 舞台が高いぶん相手も少し下げる
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(140, ey + 58, 40, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(140, ey + 60, 34, 5);
+    drawMonster(ctx, en, 110 + sx, ey, 60);
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 100, 30, false);
     if (this.mode !== 'end' && !this.viewer) this.drawCount(ctx, 160, 14);
 
     // なかま列 ＋ 共通HP
-    this.drawParty(ctx, frame);
+    this.drawParty(ctx, frame, AH);
     if (this.viewer) {
       Text.box(ctx, 0, AH, W, H - AH);
-      const d = DATA.MONSTERS[en.id];
-      Text.draw(ctx, `No.${d.no} ${d.name} (${d.type})  ${this.vi + 1}/${this.ids.length}`, 8, AH + 8);
-      Text.draw(ctx, `はいけい: ${this.bg}`, 8, AH + 20, THEME.textDim);
+      const d = DATA.MONSTERS[en.id], ly = AH + 6, lh = H - AH >= 60 ? 12 : 9;   // 舞台が高いときは行間を詰める
       const pn = this.pi >= 0 ? `${this.pi + 1}/${this.ids.length}` : 'ランダム';
-      Text.draw(ctx, `なかま: ${pn}`, 100, AH + 20, THEME.textDim);
-      Text.draw(ctx, '↑↓ あいて  ←→ なかま', 8, AH + 36, THEME.green);
-      Text.draw(ctx, 'A はいけい  MENU シャッフル  B もどる', 8, AH + 48, THEME.green);
+      Text.draw(ctx, `No.${d.no} ${d.name} (${d.type})  ${this.vi + 1}/${this.ids.length}`, 8, ly);
+      Text.draw(ctx, `はいけい: ${this.bg}`, 8, ly + lh, THEME.textDim);
+      Text.draw(ctx, `なかま: ${pn}`, 100, ly + lh, THEME.textDim);
+      Text.draw(ctx, '↑↓ あいて  ←→ なかま', 8, ly + lh * 2, THEME.green);
+      Text.draw(ctx, 'A はいけい  MENU シャッフル  B もどる', 8, ly + lh * 3, THEME.green);
     }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
   }
 
   // なかまの顔アイコン6枠と、パーティ共通のHPゲージ
-  drawParty(ctx, frame) {
+  drawParty(ctx, frame, AH = 122) {
     const st = Game.state, party = this.party();
-    // 後ろ姿で相手を見上げる。枠なし。人数に応じて中央寄せ（1匹28px）
-    const n = party.length, size = CONFIG.PARTY_SPRITE || 40, y = 116 - size + (CONFIG.PARTY_CLIP || 0);   // PARTY_CLIP: 足元を隠す量
+    // 後ろ姿で相手を見上げる。枠なし。舞台の下端（HPバー）に足元を合わせる
+    const n = party.length, size = CONFIG.PARTY_SPRITE || 40, y0 = AH - 6 - size;
+    const clip = CONFIG.PARTY_CLIP || 0;   // 足元を隠す量（箱いっぱいの絵で clip px。小さい絵は絵の高さに比例して減らす）
     const px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
     // 絵の実際の幅（透明部分を除く）で、左端〜右端に均等に並べる
     const boxes = party.map(m => Mon.drawnBox(m.id, size / 24, true));
@@ -347,6 +363,7 @@ class BattleScene {
     const oval = (ox, oy, rx, ry) => { ctx.beginPath(); ctx.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     party.forEach((m, i) => {
       const b = boxes[i];
+      const y = y0 + Math.round(clip * b.h / size);
       const x = Math.round(cx - b.dx) + px;   // 絵の左端が cx に来るように箱をずらす
       const lit = this.hit.includes(i);
       ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + b.dx + b.w / 2, y + size - 1, b.w / 2 + 2, 4);
@@ -357,7 +374,7 @@ class BattleScene {
     });
     // 共通HP
     const hp = Math.round(this.shownHp.p), max = Party.maxHp(st);
-    const by = 113;
+    const by = AH - 9;
     ctx.fillStyle = THEME.greenDark; ctx.fillRect(0, by - 1, CONFIG.W, 9);
     Text.draw(ctx, 'HP', 4, by - 1, '#f2d27a');
     drawHpBar(ctx, 18, by, 96, hp, max, true);
