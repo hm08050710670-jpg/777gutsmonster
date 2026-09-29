@@ -25,12 +25,12 @@ const Puzzle = (() => {
     inst.lock();
     fit();
   }
-  function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; }
+  function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; Game.setViewH(CONFIG.H); }
   // 盤面の大きさ：残りの高さに収まる幅にする（6×5）
   function fit() {
     if (!inst || el().hidden) return;
     const app = document.getElementById('app'), board = document.getElementById('pz-board');
-    const used = document.getElementById('note').offsetHeight + document.getElementById('screen').getBoundingClientRect().height + 18 + 60;
+    const used = document.getElementById('note').offsetHeight + 154 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 60;
     const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
     board.style.width = w + 'px';
     inst.layout();
@@ -48,6 +48,7 @@ const Puzzle = (() => {
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = document.getElementById('pad');
     if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
+    Game.setViewH(padScene ? CONFIG.H : 154);
   }
   return { show, hide, fit, setEnabled, sync, get busy() { return inst ? inst.busy : false; } };
 })();
@@ -60,7 +61,6 @@ class BattleScene {
     this.onEnd = opt.onEnd || null;
     this.pidx = Game.state.party.findIndex(m => m.hp > 0);
     this.mode = 'intro';   // intro | command | move | anim | end
-    this.cmd = 0; this.mv = 0;
     this.queue = [];       // 実行待ちのステップ
     this.shownHp = { p: this.me().hp, e: this.enemy.hp }; // 表示用（アニメ）
     this.bg = opt.bg || Bg.pick(Game.state.map);          // 背景（場所・時刻で決まる）
@@ -84,7 +84,9 @@ class BattleScene {
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step/hpAnim は末尾に積む。
   //   途中に差し込みたいときは queue.unshift(...) を使う（技の処理など）。
-  msgStep(text, after) { return () => { Game.push(new DialogScene({ text, onDone: () => { after && after(); this.next(); } })); }; }
+  static get MSG_BOX() { return { x: 0, y: 120, w: 192, h: 34 }; }   // 戦闘中の会話窓（盤面を出すぶん小さい）
+  say(text, onDone) { Game.push(new DialogScene({ text, onDone, box: BattleScene.MSG_BOX })); }
+  msgStep(text, after) { return () => { this.say(text, () => { after && after(); this.next(); }); }; }
   fnStep(fn) { return () => { fn(); this.next(); }; }
   animStep(who) { return () => { this.anim = who; this.mode = 'anim'; }; }
   msg(text, after) { this.queue.push(this.msgStep(text, after)); }
@@ -164,7 +166,7 @@ class BattleScene {
     if (this.mode !== 'command') return;
     Game.push(new ItemScene({ inBattle: true, onUse: name => {
       const me = this.me();
-      if (me.hp >= me.maxHp) { say(`${me.name}の HPは まんたんだ。`); return; }
+      if (me.hp >= me.maxHp) { this.say(`${me.name}の HPは まんたんだ。`); return; }
       this.mode = 'busy';
       this.step(() => { Game.state.items[name]--; me.hp = Math.min(me.maxHp, me.hp + DATA.ITEMS[name].heal); this.shownHp.p = me.hp; });
       this.msg(`${me.name}の HPが かいふくした！`);
@@ -176,8 +178,8 @@ class BattleScene {
     if (this.mode !== 'command') return;
     Game.push(new PartyScene({ onPick: i => {
       const m = Game.state.party[i];
-      if (m.hp <= 0) { say(`${m.name}は たたかえない！`); return; }
-      if (i === this.pidx) { say(`${m.name}は もう でている！`); return; }
+      if (m.hp <= 0) { this.say(`${m.name}は たたかえない！`); return; }
+      if (i === this.pidx) { this.say(`${m.name}は もう でている！`); return; }
       this.mode = 'busy';
       this.msg(`もどれ！ ${this.me().name}！`);
       this.step(() => { this.pidx = i; this.shownHp.p = m.hp; });
@@ -192,22 +194,6 @@ class BattleScene {
     const en = this.enemy, me = this.me();
     this.count--;
     if (this.count <= 0) { this.count = ENEMY_COUNT; this.queue.unshift(...this.moveSteps(en, me, en.moves[Game.rand(0, en.moves.length - 1)], false)); }
-    this.queue.push(() => { this.checkEnd(); this.next(); });
-    this.next();
-  }
-
-  playerTurn(move) {
-    const me = this.me(), en = this.enemy;
-    const emove = en.moves[Game.rand(0, en.moves.length - 1)];
-    const first = me.spd >= en.spd;
-    const order = first ? [[me, en, move, true], [en, me, emove, false]] : [[en, me, emove, false], [me, en, move, true]];
-    for (const [a, d, mv, isP] of order) {
-      this.queue.push(() => {
-        // 先に倒れていたら行動しない
-        if (a.hp > 0 && d.hp > 0) this.queue.unshift(...this.moveSteps(a, d, mv, isP));
-        this.next();
-      });
-    }
     this.queue.push(() => { this.checkEnd(); this.next(); });
     this.next();
   }
@@ -269,13 +255,6 @@ class BattleScene {
     else { this.msg('にげられない！'); this.queue.push(() => { this.enemyTurnOnly(); }); }
     this.next();
   }
-  playerTurnEnemyOnly() {
-    const en = this.enemy, me = this.me();
-    this.queue.unshift(...this.moveSteps(en, me, en.moves[Game.rand(0, en.moves.length - 1)], false),
-      () => { this.checkEnd(); this.next(); });
-    this.next();
-  }
-
   finish(result) {
     this.mode = 'end';
     Puzzle.hide();
@@ -313,131 +292,60 @@ class BattleScene {
       Puzzle.setEnabled(Game.top() === this);
       return;
     }
-    if (this.mode === 'command_old') {
-      if (Input.pressed('up') || Input.pressed('down')) this.cmd ^= 2;
-      if (Input.pressed('left') || Input.pressed('right')) this.cmd ^= 1;
-      if (Input.pressed('a')) {
-        if (this.cmd === 0) { this.mode = 'move'; this.mv = 0; }
-        else if (this.cmd === 1) {
-          Game.push(new PartyScene({ onPick: i => {
-            const m = Game.state.party[i];
-            if (m.hp <= 0) { say(`${m.name}は たたかえない！`); return; }
-            if (i === this.pidx) { say(`${m.name}は もう でている！`); return; }
-            this.mode = 'busy';
-            this.msg(`もどれ！ ${this.me().name}！`);
-            this.step(() => { this.pidx = i; this.shownHp.p = m.hp; });
-            this.msg(`いけっ！ ${m.name}！`);
-            this.queue.push(() => { this.playerTurnEnemyOnly(); });
-            this.next();
-          } }));
-        } else if (this.cmd === 2) {
-          Game.push(new ItemScene({ inBattle: true, onUse: name => {
-            const me = this.me();
-            if (me.hp >= me.maxHp) { say(`${me.name}の HPは まんたんだ。`); return; }
-            this.mode = 'busy';
-            this.step(() => { Game.state.items[name]--; me.hp = Math.min(me.maxHp, me.hp + DATA.ITEMS[name].heal); this.shownHp.p = me.hp; });
-            this.msg(`${me.name}の HPが かいふくした！`);
-            this.queue.push(() => { this.shownHp.p = me.hp; this.playerTurnEnemyOnly(); });
-            this.next();
-          } }));
-        } else { this.mode = 'busy'; this.tryRun(); }
-      }
-      return;
-    }
-    if (this.mode === 'move') {
-      const moves = this.me().moves;
-      // 2×2 の枠を上下左右で移動（存在しない枠には行かない）
-      const go = d => { const n = this.mv ^ d; if (n < moves.length) this.mv = n; };
-      if (Input.pressed('up') || Input.pressed('down')) go(2);
-      if (Input.pressed('left') || Input.pressed('right')) go(1);
-      if (Input.pressed('b')) { this.mode = 'command'; return; }
-      if (Input.pressed('a')) {
-        const mv = moves[this.mv];
-        if (mv.pp <= 0) { say('PPが たりない！'); return; }
-        this.mode = 'busy';
-        this.playerTurn(mv);
-      }
-    }
   }
 
   // ---- 描画（CLASSIC COLOR）----
+  //   舞台は 0..120、会話窓は 120..154（盤面を出すため、戦闘中は画面の下 154px までしか見せない）
   draw(ctx, frame) {
     const me = this.me(), en = this.enemy;
     const W = CONFIG.W, H = CONFIG.H;
+    const AH = 154;   // 見せる高さ
     // 背景：画像（assets/bg）。無ければ空と芝を描く
     const bgImg = Bg.get(this.bg);
     if (bgImg) {
-      ctx.drawImage(bgImg, 0, 0, W, 152);
+      ctx.drawImage(bgImg, 0, 0, W, AH);
     } else {
-      const sky = ctx.createLinearGradient(0, 0, 0, 96);
+      const sky = ctx.createLinearGradient(0, 0, 0, 80);
       sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 96);
-      ctx.fillStyle = '#6cb85a'; ctx.fillRect(0, 96, W, H - 96);
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 80);
+      ctx.fillStyle = '#6cb85a'; ctx.fillRect(0, 80, W, H - 80);
     }
+    if (this.viewer) { ctx.fillStyle = THEME.greenDark; ctx.fillRect(0, AH, W, H - AH); }
     // 足場の楕円（半透明で背景になじませる）
     const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, 90, 34, 8); oval(48, 138, 36, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, 92, 30, 5); oval(48, 140, 32, 5);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, 74, 34, 8); oval(48, 114, 36, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, 76, 30, 5); oval(48, 116, 32, 5);
 
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     // 敵：右上
-    drawMonster(ctx, en, 124 + sx, 38, 48);
-    this.drawStatus(ctx, en, this.shownHp.e, 4, 6, 104, 30, false);
-    // 自分：左下（左右反転で敵と向き合う）
-    if (this.sparkle > 0) this.drawSparkle(ctx, 48, 114, frame);
-    drawMonster(ctx, me, 24, 90, 48, true, true);   // 後ろ姿（無ければ反転）
-    this.drawStatus(ctx, me, this.shownHp.p, 84, 98, 104, 38, true);
+    drawMonster(ctx, en, 124 + sx, 24, 48);
+    this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 104, 30, false);
+    if (!this.viewer && this.mode !== 'end') this.drawCount(ctx, 148, 14);
+    // 自分：左下（後ろ姿、無ければ反転）
+    if (this.sparkle > 0) this.drawSparkle(ctx, 48, 90, frame);
+    drawMonster(ctx, me, 24, 66, 48, true, true);
+    this.drawStatus(ctx, me, this.shownHp.p, 84, 76, 104, 38, true);
 
-    // 下部ウィンドウ
-    const by = H - 56;
-    if (this.mode === 'command') {
-      Text.box(ctx, 0, by, W, 56);
-      Text.draw(ctx, 'ボールを うごかして こうげき！', 8, by + 12);
-      Text.draw(ctx, `${this.foe()}${en.name}の こうげきまで`, 8, by + 28, THEME.textDim);
-      Text.draw(ctx, `あと ${this.count}`, 8, by + 40, this.count <= 1 ? THEME.hpLow : THEME.green);
-    } else if (this.mode === 'command_old') {
-      Text.box(ctx, 0, by, 90, 56);
-      Text.draw(ctx, `${me.name}は`, 8, by + 14);
-      Text.draw(ctx, 'どうする？', 8, by + 30);
-      const labels = ['たたかう', 'なかま', 'どうぐ', 'にげる'];
-      labels.forEach((l, i) => {
-        const x = 92 + (i % 2) * 51, y = by + Math.floor(i / 2) * 29;
-        Text.box(ctx, x, y, 49, 27);
-        Text.draw(ctx, l, x + 13, y + 9);
-        if (i === this.cmd) Text.cursor(ctx, x + 5, y + 9);
-      });
-    } else if (this.mode === 'move') {
-      const py = H - 72;
-      Text.box(ctx, 0, py, W, 72, { fill: THEME.green });
-      me.moves.forEach((mv, i) => {
-        const x = 1 + (i % 2) * 69, y = py + 4 + Math.floor(i / 2) * 33;
-        Text.box(ctx, x, y, 68, 31);
-        Text.draw(ctx, mv.name, x + 6, y + 5);   // 7文字（56px）が枠内に収まる位置
-        Text.draw(ctx, `PP ${String(mv.pp).padStart(2)}/${String(mv.maxPp).padStart(2)}`, x + 18, y + 16, THEME.textDim);
-        if (i === this.mv) Text.cursor(ctx, x + 2, y + 5);
-      });
-      // 右：技の説明（タイプ・いりょく・めいちゅう）
-      const cur = DATA.MOVES[me.moves[this.mv].name];
-      const dx = 140, dw = 50;
-      Text.box(ctx, dx, py + 4, dw, 64);
-      Text.draw(ctx, cur.type, dx + 5, py + 8, THEME.green);
-      Text.rule(ctx, dx + 5, py + 19, dw - 10);
-      Text.draw(ctx, 'いりょく', dx + 5, py + 22);
-      Text.draw(ctx, String(cur.power), dx + dw - 6 - Text.width(String(cur.power)), py + 31);
-      Text.draw(ctx, 'めいちゅう', dx + 5, py + 42);
-      Text.draw(ctx, '100', dx + dw - 6 - 12, py + 51);
-    } else if (this.mode === 'view') {
-      Text.box(ctx, 0, by, W, 56);
+    if (this.mode === 'view') {
+      Text.box(ctx, 0, AH, W, H - AH);
       const d = DATA.MONSTERS[en.id];
-      Text.draw(ctx, `No.${d.no}  ${d.name}  ${d.type}`, 8, by + 8);
-      Text.draw(ctx, `${this.vi + 1}/${this.ids.length}  はいけい:${this.bg}`, 8, by + 20, THEME.textDim);
-      Text.draw(ctx, '←→ モンスター  ↑↓ はいけい', 8, by + 34, THEME.green);
-      Text.draw(ctx, 'B もどる', 8, by + 44, THEME.green);
-    } else {
-      Text.box(ctx, 0, by, W, 56);
+      Text.draw(ctx, `No.${d.no}  ${d.name}  ${d.type}`, 8, AH + 7);
+      Text.draw(ctx, `${this.vi + 1}/${this.ids.length}  はいけい:${this.bg}`, 8, AH + 19, THEME.textDim);
+      Text.draw(ctx, '←→ モンスター ↑↓ はいけい B もどる', 8, AH + 33, THEME.green);
     }
-
     if (this.mode === 'stats') this.drawStats(ctx, me, frame);
+  }
+
+  // 相手の攻撃までのターン数（敵の頭の上の小さな札）
+  drawCount(ctx, cx, cy) {
+    const s = `あと${this.count}`; const w = Text.width(s) + 8;
+    ctx.fillStyle = this.count <= 1 ? '#b3261e' : THEME.greenDark;
+    ctx.fillRect(cx - w / 2, cy - 6, w, 12);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(cx - w / 2, cy - 6, w, 1);
+    Text.draw(ctx, s, cx - w / 2 + 4, cy - 4, '#fff6d8');
+    // 下向きの小さな三角
+    ctx.fillStyle = this.count <= 1 ? '#b3261e' : THEME.greenDark;
+    for (let i = 0; i < 3; i++) ctx.fillRect(cx - 2 + i, cy + 6 + i, 5 - i * 2, 1);
   }
 
   // HP窓：名前 / Lv. / タイプアイコン / HPピル＋バー / (自分のみ) 現在/最大
@@ -474,7 +382,7 @@ class BattleScene {
   // のうりょく表（レベルアップ後）
   drawStats(ctx, m, frame) {
     const g = this.grow; if (!g) return;
-    const x = 12, y = 42, w = 168, h = 100;
+    const x = 12, y = 8, w = 168, h = 100;
     Text.box(ctx, x, y, w, h);
     Text.draw(ctx, `${m.name}の`, x + 8, y + 7);
     Text.draw(ctx, 'のうりょくが あがった！', x + 8, y + 18);

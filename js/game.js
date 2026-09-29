@@ -5,6 +5,8 @@ const Game = (() => {
   const canvas = document.getElementById('screen');
   const ctx = canvas.getContext('2d');
   let RS = 0;
+  let viewH = CONFIG.H;   // 画面に見せる高さ（論理px）。戦闘中は 154 に縮めて下を隠す
+  let curScale = 1;
   // 内部解像度：表示倍率×端末のピクセル密度に合わせる（iPhoneなら 2×3=6倍）。文字が実ピクセルで描かれてくっきりする
   function setRenderScale(rs) {
     rs = Math.max(2, Math.min(8, Math.round(rs)));
@@ -35,8 +37,17 @@ const Game = (() => {
     scale = Math.max(1, scale);
     canvas.style.width = Math.floor(CONFIG.W * scale) + 'px';
     canvas.style.height = Math.floor(CONFIG.H * scale) + 'px';
+    curScale = scale;
+    applyViewH();
     setRenderScale(scale * (window.devicePixelRatio || 1));
   }
+  function applyViewH() {
+    const wrap = document.getElementById('screen-wrap');
+    wrap.style.height = Math.floor(viewH * curScale) + 'px';
+    wrap.style.overflow = 'hidden';
+    wrap.style.alignItems = 'flex-start';
+  }
+  function setViewH(h) { if (h === viewH) return; viewH = h; applyViewH(); }
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', () => setTimeout(fit, 150));
 
@@ -84,7 +95,7 @@ const Game = (() => {
   const setFlag = (k, v = true) => { if (state) { state.flags[k] = v; UI.refreshNote(state); } };
 
   return {
-    start, push, pop, replace, top, fit, rand, setFlag,
+    start, push, pop, replace, top, fit, setViewH, rand, setFlag,
     get state() { return state; },
     set state(v) { state = v; UI.refreshNote(v); },
   };

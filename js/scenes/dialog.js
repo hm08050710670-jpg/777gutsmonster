@@ -11,7 +11,7 @@ class DialogScene {
     this.choices = opt.choices || null;
     this.onChoice = opt.onChoice || null;
     this.box = opt.box || { x: 0, y: CONFIG.H - 56, w: CONFIG.W, h: 56 };
-    this.lineY = [this.box.y + 14, this.box.y + 30];
+    this.lineY = this.box.h < 48 ? [this.box.y + 6, this.box.y + 17] : [this.box.y + 14, this.box.y + 30];
     this.textX = this.box.x + 10;
     this.instant = !!opt.instant;
     this.lines = Text.wrap(this.text, this.box.w - 20);
