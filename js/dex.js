@@ -10,7 +10,7 @@ const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishib
 // 表示の大きさ（枠に対する割合）。基本は進化段階で決まる：1段目 0.6／2段目 0.8／3段目 1.0
 // 個別に変えたいときは DEX_SIZE に書く（虫などさらに小さいもの）
 const STAGE_SIZE = { 1: 0.6, 2: 0.8, 3: 1.0 };
-const DEX_SIZE = { nyakimi: 0.5, kinomushi: 0.5, shibatta: 0.55, kokemogu: 0.55 };
+const DEX_SIZE = { nyakimi: 0.5, kinomushi: 0.5, shibatta: 0.55, kokemogu: 0.55, rafubatta: 0.55, nyakimino: 0.55, kinomino: 0.55, bubu: 0.6, mantou: 0.6, nyakiageha: 0.8, honeybal: 0.8 };
 
 const DEX = [
   // ---- 御三家 ----
