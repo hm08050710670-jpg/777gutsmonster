@@ -102,9 +102,9 @@ const Text = (() => {
     ctx.fillStyle = color;
     for (let i = 0; i < 4; i++) ctx.fillRect(x + i, y + 1 + i, 1, 7 - i * 2);
   }
-  function moreArrow(ctx, x, y, frame) {
+  function moreArrow(ctx, x, y, frame, color = THEME.green) {
     if (Math.floor(frame / 16) % 2) return;
-    ctx.fillStyle = THEME.green;
+    ctx.fillStyle = color;
     for (let i = 0; i < 4; i++) ctx.fillRect(x + i, y + i, 7 - i * 2, 1);
   }
 

@@ -14,6 +14,7 @@ class DialogScene {
     this.lineY = this.box.h < 48 ? [this.box.y + 6, this.box.y + 17] : [this.box.y + 14, this.box.y + 30];
     this.textX = this.box.x + 10;
     this.instant = !!opt.instant;
+    this.plain = !!opt.plain;   // 枠なし（半透明の帯に白文字）
     this.lines = Text.wrap(this.text, this.box.w - 20);
     this.page = 0; this.chars = 0; this.tick = 0;
     this.choosing = false; this.sel = 0;
@@ -47,7 +48,8 @@ class DialogScene {
 
   draw(ctx, frame) {
     const b = this.box;
-    Text.box(ctx, b.x, b.y, b.w, b.h);
+    if (this.plain) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(b.x, b.y, b.w, b.h); }
+    else Text.box(ctx, b.x, b.y, b.w, b.h);
     if (this.name) {
       const w = Text.width(this.name) + 12;
       Text.box(ctx, b.x + 6, b.y - 12, w, 18);
@@ -58,10 +60,10 @@ class DialogScene {
       const cs = [...line];
       const show = cs.slice(0, Math.max(0, remain)).join('');
       remain -= cs.length;
-      Text.draw(ctx, show, this.textX, this.lineY[i]);
+      Text.draw(ctx, show, this.textX, this.lineY[i], this.plain ? '#fff6d8' : THEME.text);
     });
     if (this.chars >= this.pageTotal() && !this.isLastPage()) {
-      Text.moreArrow(ctx, b.x + b.w - 16, b.y + b.h - 11, frame);
+      Text.moreArrow(ctx, b.x + b.w - 16, b.y + b.h - 11, frame, this.plain ? '#fff6d8' : THEME.green);
     }
     if (this.choosing) {
       const cw = 60, ch = this.choices.length * 16 + 16;

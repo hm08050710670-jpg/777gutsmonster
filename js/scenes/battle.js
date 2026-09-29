@@ -12,25 +12,22 @@ const Puzzle = (() => {
   const el = () => document.getElementById('puzzle');
   function show(s) {
     scene = s;
-    el().hidden = false; document.getElementById('pad').hidden = true;
+    el().hidden = false; document.getElementById('pad').hidden = true; document.getElementById('note').hidden = true;
     if (!inst) {
       inst = PazugoruPuzzle.mount(document.getElementById('pz-board'), {
         images: CONFIG.BALL_IMAGES || {},
         onResolve: r => { if (scene) scene.onPuzzle(r); },
       });
-      document.getElementById('pz-item').addEventListener('click', () => scene && scene.pressItem());
-      document.getElementById('pz-party').addEventListener('click', () => scene && scene.pressParty());
-      document.getElementById('pz-run').addEventListener('click', () => scene && scene.pressRun());
     } else { inst.reset(); }
     inst.lock();
     fit();
   }
-  function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; Game.setViewH(CONFIG.H); }
+  function hide() { scene = null; el().hidden = true; document.getElementById('pad').hidden = false; document.getElementById('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
   // 盤面の大きさ：残りの高さに収まる幅にする（6×5）
   function fit() {
     if (!inst || el().hidden) return;
     const app = document.getElementById('app'), board = document.getElementById('pz-board');
-    const used = document.getElementById('note').offsetHeight + 154 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 60;
+    const used = 154 * (document.getElementById('screen').getBoundingClientRect().width / CONFIG.W) + 18 + 12;
     const w = Math.max(180, Math.min(app.clientWidth - 12, Math.floor((app.clientHeight - used) * 6 / 5)));
     board.style.width = w + 'px';
     inst.layout();
@@ -38,7 +35,6 @@ const Puzzle = (() => {
   function setEnabled(on) {
     if (!inst) return;
     if (on) inst.unlock(); else inst.lock();
-    ['pz-item', 'pz-party', 'pz-run'].forEach(id => { document.getElementById(id).disabled = !on; });
   }
   window.addEventListener('resize', () => setTimeout(fit, 50));
   // 毎フレーム：どうぐ・なかまの画面が上に乗っている間だけパッドに切り替える（十字キーが必要なため）
@@ -84,7 +80,7 @@ class BattleScene {
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step は末尾に積む。途中に差し込むときは queue.unshift。
   static get MSG_BOX() { return { x: 0, y: 120, w: 192, h: 34 }; }   // 戦闘中の会話窓（盤面を出すぶん小さい）
-  say(text, onDone) { Game.push(new DialogScene({ text, onDone, box: BattleScene.MSG_BOX })); }
+  say(text, onDone) { Game.push(new DialogScene({ text, onDone, box: BattleScene.MSG_BOX, plain: true })); }
   msgStep(text, after) { return () => { this.say(text, () => { after && after(); this.next(); }); }; }
   fnStep(fn) { return () => { fn(); this.next(); }; }
   animStep(who) { return () => { this.anim = who; this.mode = 'anim'; }; }
@@ -322,20 +318,18 @@ class BattleScene {
   // なかまの顔アイコン6枠と、パーティ共通のHPゲージ
   drawParty(ctx, frame) {
     const st = Game.state, party = this.party();
-    const y = 84, slotW = 30, x0 = 4;
-    ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(0, y - 2, CONFIG.W, 30);
-    for (let i = 0; i < 6; i++) {
-      const x = x0 + i * (slotW + 1);
-      const m = party[i];
-      ctx.fillStyle = m ? THEME.ivory : 'rgba(255,255,255,0.15)'; ctx.fillRect(x, y, slotW, 26);
-      ctx.fillStyle = THEME.greenDark; ctx.fillRect(x, y, slotW, 1); ctx.fillRect(x, y + 25, slotW, 1); ctx.fillRect(x, y, 1, 26); ctx.fillRect(x + slotW - 1, y, 1, 26);
-      if (!m) continue;
+    // 後ろ姿で相手を見上げる。枠なし。人数に応じて中央寄せ（1匹28px）
+    const n = party.length, size = 28, gap = 2, y = 82;
+    const x0 = Math.floor((CONFIG.W - (n * size + (n - 1) * gap)) / 2);
+    const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
+    party.forEach((m, i) => {
+      const x = x0 + i * (size + gap);
       const lit = this.hit.includes(i);
-      if (lit) { ctx.fillStyle = '#fff3b0'; ctx.fillRect(x + 1, y + 1, slotW - 2, 24); }
-      drawMonster(ctx, m, x + 3, y + 1, 24);
-      const icon = Gfx.get(`type_${m.type}`, 1); if (icon) ctx.drawImage(icon, x + slotW - 9, y + 17);
-      if (this.sparkle > 0 && this.sparkleIdx === i) this.drawSparkle(ctx, x + 15, y + 13, frame, 10);
-    }
+      ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + size / 2, y + size - 1, size / 2, 4);
+      const bob = lit ? -2 : 0;
+      drawMonster(ctx, m, x, y + bob, size, false, true);
+      if (this.sparkle > 0 && this.sparkleIdx === i) this.drawSparkle(ctx, x + size / 2, y + size / 2, frame, 12);
+    });
     // 共通HP
     const hp = Math.round(this.shownHp.p), max = Party.maxHp(st);
     const by = 113;

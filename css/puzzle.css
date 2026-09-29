@@ -27,3 +27,4 @@
 #pz-actions .pz-btn:active{background:var(--btn-active);color:var(--text)}
 #pz-actions .pz-btn:disabled{opacity:.4}
 #pz-board{width:100%}
+#note[hidden]{display:none}
