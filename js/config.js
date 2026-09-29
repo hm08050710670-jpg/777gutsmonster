@@ -14,6 +14,7 @@ const CONFIG = {
   FONT: 'DotGothic16',
   FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf',
   PARTY_MAX: 5,       // なかまの最大数
+  PARTY_SPRITE: 40,   // 戦闘で味方を描く大きさ（px）
   TEXT_BOLD: 0.33,   // 文字の太さ（0=そのまま、0.33≒1.7倍、0.5≒2倍）
   RENDER_SCALE: 2,   // 内部描画を2倍解像度にして文字を読みやすくする
   TITLE: 'GUTS MONSTERS',

@@ -311,9 +311,9 @@ class BattleScene {
     }
 
     // 敵：中央やや右、大きめ（60px）
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(140, 76, 40, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(140, 78, 34, 5);
-    drawMonster(ctx, en, 110 + sx, 18, 60);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(140, 70, 40, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(140, 72, 34, 5);
+    drawMonster(ctx, en, 110 + sx, 12, 60);
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 100, 30, false);
     if (this.mode !== 'end') this.drawCount(ctx, 160, 14);
 
@@ -326,12 +326,13 @@ class BattleScene {
   drawParty(ctx, frame) {
     const st = Game.state, party = this.party();
     // 後ろ姿で相手を見上げる。枠なし。人数に応じて中央寄せ（1匹28px）
-    const n = party.length, size = 40, gap = -2, y = 76;   // 足元は HP バーで少し隠れてよい
+    const n = party.length, size = CONFIG.PARTY_SPRITE || 40, gap = Math.floor((CONFIG.W - n * size) / Math.max(1, n - 1)), y = 116 - size;   // 足元は HP バーで少し隠れてよい
     const px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
-    const x0 = Math.floor((CONFIG.W - (n * size + (n - 1) * gap)) / 2);
+    const g = Math.min(gap, 1);
+    const x0 = Math.floor((CONFIG.W - (n * size + (n - 1) * g)) / 2);
     const oval = (cx, cy, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
     party.forEach((m, i) => {
-      const x = x0 + i * (size + gap) + px;
+      const x = x0 + i * (size + g) + px;
       const lit = this.hit.includes(i);
       ctx.fillStyle = lit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + size / 2, y + size - 1, size / 2, 4);
       const bob = lit ? -2 : 0;
