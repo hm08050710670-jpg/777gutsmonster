@@ -7,8 +7,10 @@
 //   （2026-09-28：御三家以外はいったん外す。新しいドット絵ができた個体から追加していく）
 const DEX_ENABLED = ['kokegame', 'morigame', 'nushigame', 'hinoshishi', 'shishiburn', 'shishivolke', 'amepiyo', 'amegamo', 'doshagamo', 'bubu', 'mantou', 'bankani', 'oobankani', 'shibatta', 'rafubatta', 'shigebatta', 'kokemogu', 'rafumoggu', 'mogujuou', 'nidomu', 'nyakimi', 'nyakimino', 'nyakiageha', 'kinomushi', 'kinomino', 'honeybal'];
 
-// 表示の大きさ（枠に対する割合、既定 1.0）。小さい生き物は小さく見せる
-const DEX_SIZE = { kokemogu: 0.55, nyakimi: 0.5, nyakimino: 0.55, kinomushi: 0.5, kinomino: 0.55, shibatta: 0.55, rafubatta: 0.65, amepiyo: 0.6, amegamo: 0.8, nyakiageha: 0.8, honeybal: 0.8 };
+// 表示の大きさ（枠に対する割合）。基本は進化段階で決まる：1段目 0.6／2段目 0.8／3段目 1.0
+// 個別に変えたいときは DEX_SIZE に書く（虫などさらに小さいもの）
+const STAGE_SIZE = { 1: 0.6, 2: 0.8, 3: 1.0 };
+const DEX_SIZE = { nyakimi: 0.5, kinomushi: 0.5, shibatta: 0.55, kokemogu: 0.55 };
 
 const DEX = [
   // ---- 御三家 ----

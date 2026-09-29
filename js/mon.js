@@ -35,7 +35,8 @@ const Mon = (() => {
   // 等倍ドット絵：24*scale の箱に収まるよう最近傍で拡大（足元を下に揃える）
   function drawPx(ctx, id, x, y, scale, flip, back) {
     const e = pmeta[id]; const r = back && e.b ? e.b : e.f; if (!r) return false;
-    const size = (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || 1;
+    const d = DATA.MONSTERS[id];
+    const size = (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
     const [sx, sy, sw, sh] = r, box = 24 * scale, k = box * size / Math.max(sw, sh);
     const w = Math.round(sw * k), h = Math.round(sh * k), dx = x + Math.floor((box - w) / 2), dy = y + box - h;
     const doFlip = flip && !(back && e.b);
