@@ -32,12 +32,17 @@ const Mon = (() => {
     } catch (e) { pimg = null; pmeta = {}; }
   }
   const hasPx = id => !!(pimg && pmeta[id]);
+  // 表示倍率：相手側（正面）は進化段階／個別指定で変える。味方側（後ろ姿）は全員同じ大きさ
+  function sizeOf(id, back) {
+    if (back) return 1;
+    const d = DATA.MONSTERS[id];
+    return (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
+  }
   // 実際に描かれる大きさと箱内のオフセット（配置計算用）
   function drawnBox(id, scale, back) {
     const e = pmeta[id]; if (!e) return { w: 24 * scale, h: 24 * scale, dx: 0, dy: 0 };
     const r = back && e.b ? e.b : e.f;
-    const d = DATA.MONSTERS[id];
-    const size = (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
+    const size = sizeOf(id, back);
     const [sx, sy, sw, sh] = r, box = 24 * scale, k = box * size / Math.max(sw, sh);
     const w = Math.round(sw * k), h = Math.round(sh * k);
     return { w, h, dx: Math.floor((box - w) / 2), dy: box - h };
@@ -45,8 +50,7 @@ const Mon = (() => {
   // 等倍ドット絵：24*scale の箱に収まるよう最近傍で拡大（足元を下に揃える）
   function drawPx(ctx, id, x, y, scale, flip, back) {
     const e = pmeta[id]; const r = back && e.b ? e.b : e.f; if (!r) return false;
-    const d = DATA.MONSTERS[id];
-    const size = (typeof DEX_SIZE !== 'undefined' && DEX_SIZE[id]) || (d && typeof STAGE_SIZE !== 'undefined' && STAGE_SIZE[d.stage]) || 1;
+    const size = sizeOf(id, back);
     const [sx, sy, sw, sh] = r, box = 24 * scale, k = box * size / Math.max(sw, sh);
     const w = Math.round(sw * k), h = Math.round(sh * k), dx = x + Math.floor((box - w) / 2), dy = y + box - h;
     const doFlip = flip && !(back && e.b);

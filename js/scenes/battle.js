@@ -70,7 +70,14 @@ class BattleScene {
   shuffleParty() {
     const ids = Object.keys(DATA.MONSTERS).slice();
     for (let i = ids.length - 1; i > 0; i--) { const j = Game.rand(0, i); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    this.pi = -1;
     Game.state.party = ids.slice(0, CONFIG.PARTY_MAX).map(id => makeMonster(id, 10)); Party.full(Game.state); this.shownHp.p = Party.hp(Game.state);
+  }
+  // 閲覧モード用：図鑑順で offset から5匹をなかまにする（←→で1匹ずつずらす）
+  setParty(offset) {
+    const ids = Object.keys(DATA.MONSTERS), n = ids.length;
+    Game.state.party = Array.from({ length: Math.min(CONFIG.PARTY_MAX, n) }, (_, i) => makeMonster(ids[(offset + i) % n], 10));
+    Party.full(Game.state); this.shownHp.p = Party.hp(Game.state);
   }
 
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
@@ -249,14 +256,14 @@ class BattleScene {
   update(frame) {
     if (this.shake > 0) this.shake--;
     if (this.sparkle > 0) this.sparkle--;
-    if (this.mode === 'view') {   // ←→でモンスター、↑↓で背景、Bで戻る
+    if (this.mode === 'view') {   // ↑↓であいて、←→でなかま（5匹ずつ順送り）、Aで背景、MENUでシャッフル、Bで戻る
       const n = this.ids.length;
-      if (Input.pressed('right')) this.vi = (this.vi + 1) % n;
-      if (Input.pressed('left')) this.vi = (this.vi + n - 1) % n;
-      if (Input.pressed('down')) this.bi = (this.bi + 1) % Bg.NAMES.length;
-      if (Input.pressed('up')) this.bi = (this.bi + Bg.NAMES.length - 1) % Bg.NAMES.length;
-      if (Input.pressed('a')) this.vi = (this.vi + 1) % n;
-      if (Input.pressed('right') || Input.pressed('left') || Input.pressed('a')) { const m = makeMonster(this.ids[this.vi], 10); this.enemy = m; this.shownHp.e = m.hp; }
+      if (Input.pressed('down')) this.vi = (this.vi + 1) % n;
+      if (Input.pressed('up')) this.vi = (this.vi + n - 1) % n;
+      if (Input.pressed('down') || Input.pressed('up')) { const m = makeMonster(this.ids[this.vi], 10); this.enemy = m; this.shownHp.e = m.hp; }
+      if (Input.pressed('right')) { this.pi = (this.pi + 1) % n; this.setParty(this.pi); }
+      if (Input.pressed('left')) { this.pi = (this.pi + n - 1) % n; this.setParty(this.pi); }
+      if (Input.pressed('a')) this.bi = (this.bi + 1) % Bg.NAMES.length;
       if (Input.pressed('start')) { this.shuffleParty(); }
       this.bg = Bg.NAMES[this.bi];
       if (Input.pressed('b')) { Game.pop(); this.onEnd && this.onEnd('view'); }
@@ -317,8 +324,10 @@ class BattleScene {
       const d = DATA.MONSTERS[en.id];
       Text.draw(ctx, `No.${d.no} ${d.name} (${d.type})  ${this.vi + 1}/${this.ids.length}`, 8, AH + 8);
       Text.draw(ctx, `はいけい: ${this.bg}`, 8, AH + 20, THEME.textDim);
-      Text.draw(ctx, 'A/←→ あいて  ↑↓ はいけい', 8, AH + 36, THEME.green);
-      Text.draw(ctx, 'MENU なかまシャッフル  B もどる', 8, AH + 48, THEME.green);
+      const pn = this.pi >= 0 ? `${this.pi + 1}/${this.ids.length}` : 'ランダム';
+      Text.draw(ctx, `なかま: ${pn}`, 100, AH + 20, THEME.textDim);
+      Text.draw(ctx, '↑↓ あいて  ←→ なかま', 8, AH + 36, THEME.green);
+      Text.draw(ctx, 'A はいけい  MENU シャッフル  B もどる', 8, AH + 48, THEME.green);
     }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
   }
