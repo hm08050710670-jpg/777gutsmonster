@@ -19,6 +19,7 @@ const Tiles = (() => {
     await Promise.all([
       loadAtlas(CONFIG.TILES_IMG || 'assets/tiles.png', 'assets/tiles.json', CONFIG.TILES_META_INLINE),
       loadAtlas(CONFIG.HERO_IMG || 'assets/hero.png', 'assets/hero.json', CONFIG.HERO_META_INLINE),
+      loadAtlas(CONFIG.NPC_IMG || 'assets/npc.png', 'assets/npc.json', CONFIG.NPC_META_INLINE),
     ]);
   }
   const has = name => !!meta[name];

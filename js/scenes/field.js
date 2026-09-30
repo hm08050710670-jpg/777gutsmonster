@@ -293,7 +293,9 @@ class FieldScene {
   }
   npcSprite(ev) {
     const dir = ev.face || ev.dir || 'down';
-    return Gfx.get(ev.sprite); // NPCは正面のみ（方向別スプライトは未実装）
+    const img = ev.img || ev.sprite;   // img: 画像アトラスのスプライト名（4方向あり）
+    if (Tiles.has(`${img}_${dir}0`)) return Tiles.get(`${img}_${dir}0`);
+    return Gfx.get(ev.sprite); // 旧アート（正面のみ）
   }
 
   // 小物：マスの下中央に置く（絵の大きさが16×16でなくてもよい。街灯など背の高いものは上にはみ出す）
@@ -398,7 +400,7 @@ class FieldScene {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
       if (sx < -T || sy < -T || sx > W || sy > H) continue;
       if (ev.kind === 'starter') { if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), sx, sy - 4); }   // 画像タイルの部屋ではテーブルの絵にボールが描いてある
-      else if (ev.sprite) ctx.drawImage(this.npcSprite(ev), sx, sy - 2);
+      else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); }
     }
     // カットシーンの人物
     if (this.actor) {

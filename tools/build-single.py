@@ -79,6 +79,11 @@ if os.path.exists('assets/tiles.png') and os.path.exists('assets/tiles.json'):
     tiles_png = 'data:image/png;base64,' + base64.b64encode(open('assets/tiles.png', 'rb').read()).decode()
     tiles_json = open('assets/tiles.json', encoding='utf-8').read()
     print('town tiles embedded')
+npc_png = npc_json = None
+if os.path.exists('assets/npc.png') and os.path.exists('assets/npc.json'):
+    npc_png = 'data:image/png;base64,' + base64.b64encode(open('assets/npc.png', 'rb').read()).decode()
+    npc_json = open('assets/npc.json', encoding='utf-8').read()
+    print('npc sprites embedded')
 hero_png = hero_json = None
 if os.path.exists('assets/hero.png') and os.path.exists('assets/hero.json'):
     hero_png = 'data:image/png;base64,' + base64.b64encode(open('assets/hero.png', 'rb').read()).decode()
@@ -107,6 +112,8 @@ def inline_js(m):
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  BG_IMAGES: {json.dumps(bg_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     if tiles_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  TILES_IMG: '{tiles_png}',\n  TILES_META_INLINE: {tiles_json},\n  TITLE: 'GUTS MONSTERS',")
+    if npc_png:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  NPC_IMG: '{npc_png}',\n  NPC_META_INLINE: {npc_json},\n  TITLE: 'GUTS MONSTERS',")
     if hero_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  HERO_IMG: '{hero_png}',\n  HERO_META_INLINE: {hero_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:
