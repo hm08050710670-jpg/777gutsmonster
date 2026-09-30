@@ -60,8 +60,8 @@ const DATA = {
 
   // ---- 冒険ノート（フラグ順に上から判定）----
   NOTES: [
-    { flag: 'town2',    text: 'バーディタウンに ついた。町の人に 話を きこう。' },
-    { flag: 'forestIn', text: 'グリーンの森を 北へ ぬけて バーディタウンへ。' },
+    { flag: 'town2',    text: 'ガーデンプレースに ついた。町の人に 話を きこう。' },
+    { flag: 'forestIn', text: 'グリーンの森を 北へ ぬけて ガーデンプレースへ。' },
     { flag: 'rival1',  text: '町の北の ガーデンロードへ 向かおう。' },
     { flag: 'starter', text: '研究所を出て 冒険をはじめよう。' },
     { flag: null,      text: '冒険の朝だ。家を出て、オクムラ博士の研究所へ向かおう。' },
@@ -108,7 +108,7 @@ const DATA = {
       rows: [
         'WWWWWWWWWWWWWPWWWWWWWWWWWW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
-        'WGGGGGGGGGGGGPGGGGGGGGGGGW',
+        'WGGGGGGGGGGGSPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
@@ -141,6 +141,7 @@ const DATA = {
         { x: 17, y: 14, kind: 'warp', to: { map: 'shop', x: 4, y: 4, dir: 'up' } },
         { x: 13, y: 0, kind: 'warp', to: { map: 'road', x: 7, y: 20, dir: 'up' } },
         { x: 9, y: 11, kind: 'sign', text: 'ガッツタウン\nゴルフ場の となりの しずかな町' },
+        { x: 12, y: 2, kind: 'sign', text: 'この先 ガーデンロード\nガーデンプレースまで つづく' },
         { x: 19, y: 8, kind: 'sign', text: 'オクムラ モンスター研究所は\n町の 北西' },
         { x: 15, y: 10, kind: 'npc', sprite: 'npc_woman', dir: 'down',
           text: '北の ガーデンロードには\nやせいの GUTS MONSTERSが いるのよ。' },
@@ -239,7 +240,7 @@ const DATA = {
         { x: 7, y: 21, kind: 'warp', to: { map: 'town', x: 13, y: 1, dir: 'down' } },
         { x: 7, y: 0, kind: 'warp', to: { map: 'forest', x: 7, y: 26, dir: 'up' } },
         { x: 10, y: 17, kind: 'sign', text: 'ガーデンロード\n草むらに 注意' },
-        { x: 6, y: 1, kind: 'sign', text: 'この先 グリーンの森\n森を ぬけると バーディタウン' },
+        { x: 6, y: 1, kind: 'sign', text: 'この先 グリーンの森\n森を ぬけると ガーデンプレース' },
         { x: 4, y: 9, kind: 'npc', sprite: 'npc_man', dir: 'right',
           text: '草むらで つかまえた モンスターは\nなかまに なるんだ。（捕獲は 未実装）' },
       ],
@@ -283,7 +284,7 @@ const DATA = {
       events: [
         { x: 7, y: 27, kind: 'warp', to: { map: 'road', x: 7, y: 1, dir: 'down' } },
         { x: 8, y: 0, kind: 'warp', to: { map: 'town2', x: 9, y: 13, dir: 'up' } },
-        { x: 11, y: 11, kind: 'sign', text: 'グリーンの森\n北へ ぬけると バーディタウン' },
+        { x: 11, y: 11, kind: 'sign', text: 'グリーンの森\n北へ ぬけると ガーデンプレース' },
         { x: 10, y: 4, kind: 'npc', sprite: 'npc_man', dir: 'left',
           text: 'この森は キノムシが おおいんだ。\n虫は ほのおタイプに よわいぞ。' },
         { x: 9, y: 22, kind: 'npc', sprite: 'npc_woman', dir: 'down',
@@ -291,7 +292,7 @@ const DATA = {
       ],
     },
     town2: {
-      name: 'バーディタウン', bgm: 'town', flagOnEnter: 'town2',
+      name: 'ガーデンプレース', bgm: 'town', flagOnEnter: 'town2',
       rows: [
         'WWWWWWWWWWWWWWWWWWWW',
         'WGGGGGGGGGGGGGGGGGGW',
@@ -319,9 +320,9 @@ const DATA = {
         { x: 16, y: 3, kind: 'warp', to: { map: 'house2', x: 5, y: 5, dir: 'up' } },
         { x: 3, y: 8, kind: 'warp', to: { map: 'shop2', x: 4, y: 4, dir: 'up' } },
         { x: 16, y: 8, kind: 'look', text: 'かぎが かかっている。\nるすの ようだ。' },
-        { x: 8, y: 10, kind: 'sign', text: 'バーディタウン\n森の むこうの 小さな町' },
+        { x: 8, y: 10, kind: 'sign', text: 'ガーデンプレース\n森の むこうの 小さな町' },
         { x: 7, y: 5, kind: 'npc', sprite: 'npc_woman', dir: 'down',
-          text: 'バーディタウンへ ようこそ。\n森を ぬけてきたの？ すごいわね。' },
+          text: 'ガーデンプレースへ ようこそ。\n森を ぬけてきたの？ すごいわね。' },
         { x: 12, y: 11, kind: 'npc', sprite: 'npc_man', dir: 'left',
           text: 'この町の 東には ゴルフ場の\n18番ホールが あるんだ。（つづきは じゅんびちゅう）' },
       ],
@@ -340,7 +341,7 @@ const DATA = {
       events: [
         { x: 5, y: 5, kind: 'warp', to: { map: 'town2', x: 3, y: 3, dir: 'down' } },
         { x: 4, y: 2, kind: 'npc', sprite: 'npc_nurse', dir: 'down', heal: true, name: 'うけつけ',
-          text: 'ようこそ バーディタウンの かいふくの いえへ。\nなかまを げんきに してあげますね。' },
+          text: 'ようこそ ガーデンプレースの かいふくの いえへ。\nなかまを げんきに してあげますね。' },
       ],
     },
     shop2: {

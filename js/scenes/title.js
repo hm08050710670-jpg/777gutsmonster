@@ -6,10 +6,10 @@ class TitleScene {
   enter() { Sound.stop(); }
   items() {
     const it = Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい'];
-    if (this.debug) it.push('バトルテスト', 'モンスターみる', 'ガッツタウンへ', 'バーディタウンへ');
+    if (this.debug) it.push('バトルテスト', 'モンスターみる', 'ガッツタウンへ', 'ガーデンプレースへ');
     return it;
   }
-  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」「モンスターみる」「ガッツタウンへ」「バーディタウンへ」が出る（セーブは変えない）
+  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」「モンスターみる」「ガッツタウンへ」「ガーデンプレースへ」が出る（セーブは変えない）
   checkCode() {
     const seq = ['up', 'down', 'b', 'down', 'down'];
     const k = ['up', 'down', 'left', 'right', 'a', 'b', 'start'].find(x => Input.pressed(x));
@@ -73,7 +73,7 @@ class TitleScene {
       const label = it[this.sel];
       if (label === 'ガッツタウンへ') {
         this.warpTo('town', 13, 10);
-      } else if (label === 'バーディタウンへ') {
+      } else if (label === 'ガーデンプレースへ') {
         this.warpTo('town2', 9, 10);
       } else if (label === 'モンスターみる') {
         this.monsterView();
@@ -139,7 +139,7 @@ class TitleScene {
         const t = 'PUSH START'; Text.box(ctx, W / 2 - 34, 168, 68, 20); Text.draw(ctx, t, W / 2 - Text.width(t) / 2, 174);
       }
     } else {
-      const it = this.items(); const h = it.length * 16 + 16, w = this.debug ? 104 : 88;
+      const it = this.items(); const h = it.length * 16 + 16, w = this.debug ? 116 : 88;
       Text.box(ctx, W / 2 - w / 2, 200 - h - 8, w, h);
       it.forEach((label, i) => {
         Text.draw(ctx, label, W / 2 - w / 2 + 20, 200 - h + i * 16);
