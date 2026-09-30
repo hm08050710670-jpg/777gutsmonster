@@ -359,8 +359,10 @@ class FieldScene {
         ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py);
       }
     }
-    // 木（2×2、少し重ねて森らしく）。上の行から描いて手前を上に
-    for (const [px, py] of trees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
+    // 木（2×2、少し重ねて森らしく）。主人公より上の行の木はここで、下の行の木は主人公の後で描く（木の上に乗って見えないように）
+    const heroPy = st.y * T - camY + by;
+    const frontTrees = trees.filter(([, py]) => py > heroPy);
+    for (const [px, py] of trees) if (py <= heroPy) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
     // 建物などの置き物
     if (useImg) for (const o of this.objects()) {
       const im = Tiles.get(o.sprite); if (!im) continue;
@@ -386,5 +388,6 @@ class FieldScene {
     const step = this.moving > 0 ? 1 + this.animStep : 0;
     const hs = this.heroSprite(st.dir, step);
     ctx.drawImage(hs, st.x * T - ox - camX + bx + Math.floor((T - hs.width) / 2), st.y * T - oy - camY + by + T - hs.height - 1);
+    if (useImg) for (const [px, py] of frontTrees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
   }
 }

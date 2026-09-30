@@ -72,7 +72,7 @@ class TitleScene {
     if (Input.pressed('a')) {
       const label = it[this.sel];
       if (label === 'ガッツタウンへ') {
-        this.warpTo('town', 9, 9);
+        this.warpTo('town', 13, 10);
       } else if (label === 'バーディタウンへ') {
         this.warpTo('town2', 9, 10);
       } else if (label === 'モンスターみる') {
