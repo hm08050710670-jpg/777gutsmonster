@@ -78,7 +78,7 @@ const DATA = {
   },
   WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
-  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 11, h: 6, door: [5, 5] } },
+  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 9, h: 6, door: [4, 5] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -113,7 +113,7 @@ const DATA = {
         'WGGGGGGGGGGGGGGGGPGW',
         'WGGGGGGGGGGGGGGGGPGW',
         'WGGGGGGGGGGGGGGGGPGW',
-        'WGGGGGGGGGGGGGGGGPGW',
+        'WGGGGHHHHGHHHHGGGPGW',
         'WGGGPPPPPPPPPPPPPPGW',
         'WGGGGGGGGPGGGGGGGGGW',
         'WGGGGGGGGPGGGGGGGGGW',
@@ -126,7 +126,7 @@ const DATA = {
         'WWWWWWWWWWWWWWWWWWWW',
       ],
       objects: [
-        { sprite: 'lab', x: 4, y: 2 },
+        { sprite: 'lab', x: 5, y: 2 },
         { sprite: 'house', x: 1, y: 9 }, { sprite: 'shop', x: 14, y: 9 },
         { sprite: 'heal', x: 1, y: 13 },
       ],
