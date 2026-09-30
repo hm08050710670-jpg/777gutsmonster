@@ -78,7 +78,7 @@ const DATA = {
   },
   WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
-  OBJECTS: { in_machine: { w: 2, h: 2, door: [-1, -1] }, in_table: { w: 3, h: 2, door: [-1, -1] }, house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 9, h: 6, door: [4, 5] } },
+  OBJECTS: { in_machine: { w: 2, h: 2, door: [-1, -1] }, in_table: { w: 3, h: 2, door: [-1, -1] }, house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 11, h: 7, door: [5, 6] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -113,8 +113,8 @@ const DATA = {
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGPGGGGGGGW',
-        'WGHHHHGHHHHGGPGGGPGGGGGGGW',
-        'WGGGGGPGGGGGGPGGGPGSGGGGGW',
+        'WGGGGGGGGGGGGPGGGPGGGGGGGW',
+        'WGHHHHPHHHHGGPGGGPGSGGGGGW',
         'WGPPPPPPPPPPPPPPPPPPPPPPGW',
         'WGGGGGGGGGGGGPGGGGGGGLGGGW',
         'WGGGGGGGGSGGGPGGGGGGGGGGGW',
@@ -130,7 +130,7 @@ const DATA = {
         'WWWWWWWWWWWWWWWWWWWWWWWWWW',
       ],
       objects: [
-        { sprite: 'lab', x: 2, y: 2 },
+        { sprite: 'lab', x: 1, y: 1 },
         { sprite: 'house', x: 15, y: 3 },
         { sprite: 'heal', x: 2, y: 12 }, { sprite: 'shop', x: 15, y: 12 },
       ],
