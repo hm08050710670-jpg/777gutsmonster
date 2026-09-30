@@ -120,6 +120,13 @@ class BattleScene {
   // ---- 相手の攻撃（パーティ共通HPに当たる）----
   enemyAttackSteps() {
     const en = this.enemy, st = Game.state;
+    // 回復するタイプの相手（カエデ戦など）：HPが半分以下なら 2回に1回は 攻撃のかわりに 回復する
+    if (en.regen && en.hp <= en.maxHp / 2 && Game.rand(0, 1) === 0) {
+      return [
+        this.msgStep(`${this.foe()}${en.name}は 花のみつで かいふくした！`),
+        this.fnStep(() => { en.hp = Math.min(en.maxHp, en.hp + Math.round(en.maxHp * en.regen)); }),
+      ];
+    }
     const move = en.moves[Game.rand(0, en.moves.length - 1)], m = DATA.MOVES[move.name];
     return [
       this.msgStep(`${this.foe()}${en.name}の ${move.name}！`),

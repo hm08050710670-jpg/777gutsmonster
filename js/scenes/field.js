@@ -32,7 +32,8 @@ class FieldScene {
     const d = a.path.shift(); this.actorDir = d;
     const [dx, dy] = DIRS[d];
     a.x += dx; a.y += dy;
-    this.actorMove = CONFIG.WALK_FRAMES;
+    this.actorFrames = Math.max(1, Math.round(CONFIG.WALK_FRAMES / (a.speed || 1)));   // speed: 走るモンスターは速く
+    this.actorMove = this.actorFrames;
     return true;
   }
   get map() { return DATA.MAPS[Game.state.map]; }
@@ -158,6 +159,7 @@ class FieldScene {
     const st = Game.state;
     ev.face = FACE[st.dir];
     if (ev.prof) { this.talkProf(ev); return; }
+    if (ev.kaede) { this.talkKaede(ev); return; }
     if (ev.heal) {
       say(ev.text, () => {
         Party.full(st);
@@ -180,7 +182,9 @@ class FieldScene {
       if (!st.flags.labIntro) this.profIntro();
       else say('テーブルの 3つの ガッツボールから\nすきな 1つを えらびなさい。', null, n);
     } else if (!st.flags.rival1) {
-      say('その子と いっしょに 冒険を はじめよう。\n町の北から ガーデンロードへ いける。', null, n);
+      say('観測機は ガーデンプレースの カエデに。\n町の北から ガーデンロードへ いける。', null, n);
+    } else if (st.flags.kaedeWin) {
+      say('カエデに 認定されたか！ おめでとう。\nシブヤの 停電も 気になるな…。', null, n);
     } else {
       say('ノブオと たたかったのか。\nライバルが いると つよくなれるぞ。', null, n);
     }
@@ -193,8 +197,19 @@ class FieldScene {
       if (i !== 0) return;
       st.party = [makeMonster(ev.id, 7)]; Party.full(st);
       Game.setFlag('starter');
+      const n = 'オクムラ博士';
       say(`${st.name}は ${sp.name}を なかまにした！`, () => {
-        say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => Save.auto(st), 'オクムラ博士');
+        say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => {
+          say('それと ひとつ たのみが ある。\nこの 観測機を あずかってくれ。', () => {
+            say(`${st.name}は 観測機を うけとった！`, () => {
+              say('森の むこうの ガーデンプレースで\n庭園の 管理人 カエデに わたしてほしい。', () => {
+                say('庭園の モンスターの ようすが\nおかしいと れんらくが あってな。', () => {
+                  say('町の北の ガーデンロードから\nグリーンの森を ぬければ つくぞ。', () => { Game.setFlag('device'); Save.auto(st); }, n);
+                }, n);
+              }, n);
+            });
+          }, n);
+        }, n);
       });
     });
   }
@@ -209,6 +224,86 @@ class FieldScene {
       }
       if (!st.flags.rival1) this.rivalApproach(ev);
     }
+    if (ev.id === 'forestRun') this.forestRun();
+    if (ev.id === 'gardenSound') this.gardenSound();
+  }
+
+  // 森の中ほど：北から モンスターが つぎつぎ にげてくる（異変の予感）
+  forestRun() {
+    const st = Game.state;
+    st.dir = 'up';
+    // 主人公（8,13）の 手前まで 下りてきて、よけて 南へ 走りぬける
+    const run = (id, then) => {
+      const a = { x: 8, y: st.y - 6, mon: id, speed: 2 };
+      this.walkActor(a, ['down', 'down', 'down', 'down', 'down', 'left', 'down', 'down', 'right', 'down', 'down', 'down'], () => { this.actor = null; then && then(); });
+    };
+    say('…！ なにか 北から はしってくる！', () => {
+      run('kinomushi', () => run('nyakimi', () => run('kokemogu', () => {
+        say('モンスターたちが みんな 北から\nにげてきた…。', () => {
+          say('ガーデンプレースの ほうで\nなにか おきているのか？', () => { Game.setFlag('forestRun'); Save.auto(st); });
+        });
+      })));
+    });
+  }
+
+  // 庭園の いちばん奥：地下から 音が きこえる（観測機が 反応）
+  gardenSound() {
+    const st = Game.state;
+    if (st.flags.gardenSound) { say('地面の 下から まだ ひくい音が\nきこえている…。'); return; }
+    st.dir = 'up';
+    say('……ゴォォ……', () => {
+      say('地面の 下から ひくい 音が\nひびいてくる…！', () => {
+        say('観測機が ピピッと 反応した。', () => {
+          say('「ガーデンプレース 地下に 反応。\n おなじ 反応を シブヤ方面でも 記録」', () => {
+            say('モンスターたちが おびえていたのは\nこの音の せいか…。カエデに ほうこくしよう。', () => { Game.setFlag('gardenSound'); Save.auto(st); });
+          });
+        });
+      });
+    });
+  }
+
+  // カエデ（庭園の管理人・ガーデンプレースのタウンマスター）
+  talkKaede(ev) {
+    const st = Game.state, n = 'カエデ';
+    if (!st.flags.deviceGiven) {
+      if (!st.flags.device) { say('ここは ガーデンプレースの 庭園。\nいまは モンスターが 落ちつかなくて…。', null, n); return; }
+      say('あなた、オクムラ博士の ところの 子ね？', () => {
+        say(`${st.name}は 観測機を カエデに わたした！`, () => {
+          say('ありがとう。これで 地下の ようすを\nはかれるわ。', () => {
+            say('じつは 庭園の モンスターたちが\nずっと 落ちつかないの。', () => {
+              say('わたしは 入口で 観測するから\nあなたは 庭園の いちばん奥を しらべてきて。', () => {
+                say('花壇の おくの 行き止まりよ。\n気をつけてね。', () => { Game.setFlag('deviceGiven'); Save.auto(st); }, n);
+              }, n);
+            }, n);
+          }, n);
+        });
+      }, n);
+      return;
+    }
+    if (!st.flags.gardenSound) { say('庭園の いちばん奥を しらべてきて。\n道なりに 北へ すすんで、行き止まりよ。', null, n); return; }
+    if (st.flags.kaedeWin) { say('シブヤタウンでも 停電が つづいてるって。\nきっと この音と 関係が あるわ。\n（つづきは じゅんびちゅう）', null, n); return; }
+    say('地下から 音…！ 観測機にも\nシブヤ方面の 反応が 出てるわ。', () => {
+      say('原因は まだ わからないけど\nあなたの おかげで 手がかりが つかめた。', () => {
+        say('そこで… タウンマスターとして\nあなたに 公式戦を もうしこむわ！', () => {
+          say('庭園の 力を 見せてあげる。\nいくわよ、シバモグ！', () => this.kaedeBattle(), n);
+        }, n);
+      }, n);
+    }, n);
+  }
+  kaedeBattle() {
+    const st = Game.state;
+    const enemy = makeMonster('kokemogu', 9); enemy.regen = 0.2;   // 花のみつで 回復する（粘り強い戦い）
+    Game.push(new BattleScene({ enemy, trainer: { name: 'カエデ' }, onEnd: result => {
+      if (result === 'lose') { Party.full(st); say('なかまを 回復して あげたわ。\nもう一度 ちょうせんしてね。', () => Save.auto(st), 'カエデ'); return; }
+      Game.setFlag('kaedeWin');
+      say('…まいったわ。 あなたの 勝ちよ。', () => {
+        say(`${st.name}は ガーデンプレースの\n認定を 手に入れた！`, () => {
+          say('認定を 集めれば ガッツリーグに\n出られるわ。つぎは シブヤタウンね。', () => {
+            say('シブヤでは 停電が つづいてるそうよ。\nきっと この音と 関係が あるわ。', () => Save.auto(st), 'カエデ');
+          }, 'カエデ');
+        });
+      }, 'カエデ');
+    } }));
   }
 
   // 博士の説明（研究所に入った直後 / ボールを調べた時）
@@ -405,8 +500,11 @@ class FieldScene {
     // カットシーンの人物
     if (this.actor) {
       const a = this.actor; let ax = 0, ay = 0;
-      if (this.actorMove > 0) { const [dx, dy] = DIRS[this.actorDir]; const t = this.actorMove / CONFIG.WALK_FRAMES; ax = dx * t * T; ay = dy * t * T; }
-      ctx.drawImage(Gfx.get(a.sprite), a.x * T - ax - camX + bx, a.y * T - ay - camY - 2 + by);
+      if (this.actorMove > 0) { const [dx, dy] = DIRS[this.actorDir]; const t = this.actorMove / (this.actorFrames || CONFIG.WALK_FRAMES); ax = dx * t * T; ay = dy * t * T; }
+      const px = a.x * T - ax - camX + bx, py = a.y * T - ay - camY + by;
+      if (a.mon) Mon.draw(ctx, a.mon, px - 4, py - 8, 1, this.actorDir === 'right');   // モンスター（24px箱・足元をマスに）
+      else if (a.img && Tiles.has(`${a.img}_${this.actorDir}0`)) { const im = Tiles.get(`${a.img}_${this.actorDir}0`); ctx.drawImage(im, px + Math.floor((T - im.width) / 2), py + T - im.height - 1); }
+      else ctx.drawImage(Gfx.get(a.sprite), px, py - 2);
     }
     // 主人公
     // 歩き：1歩の間ずっと歩きコマ（1歩ごとに歩き1／歩き2を交互）。止まったら立ち
