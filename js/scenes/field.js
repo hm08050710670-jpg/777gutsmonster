@@ -301,9 +301,33 @@ class FieldScene {
     const im = Tiles.get(name); if (!im) return;
     ctx.drawImage(im, px + Math.floor((CONFIG.TILE - im.width) / 2), py + CONFIG.TILE - im.height);
   }
+  // 研究所の室内タイル（ChatGPT製 in_* タイル）。床を敷いてから家具を重ねる
+  drawLabTile(ctx, t, tx, ty, px, py) {
+    const floor = () => ctx.drawImage(Tiles.get(((tx + ty) % 3 === 0) ? 'in_floor1' : 'in_floor0'), px, py);
+    const over = name => { floor(); ctx.drawImage(Tiles.get(name), px, py); return true; };
+    switch (t) {
+      case 'W': ctx.drawImage(Tiles.get('in_wall'), px, py); return true;
+      case 'X': ctx.drawImage(Tiles.get('in_wallbase'), px, py); return true;
+      case '|': { const w = Tiles.get('in_wall'); ctx.drawImage(w, 0, 0, 1, 1, px, py, 16, 16); ctx.fillStyle = 'rgba(40,60,100,0.35)'; ctx.fillRect(px + (tx === 0 ? 15 : 0), py, 1, 16); return true; }   // 横の壁：無地
+      case 'b': ctx.drawImage(Tiles.get('in_wallbase'), px, py); ctx.drawImage(Tiles.get('in_board'), px, py); return true;
+      case 's': ctx.drawImage(Tiles.get('in_wallbase'), px, py); ctx.drawImage(Tiles.get('in_shelf'), px, py); return true;
+      case '.': floor(); return true;
+      case 'm': return over('in_mat');
+      case 'c': return over('in_carpet');
+      case 'C': return over('in_counter');
+      case 'n': return over('in_counter_c');
+      case 'd': return over('in_desk');
+      case 'p': return over('in_plant');
+      case 'k': return over('in_case');
+      case 'h': return over('in_chair');
+      case 't': return over('in_trash');
+    }
+    return false;
+  }
   // 画像タイル（屋外）。描けたら true。木は後でまとめて描くので trees に積む
   drawImgTile(ctx, t, tx, ty, px, py, trees) {
     const T = CONFIG.TILE;
+    if (this.map.tileset === 'lab') return this.drawLabTile(ctx, t, tx, ty, px, py);
     // 道は建物のドアにも繋がる（ドア前の道が丸い孤島にならないように）
     const same = (dx, dy) => this.tileAt(tx + dx, ty + dy) === t || (t === 'P' && this.doorAt(tx + dx, ty + dy));
     const mask = () => (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0);
@@ -348,7 +372,7 @@ class FieldScene {
     ctx.fillStyle = this.map.indoor ? '#1a1410' : '#173a1c';
     ctx.fillRect(0, 0, W, H);
     const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
-    const useImg = Tiles.ready && !this.map.indoor;
+    const useImg = Tiles.ready && (!this.map.indoor || !!this.map.tileset);   // 屋内は tileset 指定のあるマップだけ画像タイル
     const trees = [];
     for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
       for (let tx = cx0 - 1; tx <= cx0 + Math.ceil(W / T) + 1; tx++) {
@@ -367,13 +391,13 @@ class FieldScene {
     if (useImg) for (const o of this.objects()) {
       const im = Tiles.get(o.sprite); if (!im) continue;
       const sc = Tiles.scale(o.sprite);
-      ctx.drawImage(im, 0, 0, im.width, im.height, o.x * T - camX + bx, o.y * T - camY + by, im.width * sc, im.height * sc);
+      ctx.drawImage(im, 0, 0, im.width, im.height, o.x * T - camX + bx + (o.dx || 0), o.y * T - camY + by + (o.dy || 0), im.width * sc, im.height * sc);
     }
     // イベントの見た目（ボール・NPC）
     for (const ev of this.events()) {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
       if (sx < -T || sy < -T || sx > W || sy > H) continue;
-      if (ev.kind === 'starter') ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
+      if (ev.kind === 'starter') { if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), sx, sy - 4); }   // 画像タイルの部屋ではテーブルの絵にボールが描いてある
       else if (ev.sprite) ctx.drawImage(this.npcSprite(ev), sx, sy - 2);
     }
     // カットシーンの人物

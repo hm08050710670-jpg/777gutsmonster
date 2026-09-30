@@ -78,7 +78,7 @@ const DATA = {
   },
   WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c']),
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
-  OBJECTS: { house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 9, h: 6, door: [4, 5] } },
+  OBJECTS: { in_machine: { w: 2, h: 2, door: [-1, -1] }, in_table: { w: 3, h: 2, door: [-1, -1] }, house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 9, h: 6, door: [4, 5] } },
   VOID_ART: 'wallin',
 
   MAPS: {
@@ -152,25 +152,33 @@ const DATA = {
       ],
     },
     lab: {
-      name: 'オクムラ研究所', indoor: true, bgm: 'lab',
+      name: 'オクムラ研究所', indoor: true, bgm: 'lab', tileset: 'lab',
+      // W壁上 X壁下 b白板 s棚 .床 m出口マット c絨毯 C受付 n受付角 d机 p植物 kケース h椅子 tゴミ箱
       rows: [
-        'XXXXXXXXXXXX',
-        'X..MM.....sX',
-        'X..........X',
-        'X...OOO....X',
-        'X..........X',
-        'X..........X',
-        'X....m.....X',
-        'XXXXXXXXXXXX',
+        'WWWWWWWWWWWW',
+        'XXXbXXXXXXsX',
+        '|.........p|',
+        '|..........|',
+        '|.........d|',
+        '|k......h..|',
+        '|.k..m....t|',
+        'WWWWWWWWWWWW',
+      ],
+      objects: [
+        { sprite: 'in_machine', x: 1, y: 2 },              // 調べる装置（2×2）
+        { sprite: 'in_table', x: 4, y: 3, dx: 8 },          // ボールのテーブル（3マス分の中央に）
       ],
       events: [
         { x: 5, y: 6, kind: 'warp', to: { map: 'town', x: 6, y: 8, dir: 'down' } },
         { x: 5, y: 2, kind: 'npc', sprite: 'npc_prof', dir: 'down', name: 'オクムラ博士', prof: true },
-        { x: 4, y: 3, kind: 'starter', id: 'kokegame', unless: 'starter' },
-        { x: 5, y: 3, kind: 'starter', id: 'hinoshishi', unless: 'starter' },
-        { x: 6, y: 3, kind: 'starter', id: 'amepiyo',  unless: 'starter' },
-        { x: 3, y: 1, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
+        { x: 4, y: 4, kind: 'starter', id: 'kokegame', unless: 'starter' },     // テーブルの手前（y=5）から調べる
+        { x: 5, y: 4, kind: 'starter', id: 'hinoshishi', unless: 'starter' },
+        { x: 6, y: 4, kind: 'starter', id: 'amepiyo',  unless: 'starter' },
+        { x: 1, y: 3, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
+        { x: 2, y: 3, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
+        { x: 3, y: 1, kind: 'look', text: 'ホワイトボード。\nタイプ相性の 図が かいてある。' },
         { x: 10, y: 1, kind: 'look', text: '研究ノートが ぎっしり。' },
+        { x: 10, y: 4, kind: 'look', text: '博士の パソコン。\nモンスターの 写真が ならんでいる。' },
       ],
     },
     heal: {
