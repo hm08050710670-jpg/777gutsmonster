@@ -26,7 +26,7 @@ const Tiles = (() => {
     if (!has(name)) return null;
     const key = 't:' + name;
     if (!cache.has(key)) {
-      const { img: im, r: [x, y, w, h] } = meta[name];
+      const { img: im, r: [x, y, w, h] } = meta[name];   // r の5つ目は描画倍率（0.5＝2倍の細かさの絵）
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(im, x, y, w, h, 0, 0, w, h);
       cache.set(key, c);
@@ -73,5 +73,6 @@ const Tiles = (() => {
     }
     return cache.get(key);
   }
-  return { load, has, get, variant, auto, get ready() { return has('grass0'); } };
+  const scale = name => (meta[name] && meta[name].r[4]) || 1;
+  return { load, has, get, scale, variant, auto, get ready() { return has('grass0'); } };
 })();

@@ -364,7 +364,8 @@ class FieldScene {
     // 建物などの置き物
     if (useImg) for (const o of this.objects()) {
       const im = Tiles.get(o.sprite); if (!im) continue;
-      ctx.drawImage(im, o.x * T - camX + bx, o.y * T - camY + by);
+      const sc = Tiles.scale(o.sprite);
+      ctx.drawImage(im, 0, 0, im.width, im.height, o.x * T - camX + bx, o.y * T - camY + by, im.width * sc, im.height * sc);
     }
     // イベントの見た目（ボール・NPC）
     for (const ev of this.events()) {
