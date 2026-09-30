@@ -107,8 +107,8 @@ const DATA = {
       // 26×22。研究所は左上、北出口（ガーデンロード）は中央の縦道の上端
       rows: [
         'WWWWWWWWWWWWWPWWWWWWWWWWWW',
-        'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGSPGGGGGGGGGGGW',
+        'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
         'WGGGGGGGGGGGGPGGGGGGGGGGGW',
@@ -141,7 +141,7 @@ const DATA = {
         { x: 17, y: 14, kind: 'warp', to: { map: 'shop', x: 4, y: 4, dir: 'up' } },
         { x: 13, y: 0, kind: 'warp', to: { map: 'road', x: 7, y: 20, dir: 'up' } },
         { x: 9, y: 11, kind: 'sign', text: 'ガッツタウン\nゴルフ場の となりの しずかな町' },
-        { x: 12, y: 2, kind: 'sign', text: 'この先 ガーデンロード\nガーデンプレースまで つづく' },
+        { x: 12, y: 1, kind: 'sign', text: 'この先 ガーデンロード\nガーデンプレースまで つづく' },
         { x: 19, y: 8, kind: 'sign', text: 'オクムラ モンスター研究所は\n町の 北西' },
         { x: 15, y: 10, kind: 'npc', sprite: 'npc_woman', dir: 'down',
           text: '北の ガーデンロードには\nやせいの GUTS MONSTERSが いるのよ。' },
