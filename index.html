@@ -40,14 +40,17 @@
 
   <!-- ③' 戦闘中のパズル（パッドの代わりに表示） -->
   <div id="puzzle" hidden>
-    <div id="pz-msg"></div>
     <div id="pz-skills"></div>
-    <div id="pz-actions">
-      <button class="pz-btn" data-act="item">どうぐ</button>
-      <button class="pz-btn" data-act="party">なかま</button>
-      <button class="pz-btn" data-act="run">にげる</button>
-    </div>
     <div id="pz-board"></div>
+    <!-- メニュー（技ゲージ右端の「メニュー」で開く。盤面の上に重ねて出す） -->
+    <div id="pz-actions" hidden>
+      <div id="pz-actions-card">
+        <button class="pz-btn" data-act="item">どうぐ</button>
+        <button class="pz-btn" data-act="party">なかま</button>
+        <button class="pz-btn" data-act="run">にげる</button>
+        <button class="pz-btn close" data-act="close">とじる</button>
+      </div>
+    </div>
   </div>
 
   <!-- ④ 補助表示 -->

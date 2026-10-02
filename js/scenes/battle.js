@@ -23,16 +23,23 @@ const Puzzle = (() => {
     const colors = Object.values(s.colors);
     if (!inst) {
       inst = PazugoruPuzzle.mount($('pz-board'), { colors, images: CONFIG.BALL_IMAGES || {}, onResolve: r => { if (scene) scene.onPuzzle(r); } });
-      $('pz-actions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || !scene) return; scene.pressAction(b.dataset.act); });
-      $('pz-skills').addEventListener('click', e => { const b = e.target.closest('[data-tier]'); if (!b || !scene) return; scene.useSkill(b.dataset.tier); });
+      $('pz-actions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || !scene) return; if (b.dataset.act === 'close') { closeMenu(); return; } closeMenu(); scene.pressAction(b.dataset.act); });
+      $('pz-skills').addEventListener('click', e => {
+        if (!scene) return;
+        if (e.target.closest('#pz-menu-btn')) { if (scene.mode === 'command' && Game.top() === scene) openMenu(); return; }
+        const b = e.target.closest('[data-tier]'); if (b) scene.useSkill(b.dataset.tier);
+      });
     } else { inst.setColors(colors); inst.reset(); }
     inst.lock();
     buildSkills(s);
-    setMsg('');
+    closeMenu();
     fit();
   }
   function hide() { scene = null; el().hidden = true; $('pad').hidden = false; $('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
-  function setMsg(t) { const m = $('pz-msg'); if (m.textContent !== t) m.textContent = t; }
+  // どうぐ・なかま・にげる は、盤面から離れた「メニュー」ボタンを押したときだけ出す（押しミス防止）
+  function openMenu() { $('pz-actions').hidden = false; if (inst) inst.lock(); }
+  function closeMenu() { $('pz-actions').hidden = true; }
+  const menuOpen = () => !$('pz-actions').hidden;
   // 技ゲージの枠を作る（小・中・強・防御・回復）
   function buildSkills(s) {
     const sk = s.skills, col = s.colors;
@@ -42,6 +49,7 @@ const Puzzle = (() => {
       return `<button class="pz-skill" data-tier="${t}"><div class="ball ${c} ${mark}"></div><div class="name">${name}</div><div class="pips">${'<i class="pip"></i>'.repeat(need)}</div><div class="cnt">0/${need}</div></button>`;
     }).join('');
     html += `<div class="pz-skill info"><div class="ball pink pink"></div><div class="name">かいふく</div><div class="pips"></div><div class="cnt">そくじ</div></div>`;
+    html += `<button class="pz-skill menu" id="pz-menu-btn"><div class="menu-icon">≡</div><div class="name">メニュー</div></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
     $('pz-skills').querySelectorAll('.ball').forEach(b => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + b.classList[1]; probe.style.display = 'none'; document.body.appendChild(probe); const cs = getComputedStyle(probe); ['--hi', '--c', '--lo'].forEach(v => b.style.setProperty(v, cs.getPropertyValue(v))); probe.remove(); });
@@ -59,11 +67,13 @@ const Puzzle = (() => {
   // 舞台の高さ（論理px）：盤面＋ゲージ＋ボタンを下に置き、残りを舞台に使う（ARENA_MIN〜ARENA_MAX）
   let arena = 122;
   const ARENA_MIN = 122, ARENA_MAX = 150, BOARD_PAD = 12;
-  function uiH() { return ['pz-msg', 'pz-skills', 'pz-actions'].reduce((n, id) => n + ($(id) ? $(id).offsetHeight + 5 : 0), 0); }
+  function uiH() { return ['pz-skills'].reduce((n, id) => n + ($(id) ? $(id).offsetHeight + 5 : 0), 0) + 8; }
   function calc() {
     const app = $('app');
     const cs = getComputedStyle(app);
-    const innerH = app.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    // アプリ内ブラウザでは app の高さが実際に見える範囲より大きいことがあるので、見えている高さ（visualViewport）でも抑える
+    const vis = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const innerH = Math.min(app.clientHeight, vis) - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     const scale = Game.scale || 1;
     const ui = el().hidden ? 0 : uiH();
     const boardW = Math.max(180, Math.min(app.clientWidth - 12, 480, Math.floor((innerH - ARENA_MIN * scale - BOARD_PAD - ui) * 6 / 5)));
@@ -91,7 +101,7 @@ const Puzzle = (() => {
     Game.setViewH(padScene ? CONFIG.H : arena);
     if (!padScene) syncSkills(scene);
   }
-  return { show, hide, fit, calc, setEnabled, sync, setMsg, get arena() { return arena; }, get busy() { return inst ? inst.busy : false; } };
+  return { show, hide, fit, calc, setEnabled, sync, get arena() { return arena; }, get busy() { return inst ? inst.busy : false; }, get menuOpen() { return menuOpen(); } };
 })();
 
 class BattleScene {
@@ -110,6 +120,10 @@ class BattleScene {
     this.charges = { small: 0, mid: 0, strong: 0, guard: 0 };
     this.guard = false;         // 防御中（つぎの相手の攻撃を半減）
     this.sparkleIdx = -1;
+    this.pops = [];             // ダメージなどの浮き文字 { x, y, text, color, t }
+    this.flashE = 0; this.flashP = 0;   // 当たったときの白点滅（コマ数）
+    this.banner = null;         // 技名の帯 { text, t }
+    this.text = '';             // 舞台に出す短いメッセージ（canvas）
     this.setMe();
     this.shownHp = { p: this.me ? this.me.hp : 0, e: this.enemy.hp }; // 表示用（アニメ）
   }
@@ -148,7 +162,8 @@ class BattleScene {
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step は末尾に積む。途中に差し込むときは queue.unshift。
   static get PAUSE_FRAMES() { return 40; }
-  say(text, onDone) { Puzzle.setMsg(text); this.pauseT = 0; this.pauseDone = onDone; this.mode = 'pause'; }
+  say(text, onDone) { this.text = text; this.pauseT = 0; this.pauseDone = onDone; this.mode = 'pause'; }
+  pop(x, y, text, color = '#fff6d8') { this.pops.push({ x, y, text, color, t: 40 }); }
   msgStep(text, after) { return () => { this.say(text, () => { after && after(); this.next(); }); }; }
   fnStep(fn) { return () => { fn(); this.next(); }; }
   animStep(who) { return () => { this.anim = who; this.mode = 'anim'; }; }
@@ -167,26 +182,29 @@ class BattleScene {
     // 回復するタイプの相手（カエデ戦など）：HPが半分以下なら 2回に1回は 攻撃のかわりに 回復する
     if (en.regen && en.hp <= en.maxHp / 2 && Game.rand(0, 1) === 0) {
       return [
-        this.msgStep(`${this.foe()}${en.name}は 花のみつで かいふくした！`),
-        this.fnStep(() => { en.hp = Math.min(en.maxHp, en.hp + Math.round(en.maxHp * en.regen)); this.enemyMove = this.pickEnemyMove(); }),
+        this.fnStep(() => { const h = Math.min(en.maxHp - en.hp, Math.round(en.maxHp * en.regen)); en.hp += h; this.shownHp.e = en.hp; const eb = this.enemyBox(); this.pop(eb.cx, eb.top, `+${h}`, '#ffb0d8'); this.enemyMove = this.pickEnemyMove(); }),
+        () => { this.mode = 'wait'; this.waitT = 24; this.waitDone = () => this.next(); },
       ];
     }
     const move = this.enemyMove, m = DATA.MOVES[move.name];
-    const steps = [
-      this.msgStep(`${this.foe()}${en.name}の ${move.name}！`),
+    // 文章は出さず、演出だけ：相手が前に出る → 自分が白く光って揺れ、ダメージの数字が浮く
+    return [
+      () => { this.lunge = { who: 'e', t: 14 }; this.mode = 'wait'; this.waitT = 14; this.waitDone = () => this.next(); },
       this.fnStep(() => {
         const eff = (DATA.TYPES[m.type] || {})[me.type] ?? 1;
         let d = this.dmg(en.level, m.power, en.atk, me.def, en.type === m.type ? 1.5 : 1, eff);
-        if (this.guard) { d = Math.max(1, Math.floor(d / 2)); this.guard = false; this.guardUsed = true; }
-        this.lastEff = eff;
-        me.hp = Math.max(0, me.hp - d); this.pshake = 12;
+        let guarded = false;
+        if (this.guard) { d = Math.max(1, Math.floor(d / 2)); this.guard = false; guarded = true; }
+        me.hp = Math.max(0, me.hp - d); this.pshake = 12; this.flashP = 10;
+        const pb = this.meBox();
+        this.pop(pb.cx, pb.top, `-${d}`, guarded ? '#bfe0ff' : '#ff8a7a');
+        if (guarded) this.pop(pb.cx, pb.top - 12, 'ガード!', '#bfe0ff');
+        else if (eff > 1) this.pop(pb.cx, pb.top - 12, 'ばつぐん!', '#ffd24a');
+        else if (eff < 1) this.pop(pb.cx, pb.top - 12, 'いまひとつ', '#c8d0c0');
         this.enemyMove = this.pickEnemyMove();
       }),
       this.animStep('p'),
     ];
-    steps.push(() => { if (this.guardUsed) { this.guardUsed = false; this.say(`${this.skills.guard}で ダメージを おさえた！`, () => this.next()); } else this.next(); });
-    steps.push(() => { if (this.lastEff > 1) this.say('こうかは ばつぐんだ！', () => this.next()); else if (this.lastEff < 1) this.say('こうかは いまひとつの ようだ。', () => this.next()); else this.next(); });
-    return steps;
   }
   // カウントを進めて、0なら相手が攻撃
   enemyTick() {
@@ -210,14 +228,9 @@ class BattleScene {
       const t = tierOf(g.color); if (!t) continue;
       const c = chargeFor(t, g.n); this.charges[t] += c; gained[t] = (gained[t] || 0) + c;
     }
-    const names = Object.keys(gained).map(t => this.skills[t]);
-    if (names.length) this.msg(`${names.join('・')}が チャージされた！`);
-    const ready = Object.keys(gained).filter(t => this.charges[t] >= SKILL_NEED[t] && this.charges[t] - gained[t] < SKILL_NEED[t]);
-    if (ready.length) this.msg(`${ready.map(t => this.skills[t]).join('・')}が つかえる！`);
     if (heal > 0) {
-      this.step(() => { me.hp = Math.min(me.maxHp, me.hp + heal); });
-      this.msg(`${me.name}の HPが かいふくした！`);
-      this.step(() => { this.shownHp.p = me.hp; });
+      this.step(() => { const h = Math.min(heal, me.maxHp - me.hp); me.hp += h; this.shownHp.p = me.hp; this.sparkle = 40; this.sparkleIdx = 0; const pb = this.meBox(); this.pop(pb.cx, pb.top, `+${h}`, '#ffb0d8'); });
+      this.queue.push(() => { this.mode = 'wait'; this.waitT = 24; this.waitDone = () => this.next(); });
     }
     this.queue.push(() => { this.enemyTick(); this.next(); });
     this.queue.push(() => { this.checkEnd(); this.next(); });
@@ -230,19 +243,23 @@ class BattleScene {
     const me = this.me, en = this.enemy, name = this.skills[tier];
     this.mode = 'busy'; Puzzle.setEnabled(false);
     this.charges[tier] -= need;
+    this.banner = { text: name, t: 50 };
     if (tier === 'guard') {
-      this.msg(`${me.name}の ${name}！`);
-      this.step(() => { this.guard = true; });
-      this.msg('まもりが かたくなった！');
-      this.queue.push(() => { this.mode = 'command'; });
+      this.step(() => { this.guard = true; this.guardFx = 30; const pb = this.meBox(); this.pop(pb.cx, pb.top, 'まもり UP', '#bfe0ff'); });
+      this.queue.push(() => { this.mode = 'wait'; this.waitT = 30; this.waitDone = () => { this.mode = 'command'; }; });
       this.next(); return;
     }
     const eff = (DATA.TYPES[me.type] || {})[en.type] ?? 1;
     const d = this.dmg(me.level, SKILL_POWER[tier], me.atk, en.def, 1.5, eff);
-    this.msg(`${me.name}の ${name}！`);
-    this.step(() => { this.hit = true; en.hp = Math.max(0, en.hp - d); this.shake = 12; });
+    // 自分が前に出る → 相手が白く光って揺れ、ダメージの数字が浮く
+    this.queue.push(() => { this.hit = true; this.lunge = { who: 'p', t: 14 }; this.mode = 'wait'; this.waitT = 14; this.waitDone = () => this.next(); });
+    this.step(() => {
+      en.hp = Math.max(0, en.hp - d); this.shake = 12; this.flashE = 10;
+      const eb = this.enemyBox();
+      this.pop(eb.cx, eb.top, `-${d}`, '#fff6d8');
+      if (eff > 1) this.pop(eb.cx, eb.top - 12, 'ばつぐん!', '#ffd24a'); else if (eff < 1) this.pop(eb.cx, eb.top - 12, 'いまひとつ', '#c8d0c0');
+    });
     this.queue.push(this.animStep('e'));
-    if (eff > 1) this.msg('こうかは ばつぐんだ！'); else if (eff < 1) this.msg('こうかは いまひとつの ようだ。');
     this.step(() => { this.hit = false; });
     this.queue.push(() => { this.checkEnd(); this.next(); });
     this.next();
@@ -259,8 +276,8 @@ class BattleScene {
       const me = this.me;
       if (me.hp >= me.maxHp) { this.say('HPは まんたんだ。', () => { this.mode = 'command'; }); return; }
       this.mode = 'busy';
-      this.step(() => { Game.state.items[name]--; me.hp = Math.min(me.maxHp, me.hp + DATA.ITEMS[name].heal); this.shownHp.p = me.hp; });
-      this.msg(`${me.name}の HPが かいふくした！`);
+      this.step(() => { Game.state.items[name]--; const h = Math.min(DATA.ITEMS[name].heal, me.maxHp - me.hp); me.hp += h; this.shownHp.p = me.hp; this.sparkle = 40; this.sparkleIdx = 0; const pb = this.meBox(); this.pop(pb.cx, pb.top, `+${h}`, '#ffb0d8'); });
+      this.queue.push(() => { this.mode = 'wait'; this.waitT = 24; this.waitDone = () => this.next(); });
       this.queue.push(() => { this.enemyTick(); this.next(); });
       this.queue.push(() => { this.checkEnd(); this.next(); });
       this.next();
@@ -360,6 +377,13 @@ class BattleScene {
   update(frame) {
     if (this.shake > 0) this.shake--;
     if (this.sparkle > 0) this.sparkle--;
+    if (this.flashE > 0) this.flashE--;
+    if (this.flashP > 0) this.flashP--;
+    if (this.guardFx > 0) this.guardFx--;
+    if (this.lunge && --this.lunge.t <= 0) this.lunge = null;
+    if (this.banner && --this.banner.t <= 0) this.banner = null;
+    this.pops.forEach(p => { p.t--; p.y -= 0.4; }); this.pops = this.pops.filter(p => p.t > 0);
+    if (this.mode === 'wait') { if (--this.waitT <= 0) { this.mode = 'busy'; const f = this.waitDone; this.waitDone = null; f && f(); } return; }
     if (this.mode === 'view') {   // ↑↓であいて、←→でなかま、Aで背景、MENUでランダム、Bで戻る
       const n = this.ids.length;
       if (Input.pressed('down')) this.vi = (this.vi + 1) % n;
@@ -379,7 +403,7 @@ class BattleScene {
       return;
     }
     if (this.mode === 'pause') {
-      if (++this.pauseT >= BattleScene.PAUSE_FRAMES || Input.pressed('a')) { this.mode = 'busy'; const f = this.pauseDone; this.pauseDone = null; f && f(); }
+      if (++this.pauseT >= BattleScene.PAUSE_FRAMES || Input.pressed('a')) { this.mode = 'busy'; this.text = ''; const f = this.pauseDone; this.pauseDone = null; f && f(); }
       return;
     }
     if (this.pshake > 0) this.pshake--;
@@ -391,7 +415,7 @@ class BattleScene {
       return;
     }
     if (this.mode === 'command') {
-      Puzzle.setEnabled(Game.top() === this);
+      Puzzle.setEnabled(Game.top() === this && !Puzzle.menuOpen);
       return;
     }
   }
@@ -415,11 +439,14 @@ class BattleScene {
     const sx = this.shake ? (this.shake % 2 ? 2 : -2) : 0;
     const extra = AH - 122;
 
-    // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる
+    // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
     const ey = 30 + Math.floor(extra / 3);
+    const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
+    const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(146, ey + 66, 40, 7);
     ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(146, ey + 68, 34, 5);
-    drawMonster(ctx, en, 112 + sx, ey, 68);
+    this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
+    this._eBox = { x: 112, y: ey, size: 68 };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
     if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 104, 4, 84, 34);
 
@@ -428,11 +455,33 @@ class BattleScene {
       const size = 64, px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
       const b = Mon.drawnBox(me.id, size / 24, true);
       const y = AH - 4 - size, x = 8 + px;
+      const plx = this.lunge && this.lunge.who === 'p' ? lg : 0, ply = this.lunge && this.lunge.who === 'p' ? -lg * 0.5 : 0;
       ctx.fillStyle = this.hit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + b.dx + b.w / 2, y + size - 1, b.w / 2 + 2, 4);
-      drawMonster(ctx, me, x, y + (this.hit ? -2 : 0), size, false, true);
+      this.drawMon(ctx, me, x + plx, y + ply, size, true, this.flashP);
+      this._pBox = { x, y, size, b };
       if (this.sparkle > 0 && this.sparkleIdx === 0) this.drawSparkle(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, frame, 12);
+      if (this.guard || this.guardFx > 0) this.drawGuardRing(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, Math.max(b.w, b.h) / 2 + 4, frame, this.guardFx);
       this.drawStatus(ctx, me, Math.round(this.shownHp.p), 92, AH - 36, 96, 32, true);
-      if (this.guard) this.drawGuardMark(ctx, x + b.dx + b.w + 2, y + 6);
+    }
+    // 浮き文字（ダメージなど）
+    for (const p of this.pops) {
+      const a = Math.min(1, p.t / 12); ctx.globalAlpha = a;
+      const w = Text.width(p.text); Text.draw(ctx, p.text, Math.round(p.x - w / 2) + 1, Math.round(p.y) + 1, 'rgba(0,0,0,0.6)'); Text.draw(ctx, p.text, Math.round(p.x - w / 2), Math.round(p.y), p.color);
+      ctx.globalAlpha = 1;
+    }
+    // 技名の帯（自分の技を使ったとき）
+    if (this.banner) {
+      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 44;
+      ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(bx, by, w, 14);
+      ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx, by, 2, 14); ctx.fillRect(bx + w - 2, by, 2, 14);
+      Text.draw(ctx, this.banner.text, bx + 8, by + 2, '#fff6d8');
+    }
+    // 短いメッセージ（出現・勝利・経験値など）：舞台の中ほどの帯
+    if (this.text && !this.viewer) {
+      const ty = 44;
+      ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(0, ty, W, 16);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(0, ty, W, 1);
+      Text.draw(ctx, this.text, 6, ty + 3, '#fff6d8');
     }
     if (this.viewer) {
       Text.box(ctx, 0, AH, W, H - AH);
@@ -456,10 +505,28 @@ class BattleScene {
     const col = this.count <= 1 ? '#ff8a7a' : '#f2d27a';
     Text.draw(ctx, s, x + w - 4 - Text.width(s), y + 22, col);
   }
-  // 防御中のしるし（盾）
-  drawGuardMark(ctx, x, y) {
-    ctx.fillStyle = '#e8f0ff'; ctx.fillRect(x, y, 7, 5); ctx.fillRect(x + 1, y + 5, 5, 2); ctx.fillRect(x + 2, y + 7, 3, 1);
-    ctx.fillStyle = '#4a6a9a'; ctx.fillRect(x + 2, y + 2, 3, 3);
+  // 自分・相手の絵の位置（浮き文字の基準）
+  enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
+  meBox() { const p = this._pBox; if (!p) return { cx: 40, top: 60 }; return { cx: p.x + p.b.dx + p.b.w / 2, top: p.y + p.b.dy }; }
+  // モンスターを描く。flash が残っていれば白く光らせる（当たった演出）
+  drawMon(ctx, m, x, y, size, back, flash) {
+    drawMonster(ctx, m, x, y, size, false, back);
+    if (flash > 0 && flash % 4 >= 2) {
+      const c = BattleScene.tmp(size); const g = c.getContext('2d');
+      g.clearRect(0, 0, size, size); drawMonster(g, m, 0, 0, size, false, back);
+      g.globalCompositeOperation = 'source-in'; g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(0, 0, size, size); g.globalCompositeOperation = 'source-over';
+      ctx.drawImage(c, x, y);
+    }
+  }
+  static tmp(size) { if (!this._tmp) this._tmp = document.createElement('canvas'); if (this._tmp.width !== size) { this._tmp.width = size; this._tmp.height = size; } return this._tmp; }
+  // 防御の光の輪（発動時は広がる、防御中は薄く残る）
+  drawGuardRing(ctx, cx, cy, r, frame, fx) {
+    ctx.save();
+    const t = fx > 0 ? (30 - fx) / 30 : 1;
+    ctx.strokeStyle = fx > 0 ? `rgba(190,224,255,${0.9 - t * 0.5})` : `rgba(190,224,255,${0.35 + 0.15 * Math.sin(frame / 8)})`;
+    ctx.lineWidth = fx > 0 ? 2 : 1;
+    ctx.beginPath(); ctx.ellipse(cx, cy, r + (fx > 0 ? t * 6 : 0), (r + (fx > 0 ? t * 6 : 0)) * 0.8, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
 
   // HP窓：名前 / Lv. / タイプアイコン / HPピル＋バー / (自分のみ) 現在/最大
