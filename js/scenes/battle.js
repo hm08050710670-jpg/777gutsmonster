@@ -43,7 +43,7 @@ const Puzzle = (() => {
   // 技ゲージの枠を作る（小・中・強・防御・回復 ＋ メニュー）。ChatGPT製のカード絵に合わせた CSS 描画
   //   アイコン画像があるタイプ（いまは くさ）は絵を、無いタイプは仮の丸いボールを使う
   // 円形メーター（ChatGPT製：上段＝空、下段＝満タン。小・中・強・防御・回復の順）。タイプごとのシートがあればそれを使う
-  const METER_ATTRS = ['g'];   // シートがあるタイプ（f=炎 w=水 t=雷 e=土 を追加予定）
+  const METER_ATTRS = ['g', 'f', 'w', 't', 'e'];   // シートがあるタイプ（g=草 f=炎 w=水 t=雷 e=土。防御・回復は草のシートの4・5列目を共用）
   const METERS = {};
   function loadMeters() {
     for (const a of METER_ATTRS) {
@@ -79,7 +79,7 @@ const Puzzle = (() => {
     const TIER_COL = { small: 0, mid: 1, strong: 2, guard: 3, heal: 4 };
     const icon = (tier, c, mark) => {
       // メーターの絵：攻撃は自タイプのシート、防御・回復はシートに5列あればそれ、無ければ草のシートのもの
-      const ma = METER_ATTRS.includes(attr) ? attr : (tier === 'guard' || tier === 'heal') ? 'g' : null;
+      const ma = (tier === 'guard' || tier === 'heal') ? 'g' : METER_ATTRS.includes(attr) ? attr : null;
       if (ma) return `<canvas class="meter" width="36" height="36" data-m="${ma}:${TIER_COL[tier]}"></canvas>`;
       const set = ICONS[attr]; const img = tier === 'guard' ? 'shield' : tier === 'heal' ? 'heart' : set ? set[['small', 'mid', 'strong'].indexOf(tier)] : null;
       return img ? `<div class="icon ${img}"></div>` : `<div class="icon"><div class="ball ${c} ${mark}"></div></div>`;
