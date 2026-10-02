@@ -113,7 +113,7 @@ const Puzzle = (() => {
   }
   // 舞台の高さ（論理px）：盤面＋ゲージ＋ボタンを下に置き、残りを舞台に使う（ARENA_MIN〜ARENA_MAX）
   let arena = 122;
-  const ARENA_MIN = 122, ARENA_MAX = 150, BOARD_PAD = 12;
+  const ARENA_MIN = 122, ARENA_MAX = 208, BOARD_PAD = 10;   // 舞台は余った縦幅をぜんぶ使う（最大＝画面の全高 208）
   function uiH() { return ['pz-skills'].reduce((n, id) => n + ($(id) ? $(id).offsetHeight + 5 : 0), 0) + 8; }
   function calc() {
     const app = $('app');
@@ -123,7 +123,7 @@ const Puzzle = (() => {
     const innerH = Math.min(app.clientHeight, vis) - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     const scale = Game.scale || 1;
     const ui = el().hidden ? 0 : uiH();
-    const boardW = Math.max(180, Math.min(app.clientWidth - 12, 480, Math.floor((innerH - ARENA_MIN * scale - BOARD_PAD - ui) * 6 / 5)));
+    const boardW = Math.max(180, Math.min(app.clientWidth - 6, 480, Math.floor((innerH - ARENA_MIN * scale - BOARD_PAD - ui) * 6 / 5)));
     const boardH = boardW * 5 / 6;
     arena = Math.max(ARENA_MIN, Math.min(ARENA_MAX, Math.floor((innerH - boardH - BOARD_PAD - ui) / scale)));
     return boardW;
@@ -474,7 +474,11 @@ class BattleScene {
     const W = CONFIG.W, H = CONFIG.H;
     const AH = Puzzle.arena;
     const bgImg = Bg.get(this.bg);
-    if (bgImg) ctx.drawImage(bgImg, 0, 0, W, Math.max(152, AH));
+    if (bgImg) {
+      // 舞台が絵より高いときは、比率を保って拡大し左右を少し切る（縦に引き伸ばさない）
+      const bh = Math.max(152, AH), k = Math.max(1, bh / 152), bw = Math.round(W * k);
+      ctx.drawImage(bgImg, Math.round((W - bw) / 2), 0, bw, bh);
+    }
     else {
       const sky = ctx.createLinearGradient(0, 0, 0, 80);
       sky.addColorStop(0, '#9fd4f5'); sky.addColorStop(1, '#dff1fb');
@@ -487,7 +491,7 @@ class BattleScene {
     const extra = AH - 122;
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
-    const ey = 30 + Math.floor(extra / 3);
+    const ey = 34 + Math.floor(extra * 0.5);
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(146, ey + 66, 40, 7);
@@ -495,7 +499,7 @@ class BattleScene {
     this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
     this._eBox = { x: 112, y: ey, size: 68 };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 104, 4, 84, 34);
+    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 102, 4, 86, 46);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -518,14 +522,14 @@ class BattleScene {
     }
     // 技名の帯（自分の技を使ったとき）
     if (this.banner) {
-      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 44;
+      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 56;
       ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(bx, by, w, 14);
       ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx, by, 2, 14); ctx.fillRect(bx + w - 2, by, 2, 14);
       Text.draw(ctx, this.banner.text, bx + 8, by + 2, '#fff6d8');
     }
     // 短いメッセージ（出現・勝利・経験値など）：舞台の中ほどの帯
     if (this.text && !this.viewer) {
-      const ty = 44;
+      const ty = 56;
       ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(0, ty, W, 16);
       ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(0, ty, W, 1);
       Text.draw(ctx, this.text, 6, ty + 3, '#fff6d8');
@@ -543,14 +547,20 @@ class BattleScene {
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
+  //   1行目：見出し／2行目：技名（大きめ・白）／3行目：残りターン（数字を大きく）＋ターンの目盛り
   drawNext(ctx, x, y, w, h) {
-    ctx.fillStyle = 'rgba(20,40,26,0.82)'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(x, y, w, 1);
-    Text.draw(ctx, 'つぎの こうげき', x + 4, y + 2, '#d8e2c8');
-    Text.draw(ctx, this.enemyMove.name, x + 4, y + 12, '#fff6d8');
-    const s = `あと ${this.count} ターン`;
-    const col = this.count <= 1 ? '#ff8a7a' : '#f2d27a';
-    Text.draw(ctx, s, x + w - 4 - Text.width(s), y + 22, col);
+    const urgent = this.count <= 1;
+    ctx.fillStyle = 'rgba(14,30,20,0.9)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = urgent ? '#ff8a7a' : '#f2d27a'; ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y, 2, h);   // 上と左に色の縁（残り1ターンは赤）
+    Text.draw(ctx, 'つぎの こうげき', x + 6, y + 3, '#c8d4b8');
+    // 技名：1.3倍。背景に埋もれないよう黒い帯の上に白で
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x + 4, y + 13, w - 8, 14);
+    ctx.save(); ctx.translate(x + 6, y + 14); ctx.scale(1.3, 1.3); Text.draw(ctx, this.enemyMove.name, 0, 0, '#ffffff'); ctx.restore();
+    // 残りターン：「あと」＋大きな数字＋「ターン」（残り1ターンは赤）
+    const col = urgent ? '#ff8a7a' : '#f2d27a';
+    Text.draw(ctx, 'あと', x + 6, y + 34, '#c8d4b8');
+    ctx.save(); ctx.translate(x + 24, y + 28); ctx.scale(1.9, 1.9); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    Text.draw(ctx, 'ターン', x + 42, y + 34, '#c8d4b8');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
