@@ -42,19 +42,56 @@ const Puzzle = (() => {
   const menuOpen = () => !$('pz-actions').hidden;
   // 技ゲージの枠を作る（小・中・強・防御・回復 ＋ メニュー）。ChatGPT製のカード絵に合わせた CSS 描画
   //   アイコン画像があるタイプ（いまは くさ）は絵を、無いタイプは仮の丸いボールを使う
+  // 円形メーター（ChatGPT製：上段＝空、下段＝満タン。小・中・強・防御・回復の順）。タイプごとのシートがあればそれを使う
+  const METER_ATTRS = ['g'];   // シートがあるタイプ（f=炎 w=水 t=雷 e=土 を追加予定）
+  const METERS = {};
+  function loadMeters() {
+    for (const a of METER_ATTRS) {
+      if (METERS[a]) continue;
+      const im = new Image(); im.onload = () => { if (scene) scene._skillKey = null; }; im.src = (CONFIG.METER_IMAGES || {})[a] || `assets/ui/meter_${a}.png`;
+      METERS[a] = im;
+    }
+  }
+  const meterReady = a => METERS[a] && METERS[a].complete && METERS[a].naturalWidth > 0;
+  // メーターを描く：空の絵 → たまったぶんの扇形で満タンの絵 → 区切り線（12時から時計回り、need 等分）
+  function drawMeter(cv, attr, colIdx, need, have) {
+    const D = 36, g = cv.getContext('2d'), im = METERS[attr]; if (!im) return;
+    g.clearRect(0, 0, D, D); g.imageSmoothingEnabled = false;
+    g.drawImage(im, colIdx * D, 0, D, D, 0, 0, D, D);
+    if (have > 0) {
+      g.save(); g.beginPath(); g.moveTo(D / 2, D / 2);
+      const a0 = -Math.PI / 2, a1 = a0 + Math.PI * 2 * Math.min(1, have / need);
+      g.arc(D / 2, D / 2, D, a0, a1); g.closePath(); g.clip();
+      g.drawImage(im, colIdx * D, D, D, D, 0, 0, D, D); g.restore();
+    }
+    if (need > 1) {
+      g.strokeStyle = '#141414'; g.lineWidth = 2; g.lineCap = 'butt';
+      for (let k = 0; k < need; k++) {
+        const a = -Math.PI / 2 + Math.PI * 2 * k / need, r0 = 10.5, r1 = 19;
+        g.beginPath(); g.moveTo(D / 2 + Math.cos(a) * r0, D / 2 + Math.sin(a) * r0); g.lineTo(D / 2 + Math.cos(a) * r1, D / 2 + Math.sin(a) * r1); g.stroke();
+      }
+    }
+  }
   const ICONS = { g: ['leaf1', 'leaf2', 'leaf3'] };
   function buildSkills(s) {
+    loadMeters();
     const sk = s.skills, col = s.colors, attr = col.mid[0];
+    const TIER_COL = { small: 0, mid: 1, strong: 2, guard: 3, heal: 4 };
     const icon = (tier, c, mark) => {
+      // メーターの絵：攻撃は自タイプのシート、防御・回復はシートに5列あればそれ、無ければ草のシートのもの
+      const ma = METER_ATTRS.includes(attr) ? attr : (tier === 'guard' || tier === 'heal') ? 'g' : null;
+      if (ma) return `<canvas class="meter" width="36" height="36" data-m="${ma}:${TIER_COL[tier]}"></canvas>`;
       const set = ICONS[attr]; const img = tier === 'guard' ? 'shield' : tier === 'heal' ? 'heart' : set ? set[['small', 'mid', 'strong'].indexOf(tier)] : null;
       return img ? `<div class="icon ${img}"></div>` : `<div class="icon"><div class="ball ${c} ${mark}"></div></div>`;
     };
     const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', sk.guard, 'white', 'white']];
     let html = tiers.map(([t, name, c, mark]) => {
       const need = SKILL_NEED[t];
-      return `<button class="pz-skill" data-tier="${t}"><div class="name">${name}</div><div class="row">${icon(t, c, mark)}<div class="col"><div class="pips">${'<i class="pip"></i>'.repeat(need)}</div><div class="cnt">0/${need}</div></div></div></button>`;
+      const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
+      return `<button class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></button>`;
     }).join('');
-    html += `<div class="pz-skill info"><div class="name">かいふく</div><div class="row">${icon('heal', 'pink', 'pink')}<div class="col"><div class="pips"><i class="pip on" style="--c:#ff8fc0"></i></div><div class="cnt">そくじ</div></div></div></div>`;
+    const hic = icon('heal', 'pink', 'pink'), hm = hic.startsWith('<canvas');
+    html += `<div class="pz-skill info${hm ? ' has-meter' : ''}"><div class="name">かいふく</div><div class="row">${hic}<div class="col">${hm ? '' : '<div class="pips"><i class="pip on" style="--c:#ff8fc0"></i></div>'}<div class="cnt">そくじ</div></div></div></div>`;
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
@@ -65,9 +102,11 @@ const Puzzle = (() => {
   // ゲージの表示を現在のチャージに合わせる
   function syncSkills(s) {
     const key = JSON.stringify([s.charges, s.mode === 'command']); if (key === s._skillKey) return; s._skillKey = key;
+    const hc = $('pz-skills').querySelector('.info canvas.meter'); if (hc) { const [ma, ci] = hc.dataset.m.split(':'); if (meterReady(ma)) drawMeter(hc, ma, +ci, 1, 1); }
     $('pz-skills').querySelectorAll('[data-tier]').forEach(b => {
       const t = b.dataset.tier, need = SKILL_NEED[t], have = Math.min(need, s.charges[t]);
       b.querySelectorAll('.pip').forEach((p, i) => p.classList.toggle('on', i < have));
+      const cv = b.querySelector('canvas.meter'); if (cv) { const [ma, ci] = cv.dataset.m.split(':'); if (meterReady(ma)) drawMeter(cv, ma, +ci, need, have); }
       b.querySelector('.cnt').textContent = `${s.charges[t]}/${need}`;
       b.classList.toggle('ready', s.charges[t] >= need && s.mode === 'command');
     });

@@ -90,6 +90,14 @@ if os.path.exists('assets/hero.png') and os.path.exists('assets/hero.json'):
     hero_json = open('assets/hero.json', encoding='utf-8').read()
     print('hero sprites embedded')
 
+# 技チャージメーター（assets/ui/meter_<attr>.png）
+meter_imgs = {}
+if os.path.isdir('assets/ui'):
+    for f in sorted(os.listdir('assets/ui')):
+        m = re.match(r'meter_(\w+)\.png$', f)
+        if m: meter_imgs[m.group(1)] = 'data:image/png;base64,' + base64.b64encode(open(f'assets/ui/{f}', 'rb').read()).decode()
+print('meters embedded:', list(meter_imgs))
+
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
@@ -122,6 +130,8 @@ def inline_js(m):
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  NPC_IMG: '{npc_png}',\n  NPC_META_INLINE: {npc_json},\n  TITLE: 'GUTS MONSTERS',")
     if hero_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  HERO_IMG: '{hero_png}',\n  HERO_META_INLINE: {hero_json},\n  TITLE: 'GUTS MONSTERS',")
+    if src == 'js/config.js' and meter_imgs:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  METER_IMAGES: {json.dumps(meter_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'
