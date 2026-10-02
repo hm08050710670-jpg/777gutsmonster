@@ -45,7 +45,7 @@ const server = http.createServer((req, res) => {
   const finishBattle = async () => {
     for (let i = 0; i < 80; i++) {
       const t = await top(); if (t === 'FieldScene') return;
-      if (t === 'BattleScene') { const mode = await page.evaluate(() => Game.top().mode); if (mode === 'command') { await page.evaluate(() => { Game.top().onPuzzle({ combo: 1, counts: { green: 3 }, total: 3 }); }); } else if (mode === 'stats') { await tap('a'); } await page.waitForTimeout(400); }
+      if (t === 'BattleScene') { const mode = await page.evaluate(() => Game.top().mode); if (mode === 'command') { const used = await page.evaluate(() => { const b = Game.top(); if (b.charges.small >= 1) { b.useSkill('small'); return true; } b.onPuzzle({ combo: 1, counts: {}, total: 3, groups: [{ color: b.colors.small, n: 3 }] }); return false; }); } else if (mode === 'stats') { await tap('a'); } await page.waitForTimeout(400); }
       else await advance(3);
     }
   };
@@ -82,7 +82,7 @@ const server = http.createServer((req, res) => {
   for (let i = 0; i < 40; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }
   await advance(); await page.waitForTimeout(300); await shot('12_kaede_battle');
   // 相手を弱らせて回復を確認
-  await page.evaluate(() => { const b = Game.top(); b.enemy.hp = Math.floor(b.enemy.maxHp * 0.3); b.count = 1; b.onPuzzle({ combo: 1, counts: { pink: 3 }, total: 3 }); });
+  await page.evaluate(() => { const b = Game.top(); b.enemy.hp = Math.floor(b.enemy.maxHp * 0.3); b.count = 1; b.onPuzzle({ combo: 1, counts: {}, total: 3, groups: [{ color: b.colors.heal, n: 3 }] }); });
   await page.waitForTimeout(2500); console.log('enemy after regen chance:', await page.evaluate(() => { const b = Game.top(); return b.enemy && (b.enemy.hp + '/' + b.enemy.maxHp); }));
   await page.evaluate(() => { Game.top().enemy.hp = 1; }); await finishBattle(); await advance(); await page.waitForTimeout(300); await shot('13_kaede_win'); await closeAll(); console.log('after kaede:', await st(), 'note:', await note()); await shot('14_after');
   await tap('a'); await page.waitForTimeout(300); await advance(5);

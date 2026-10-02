@@ -14,7 +14,7 @@ const CONFIG = {
   FONT: 'DotGothic16',
   FONT_FILE: 'assets/fonts/DotGothic16-Regular.ttf',
   PARTY_MAX: 5,       // なかまの最大数
-  PARTY_SPRITE: 76, PARTY_BACK_SIZE: 0.6,   // 戦闘で味方を描く大きさ（px）
+  PARTY_BACK_SIZE: 1,   // 自分（後ろ姿）の大きさの倍率（1匹で戦うので相手と同じ比率）
   PARTY_CLIP: 10,     // 味方の足元を隠す量（px）
   PARTY_MARGIN_R: 6,  // 味方の列の右端の余白（px）
   TEXT_BOLD: 0.33,   // 文字の太さ（0=そのまま、0.33≒1.7倍、0.5≒2倍）

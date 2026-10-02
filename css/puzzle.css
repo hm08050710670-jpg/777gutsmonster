@@ -9,21 +9,58 @@
 @keyframes pz-pop{0%{transform:var(--t) scale(1)}40%{transform:var(--t) scale(1.25);opacity:.85}100%{transform:var(--t) scale(0);opacity:0}}
 .pz-ball.nofx{transition:none}
 
-/* ---- 画像が届くまでの仮ボール（CSS描画） ---- */
-.pz-ball{border-radius:50%;box-sizing:border-box}
-.pz-ball.red   {background:radial-gradient(circle at 35% 30%,#ffb0a0 0,#ff5a3c 35%,#b91d10 100%)}
-.pz-ball.blue  {background:radial-gradient(circle at 35% 30%,#b8e6ff 0,#3d9cf0 35%,#0f4fa8 100%)}
-.pz-ball.green {background:radial-gradient(circle at 35% 30%,#c9f5a8 0,#5fc94c 35%,#237a22 100%)}
-.pz-ball.yellow{background:radial-gradient(circle at 35% 30%,#fff5b0 0,#f7d23c 35%,#b58a0c 100%)}
-.pz-ball.purple{background:radial-gradient(circle at 35% 30%,#e0d0f5 0,#9a7bc8 35%,#4c2f7a 100%)}
-.pz-ball.pink  {background:radial-gradient(circle at 35% 30%,#ffe0ee 0,#ff8fc0 35%,#c2397e 100%)}
+/* ---- 仮ボール（CSS描画。正式なボール絵は後で差し替え） ----
+   色の役割：濃い＝強攻撃／基本＝中攻撃／明るい＝小攻撃／白＝防御／ピンク＝回復
+   クラス名：f=炎 w=水 g=草 e=土 t=雷 a=風 l=光 d=闇 n=ノーマル、3=強 2=中 1=小       */
+.pz-ball{border-radius:50%;box-sizing:border-box;background:radial-gradient(circle at 35% 30%,var(--hi) 0,var(--c) 38%,var(--lo) 100%)}
+.pz-ball.f3{--hi:#ff8a7a;--c:#d8231a;--lo:#6e0a05}  .pz-ball.f2{--hi:#ffd0a0;--c:#ff7f1f;--lo:#a3400a}  .pz-ball.f1{--hi:#fffbd0;--c:#ffd93a;--lo:#b8900c}
+.pz-ball.w3{--hi:#8fb0ff;--c:#1a46b8;--lo:#061a5a}  .pz-ball.w2{--hi:#bfe8ff;--c:#3a98f0;--lo:#0f4fa8}  .pz-ball.w1{--hi:#f0fcff;--c:#8fe3ff;--lo:#3aa6c8}
+.pz-ball.g3{--hi:#8fd890;--c:#1f7a2e;--lo:#073812}  .pz-ball.g2{--hi:#cdf7a8;--c:#5ccc48;--lo:#237a22}  .pz-ball.g1{--hi:#f6ffd0;--c:#c6f25a;--lo:#7fa81a}
+.pz-ball.e3{--hi:#b88a6a;--c:#5e2f12;--lo:#2a1205}  .pz-ball.e2{--hi:#e8c3a0;--c:#a8652c;--lo:#5e3410}  .pz-ball.e1{--hi:#fff6e8;--c:#e6caa0;--lo:#a8875a}
+.pz-ball.t3{--hi:#d9b8ff;--c:#8a3fd8;--lo:#3a1270}  .pz-ball.t2{--hi:#fff2a8;--c:#ffd21f;--lo:#b58a0c}  .pz-ball.t1{--hi:#ffffe8;--c:#fff39a;--lo:#c8b24a}
+.pz-ball.a3{--hi:#9fe8e0;--c:#0f7f80;--lo:#053a3a}  .pz-ball.a2{--hi:#d0fff8;--c:#3fd0c6;--lo:#148a84}  .pz-ball.a1{--hi:#ffffff;--c:#bdf6f0;--lo:#6fc0b8}
+.pz-ball.l3{--hi:#ffe0a0;--c:#d08a00;--lo:#6a4000}  .pz-ball.l2{--hi:#fff6c8;--c:#ffcf4d;--lo:#b58a0c}  .pz-ball.l1{--hi:#ffffff;--c:#fff1b8;--lo:#c8b070}
+.pz-ball.d3{--hi:#8a70b8;--c:#2a1a4a;--lo:#0a0418}  .pz-ball.d2{--hi:#c9b4ec;--c:#6c4ca0;--lo:#2e1a52}  .pz-ball.d1{--hi:#ffffff;--c:#cdb9ea;--lo:#8a6cb8}
+.pz-ball.n3{--hi:#a8a8a8;--c:#555;--lo:#1a1a1a}     .pz-ball.n2{--hi:#e0e0e0;--c:#9a9a9a;--lo:#505050}  .pz-ball.n1{--hi:#ffffff;--c:#e0e0e0;--lo:#9a9a9a}
+.pz-ball.white{--hi:#ffffff;--c:#f4f4f4;--lo:#b0b0b0}
+.pz-ball.pink {--hi:#ffe0ee;--c:#ff8fc0;--lo:#c2397e}
+/* 中央のマーク：強＝大・中＝標準・小＝小、白＝盾、ピンク＝ハート（色だけに頼らず判別できるように） */
+.pz-ball::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.78);border-radius:50%;box-shadow:0 0 0 1.5px rgba(0,0,0,.18)}
+.pz-ball.f3::after,.pz-ball.w3::after,.pz-ball.g3::after,.pz-ball.e3::after,.pz-ball.t3::after,.pz-ball.a3::after,.pz-ball.l3::after,.pz-ball.d3::after,.pz-ball.n3::after{width:50%;height:50%}
+.pz-ball.f2::after,.pz-ball.w2::after,.pz-ball.g2::after,.pz-ball.e2::after,.pz-ball.t2::after,.pz-ball.a2::after,.pz-ball.l2::after,.pz-ball.d2::after,.pz-ball.n2::after{width:32%;height:32%}
+.pz-ball.f1::after,.pz-ball.w1::after,.pz-ball.g1::after,.pz-ball.e1::after,.pz-ball.t1::after,.pz-ball.a1::after,.pz-ball.l1::after,.pz-ball.d1::after,.pz-ball.n1::after{width:16%;height:16%}
+.pz-ball.white::after{width:44%;height:50%;border-radius:0;background:#6a7a8a;box-shadow:none;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
+.pz-ball.pink::after{width:40%;height:36%;border-radius:0;background:#fff;box-shadow:none;clip-path:path('M20 36 L4 20 A8 8 0 0 1 20 8 A8 8 0 0 1 36 20 Z');}
+.pz-ball.pink::after{width:40px;height:36px;transform:translate(-50%,-50%) scale(var(--hs,0.9))}
 .pz-ball[style*="background-image"]{background-color:transparent;border-radius:0}
+.pz-ball[style*="background-image"]::after{display:none}
 
 /* ---- 戦闘中のパズル領域（仮想パッドの場所に出す） ---- */
 #puzzle[hidden]{display:none}
-#puzzle{flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 6px 8px;box-sizing:border-box;min-height:140px}
+#puzzle{flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:2px 6px 8px;box-sizing:border-box;min-height:140px}
+/* 戦闘メッセージ（1行） */
+#pz-msg{width:100%;box-sizing:border-box;min-height:26px;padding:4px 10px;border-radius:6px;background:var(--ivory);color:var(--text);border:2px solid var(--green);
+  font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 技ゲージ：小・中・強・防御・回復 */
+#pz-skills{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;box-sizing:border-box;padding:4px;border-radius:8px;background:rgba(0,0,0,.28);border:1.5px solid rgba(255,255,255,.14)}
+.pz-skill{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 3px;border-radius:6px;border:none;background:rgba(255,255,255,.06);color:var(--btn-text);font-size:9px;line-height:1.1;touch-action:manipulation;opacity:.85}
+.pz-skill .ball{width:22px;height:22px;border-radius:50%;position:relative;box-shadow:0 2px 2px rgba(0,0,0,.4);background:radial-gradient(circle at 35% 30%,var(--hi) 0,var(--c) 38%,var(--lo) 100%)}
+.pz-skill .ball::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30%;height:30%;background:rgba(255,255,255,.8);border-radius:50%}
+.pz-skill .ball.big::after{width:48%;height:48%} .pz-skill .ball.small::after{width:16%;height:16%}
+.pz-skill .ball.white::after{width:44%;height:50%;border-radius:0;background:#6a7a8a;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
+.pz-skill .ball.pink::after{width:40px;height:36px;transform:translate(-50%,-50%) scale(.45);border-radius:0;background:#fff;clip-path:path('M20 36 L4 20 A8 8 0 0 1 20 8 A8 8 0 0 1 36 20 Z')}
+.pz-skill .name{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700}
+.pz-skill .pips{display:flex;gap:2px;align-items:center}
+.pz-skill .pip{width:8px;height:5px;border-radius:2px;background:rgba(255,255,255,.18)}
+.pz-skill .pip.on{background:var(--c)}
+.pz-skill .cnt{font-size:8px;opacity:.8}
+.pz-skill.ready{opacity:1;background:rgba(255,235,120,.18);box-shadow:0 0 0 1.5px #f4d35e,0 0 8px rgba(244,211,94,.7);animation:pz-glow 1s ease-in-out infinite alternate}
+.pz-skill.ready .name{color:#fff}
+@keyframes pz-glow{from{box-shadow:0 0 0 1.5px #f4d35e,0 0 4px rgba(244,211,94,.5)}to{box-shadow:0 0 0 1.5px #fff2a8,0 0 12px rgba(244,211,94,.95)}}
+.pz-skill.info{opacity:.7}
+.pz-skill:disabled{pointer-events:none}
 #pz-actions{display:flex;gap:8px;width:100%;justify-content:center}
-#pz-actions .pz-btn{background:var(--btn);color:var(--btn-text);border:none;border-bottom:3px solid var(--btn-edge);height:32px;padding:0 16px;border-radius:16px;font-size:13px;font-weight:700;letter-spacing:.05em;touch-action:manipulation}
+#pz-actions .pz-btn{flex:1 1 0;background:var(--btn);color:var(--btn-text);border:none;border-bottom:3px solid var(--btn-edge);height:30px;padding:0 8px;border-radius:15px;font-size:13px;font-weight:700;letter-spacing:.05em;touch-action:manipulation}
 #pz-actions .pz-btn:active{background:var(--btn-active);color:var(--text)}
 #pz-actions .pz-btn:disabled{opacity:.4}
 #pz-board{width:100%}

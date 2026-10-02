@@ -31,14 +31,11 @@ class TitleScene {
     Game.replace(new FieldScene());
   }
   battleTest() {
-    // テスト用パーティ：毎回ランダム5匹。大きい（最終進化）・中くらい・小さい（進化前）が必ず混ざるようにする
+    // テスト用：ランダムな1匹（戦うのは先頭の1匹）＋控え2匹。レベルは少し高め
     const st = Save.newGame('テスト', 'm');
     const all = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
     const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Game.rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const pick = [];
-    for (const stage of [3, 2, 1]) { const c = shuffle(all.filter(id => DATA.MONSTERS[id].stage === stage && !pick.includes(id))); if (c.length) pick.push(c[0]); }
-    for (const id of shuffle(all.slice())) { if (pick.length >= CONFIG.PARTY_MAX) break; if (!pick.includes(id)) pick.push(id); }
-    st.party = shuffle(pick).map(id => makeMonster(id, 7)); Party.full(st);
+    st.party = shuffle(all.slice()).slice(0, 3).map(id => makeMonster(id, 10)); Party.full(st);
     st.items = { 'きずぐすり': 5 };
     st.flags = { labIntro: true, starter: true };
     st.map = 'road'; st.x = 7; st.y = 5;

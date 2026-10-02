@@ -21,7 +21,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function mount(boardEl, opts){
   opts=opts||{};
   const COLS=opts.cols||6, ROWS=opts.rows||5;
-  const COLORS=opts.colors||DEFAULT_COLORS;
+  let COLORS=opts.colors||DEFAULT_COLORS;
   const IMG=opts.images||{};
   const onTick=opts.onTick||(()=>{}), onMatch=opts.onMatch||(()=>{}), onResolve=opts.onResolve||(()=>{});
   const BALL_RATIO=opts.ballRatio||0.99;   // マスに対するボールの大きさ
@@ -99,11 +99,11 @@ function mount(boardEl, opts){
 
   /* ---- 消去→落下→補充→連鎖 ---- */
   async function resolve(){
-    busy=true; let combo=0; const counts={}; let total=0;
+    busy=true; let combo=0; const counts={}; let total=0; const groupsOut=[];
     while(true){
       const groups=findGroups(); if(!groups.length) break;
       for(const g of groups){
-        combo++; counts[g.color]=(counts[g.color]||0)+g.cells.length; total+=g.cells.length;
+        combo++; counts[g.color]=(counts[g.color]||0)+g.cells.length; total+=g.cells.length; groupsOut.push({color:g.color,n:g.cells.length});
         onMatch(g,combo);
         g.cells.forEach(([r,c])=>grid[r][c].el.classList.add('pop'));
         await wait(150);
@@ -119,12 +119,12 @@ function mount(boardEl, opts){
       await wait(260);
     }
     busy=false;
-    if(combo>0) onResolve({combo,counts,total});
+    if(combo>0) onResolve({combo,counts,total,groups:groupsOut});
   }
 
   window.addEventListener('resize',layout);
   reset();
-  return { reset, layout, lock:()=>{locked=true;}, unlock:()=>{locked=false;}, get grid(){return grid;}, get busy(){return busy;} };
+  return { reset, layout, lock:()=>{locked=true;}, unlock:()=>{locked=false;}, setColors:list=>{ COLORS=list.slice(); }, get grid(){return grid;}, get busy(){return busy;} };
 }
 
 global.PazugoruPuzzle={mount};

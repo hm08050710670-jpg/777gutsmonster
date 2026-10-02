@@ -456,16 +456,38 @@ const DATA = {
   },
 };
 
-// パーティ共通HP（パズドラ風）。最大＝仲間の最大HPの合計。現在値は state.hp に持つ
+// 戦闘は 1匹（先頭の なかま）で戦う。HPは 1匹ずつ持つ
 const Party = {
-  maxHp: st => st.party.reduce((n, m) => n + m.maxHp, 0),
-  hp: st => { const mx = Party.maxHp(st); if (st.hp == null) st.hp = mx; return Math.max(0, Math.min(mx, st.hp)); },
-  set(st, v) { st.hp = Math.max(0, Math.min(Party.maxHp(st), Math.round(v))); },
-  full(st) { st.hp = Party.maxHp(st); st.party.forEach(m => { m.hp = m.maxHp; m.moves && m.moves.forEach(mv => { mv.pp = mv.maxPp; }); }); },
-  // 防御・素早さは仲間の平均（いなければ 5）
-  def: st => st.party.length ? Math.round(st.party.reduce((n, m) => n + m.def, 0) / st.party.length) : 5,
-  spd: st => st.party.length ? Math.round(st.party.reduce((n, m) => n + m.spd, 0) / st.party.length) : 5,
+  active: st => st.party[0] || null,
+  maxHp: st => st.party[0] ? st.party[0].maxHp : 0,
+  hp: st => st.party[0] ? Math.max(0, Math.min(st.party[0].maxHp, st.party[0].hp)) : 0,
+  set(st, v) { const m = st.party[0]; if (m) m.hp = Math.max(0, Math.min(m.maxHp, Math.round(v))); },
+  full(st) { st.party.forEach(m => { m.hp = m.maxHp; m.moves && m.moves.forEach(mv => { mv.pp = mv.maxPp; }); }); },
+  def: st => st.party[0] ? st.party[0].def : 5,
+  spd: st => st.party[0] ? st.party[0].spd : 5,
 };
+
+// ---- 技チャージ（全モンスター共通の標準値：小1・中3・強5・防御2、回復は即時）----
+//   ボールの色は自分のタイプの「濃い＝強／基本＝中／明るい＝小」、白＝防御、ピンク＝回復
+const SKILL_NEED = { small: 1, mid: 3, strong: 5, guard: 2 };
+const SKILL_POWER = { small: 35, mid: 65, strong: 120 };
+// タイプごとの技名（仮）。個別に変えたいモンスターは SKILL_OVERRIDE に
+const TYPE_SKILLS = {
+  'くさ':   { small: 'このは',     mid: 'リーフカッター',  strong: 'グリーンバースト', guard: 'リーフガード' },
+  'ほのお': { small: 'ひのこ',     mid: 'ファイアクロー',  strong: 'ヒートブラスト',   guard: 'ねっきのまく' },
+  'みず':   { small: 'しぶき',     mid: 'アクアスラッシュ', strong: 'ビッグウェーブ',  guard: 'みずのベール' },
+  'でんき': { small: 'スパーク',   mid: 'でんげきアーム',  strong: 'サンダーブレイク', guard: 'せいでんバリア' },
+  'じめん': { small: 'つちけむり', mid: 'ロックスロー',    strong: 'グランドクエイク', guard: 'いわのよろい' },
+  'かぜ':   { small: 'そよかぜ',   mid: 'ウインドカッター', strong: 'テンペスト',      guard: 'かぜのまく' },
+  'ひかり': { small: 'ひかりのつぶ', mid: 'シャインレイ',  strong: 'セイントフラッシュ', guard: 'ひかりのたて' },
+  'やみ':   { small: 'かげつき',   mid: 'ダークスラッシュ', strong: 'ナイトメアブロー', guard: 'やみのころも' },
+  'ノーマル': { small: 'たいあたり', mid: 'ガッツアタック', strong: 'フルスイング',     guard: 'ガード' },
+};
+const SKILL_OVERRIDE = {
+  kokegame: { guard: 'こうらガード' }, morigame: { guard: 'こうらガード' }, nushigame: { guard: 'こうらガード' },
+  bubu: { small: 'かみつく', mid: 'クラウンヘッド', strong: 'キングスマッシュ', guard: 'おうさまのいげん' },
+};
+function skillsOf(m) { const t = TYPE_SKILLS[m.type] || TYPE_SKILLS['ノーマル']; return Object.assign({}, t, SKILL_OVERRIDE[m.id] || {}); }
 
 function makeMonster(id, level) {
   const sp = DATA.MONSTERS[id];
