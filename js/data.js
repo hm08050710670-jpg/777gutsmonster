@@ -467,9 +467,10 @@ const Party = {
   spd: st => st.party[0] ? st.party[0].spd : 5,
 };
 
-// ---- 技チャージ（全モンスター共通の標準値：小1・中3・強5・防御2、回復は即時）----
+// ---- 技チャージ（全モンスター共通の標準値：小1・中3・強5・防御2・回復1）。たまった技は自動で発動する ----
 //   ボールの色は自分のタイプの「濃い＝強／基本＝中／明るい＝小」、白＝防御、ピンク＝回復
-const SKILL_NEED = { small: 1, mid: 3, strong: 5, guard: 2 };
+const SKILL_NEED = { small: 1, mid: 3, strong: 5, guard: 2, heal: 1 };   // 回復も1チャージ（ピンク3つ）でたまったら自動で発動
+const SKILL_HEAL = 0.25;   // 回復量（最大HPに対する割合）
 const SKILL_POWER = { small: 35, mid: 65, strong: 120 };
 // タイプごとの技名（仮）。個別に変えたいモンスターは SKILL_OVERRIDE に
 const TYPE_SKILLS = {

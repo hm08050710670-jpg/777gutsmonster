@@ -45,7 +45,7 @@ const server = http.createServer((req, res) => {
   const finishBattle = async () => {
     for (let i = 0; i < 80; i++) {
       const t = await top(); if (t === 'FieldScene') return;
-      if (t === 'BattleScene') { const mode = await page.evaluate(() => Game.top().mode); if (mode === 'command') { const used = await page.evaluate(() => { const b = Game.top(); if (b.charges.small >= 1) { b.useSkill('small'); return true; } b.onPuzzle({ combo: 1, counts: {}, total: 3, groups: [{ color: b.colors.small, n: 3 }] }); return false; }); } else if (mode === 'stats') { await tap('a'); } await page.waitForTimeout(400); }
+      if (t === 'BattleScene') { const mode = await page.evaluate(() => Game.top().mode); if (mode === 'command') { await page.evaluate(() => { const b = Game.top(); b.onPuzzle({ combo: 1, counts: {}, total: 3, groups: [{ color: b.colors.small, n: 3 }] }); }); } else if (mode === 'stats') { await tap('a'); } await page.waitForTimeout(400); }
       else await advance(3);
     }
   };

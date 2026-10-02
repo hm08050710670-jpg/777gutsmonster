@@ -27,7 +27,6 @@ const Puzzle = (() => {
       $('pz-skills').addEventListener('click', e => {
         if (!scene) return;
         if (e.target.closest('#pz-menu-btn')) { if (scene.mode === 'command' && Game.top() === scene) openMenu(); return; }
-        const b = e.target.closest('[data-tier]'); if (b) scene.useSkill(b.dataset.tier);
       });
     } else { inst.setColors(colors); inst.reset(); }
     inst.lock();
@@ -84,31 +83,28 @@ const Puzzle = (() => {
       const set = ICONS[attr]; const img = tier === 'guard' ? 'shield' : tier === 'heal' ? 'heart' : set ? set[['small', 'mid', 'strong'].indexOf(tier)] : null;
       return img ? `<div class="icon ${img}"></div>` : `<div class="icon"><div class="ball ${c} ${mark}"></div></div>`;
     };
-    const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', sk.guard, 'white', 'white']];
+    const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', sk.guard, 'white', 'white'], ['heal', 'かいふく', 'pink', 'pink']];
     let html = tiers.map(([t, name, c, mark]) => {
       const need = SKILL_NEED[t];
       const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
-      return `<button class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></button>`;
+      return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
-    const hic = icon('heal', 'pink', 'pink'), hm = hic.startsWith('<canvas');
-    html += `<div class="pz-skill info${hm ? ' has-meter' : ''}"><div class="name">かいふく</div><div class="row">${hic}<div class="col">${hm ? '' : '<div class="pips"><i class="pip on" style="--c:#ff8fc0"></i></div>'}<div class="cnt">そくじ</div></div></div></div>`;
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
     $('pz-skills').querySelectorAll('.ball').forEach(b => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + b.classList[1]; probe.style.display = 'none'; document.body.appendChild(probe); const cs = getComputedStyle(probe); ['--hi', '--c', '--lo'].forEach(v => b.style.setProperty(v, cs.getPropertyValue(v))); probe.remove(); });
     // ピップの点灯色（技の段階の色）
-    $('pz-skills').querySelectorAll('[data-tier]').forEach(b => { const t = b.dataset.tier; const probe = document.createElement('div'); probe.className = 'pz-ball ' + (t === 'guard' ? 'white' : col[t]); probe.style.display = 'none'; document.body.appendChild(probe); b.style.setProperty('--c', t === 'guard' ? '#7a8ea8' : getComputedStyle(probe).getPropertyValue('--c')); probe.remove(); });
+    $('pz-skills').querySelectorAll('[data-tier]').forEach(b => { const t = b.dataset.tier; const probe = document.createElement('div'); probe.className = 'pz-ball ' + (t === 'guard' ? 'white' : t === 'heal' ? 'pink' : col[t]); probe.style.display = 'none'; document.body.appendChild(probe); b.style.setProperty('--c', t === 'guard' ? '#7a8ea8' : getComputedStyle(probe).getPropertyValue('--c')); probe.remove(); });
   }
   // ゲージの表示を現在のチャージに合わせる
   function syncSkills(s) {
     const key = JSON.stringify([s.charges, s.mode === 'command']); if (key === s._skillKey) return; s._skillKey = key;
-    const hc = $('pz-skills').querySelector('.info canvas.meter'); if (hc) { const [ma, ci] = hc.dataset.m.split(':'); if (meterReady(ma)) drawMeter(hc, ma, +ci, 1, 1); }
     $('pz-skills').querySelectorAll('[data-tier]').forEach(b => {
       const t = b.dataset.tier, need = SKILL_NEED[t], have = Math.min(need, s.charges[t]);
       b.querySelectorAll('.pip').forEach((p, i) => p.classList.toggle('on', i < have));
       const cv = b.querySelector('canvas.meter'); if (cv) { const [ma, ci] = cv.dataset.m.split(':'); if (meterReady(ma)) drawMeter(cv, ma, +ci, need, have); }
       b.querySelector('.cnt').textContent = `${s.charges[t]}/${need}`;
-      b.classList.toggle('ready', s.charges[t] >= need && s.mode === 'command');
+      b.classList.toggle('ready', s.charges[t] >= need);
     });
   }
   // 舞台の高さ（論理px）。配分の優先順位：盤面6×5を全部見せる → カード列 → 残りを舞台（ARENA_MIN〜ARENA_MAX）
@@ -132,13 +128,25 @@ const Puzzle = (() => {
     h += cardH;
     return h;
   }
+  // 実際に見えている高さ。アプリ内ブラウザ（Claude など）は画面全体の高さを返しながら上部をネイティブの見出しで隠すことがあるので、
+  //   「全画面でないのに画面の全高と同じ」ときは、見出しぶん（安全域の上 ＋ 約72px）を差し引く
+  function visibleHeight(app) {
+    const vis = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    let h = Math.min(app.clientHeight, vis);
+    const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+    if (!standalone && screen.height && window.innerHeight >= screen.height - 4) {
+      const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
+      const sat = probe.offsetHeight; probe.remove();
+      h -= sat + 72;
+    }
+    return h;
+  }
   function calc() {
     const app = $('app');
     // 実際に見えている高さ（アプリ内ブラウザや Safari のツールバーぶんを除く）
-    const vis = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
     const scale = Game.scale || 1;
     cardH = CARD_MIN;
-    let avail = Math.min(app.clientHeight, vis) - overhead();
+    let avail = visibleHeight(app) - overhead();
     // 盤面：幅いっぱい。ただし舞台の最小高さを残せないときは縮める
     const boardW = Math.max(180, Math.min(app.clientWidth - 6, 480, Math.floor((avail - ARENA_MIN * scale) * 6 / 5)));
     const boardH = boardW * 5 / 6;
@@ -185,7 +193,7 @@ class BattleScene {
     this.shake = 0;
     this.count = ENEMY_COUNT;   // 相手の攻撃までのターン数
     this.enemyMove = this.pickEnemyMove();
-    this.charges = { small: 0, mid: 0, strong: 0, guard: 0 };
+    this.charges = { small: 0, mid: 0, strong: 0, guard: 0, heal: 0 };
     this.guard = false;         // 防御中（つぎの相手の攻撃を半減）
     this.sparkleIdx = -1;
     this.pops = [];             // ダメージなどの浮き文字 { x, y, text, color, t }
@@ -283,54 +291,55 @@ class BattleScene {
     }
   }
 
-  // ---- 盤面を消したとき：色ごとに技をチャージ（ピンクは即時回復）。1ターン進む ----
+  // ---- 盤面を消したとき：色ごとに技をチャージ。規定数に達した技は自動で発動（小→中→強→防御→回復の順）。そのあと1ターン進む ----
   onPuzzle(r) {
     if (this.mode !== 'command') return;
     this.mode = 'busy'; Puzzle.setEnabled(false);
-    const me = this.me, col = this.colors;
-    const tierOf = c => c === col.strong ? 'strong' : c === col.mid ? 'mid' : c === col.small ? 'small' : c === col.guard ? 'guard' : null;
-    const comboMul = 1 + 0.25 * (r.combo - 1);
-    let heal = 0; const gained = {};
+    const col = this.colors;
+    const tierOf = c => c === col.strong ? 'strong' : c === col.mid ? 'mid' : c === col.small ? 'small' : c === col.guard ? 'guard' : c === col.heal ? 'heal' : null;
     for (const g of (r.groups || [])) {
-      if (g.color === col.heal) { heal += Math.round(me.maxHp * 0.05 * g.n * comboMul); continue; }
       const t = tierOf(g.color); if (!t) continue;
-      const c = chargeFor(t, g.n); this.charges[t] += c; gained[t] = (gained[t] || 0) + c;
+      this.charges[t] += chargeFor(t, g.n);
     }
-    if (heal > 0) {
-      this.step(() => { const h = Math.min(heal, me.maxHp - me.hp); me.hp += h; this.shownHp.p = me.hp; this.sparkle = 40; this.sparkleIdx = 0; const pb = this.meBox(); this.pop(pb.cx, pb.top, `+${h}`, '#ffb0d8'); });
-      this.queue.push(() => { this.mode = 'wait'; this.waitT = 24; this.waitDone = () => this.next(); });
-    }
+    // たまった技を順に発動（相手を倒したら残りは発動しない。チャージは残る）
+    const order = ['small', 'mid', 'strong', 'guard', 'heal'];
+    const fireNext = () => {
+      const t = order.find(k => this.charges[k] >= SKILL_NEED[k]);
+      if (!t || this.enemy.hp <= 0) { this.next(); return; }
+      this.charges[t] -= SKILL_NEED[t];
+      this.queue.unshift(...this.skillSteps(t), fireNext);
+      this.next();
+    };
+    this.queue.push(fireNext);
     this.queue.push(() => { this.enemyTick(); this.next(); });
     this.queue.push(() => { this.checkEnd(); this.next(); });
     this.next();
   }
-  // ---- たまった技を使う（ターンは消費しない）----
-  useSkill(tier) {
-    if (this.mode !== 'command' || Game.top() !== this) return;
-    const need = SKILL_NEED[tier]; if (this.charges[tier] < need) return;
-    const me = this.me, en = this.enemy, name = this.skills[tier];
-    this.mode = 'busy'; Puzzle.setEnabled(false);
-    this.charges[tier] -= need;
-    this.banner = { text: name, t: 50 };
+  // 技の演出と効果のステップ列
+  skillSteps(tier) {
+    const me = this.me, en = this.enemy, name = tier === 'heal' ? 'かいふく' : this.skills[tier];
+    const wait = n => () => { this.mode = 'wait'; this.waitT = n; this.waitDone = () => this.next(); };
+    const steps = [this.fnStep(() => { this.banner = { text: name, t: 50 }; })];
     if (tier === 'guard') {
-      this.step(() => { this.guard = true; this.guardFx = 30; const pb = this.meBox(); this.pop(pb.cx, pb.top, 'まもり UP', '#bfe0ff'); });
-      this.queue.push(() => { this.mode = 'wait'; this.waitT = 30; this.waitDone = () => { this.mode = 'command'; }; });
-      this.next(); return;
+      steps.push(this.fnStep(() => { this.guard = true; this.guardFx = 30; const pb = this.meBox(); this.pop(pb.cx, pb.top, 'まもり UP', '#bfe0ff'); }), wait(30));
+      return steps;
+    }
+    if (tier === 'heal') {
+      steps.push(this.fnStep(() => { const h = Math.min(Math.round(me.maxHp * SKILL_HEAL), me.maxHp - me.hp); me.hp += h; this.shownHp.p = me.hp; this.sparkle = 40; this.sparkleIdx = 0; const pb = this.meBox(); this.pop(pb.cx, pb.top, `+${h}`, '#ffb0d8'); }), wait(30));
+      return steps;
     }
     const eff = (DATA.TYPES[me.type] || {})[en.type] ?? 1;
-    const d = this.dmg(me.level, SKILL_POWER[tier], me.atk, en.def, 1.5, eff);
     // 自分が前に出る → 相手が白く光って揺れ、ダメージの数字が浮く
-    this.queue.push(() => { this.hit = true; this.lunge = { who: 'p', t: 14 }; this.mode = 'wait'; this.waitT = 14; this.waitDone = () => this.next(); });
-    this.step(() => {
+    steps.push(() => { this.hit = true; this.lunge = { who: 'p', t: 14 }; this.mode = 'wait'; this.waitT = 14; this.waitDone = () => this.next(); });
+    steps.push(this.fnStep(() => {
+      const d = this.dmg(me.level, SKILL_POWER[tier], me.atk, en.def, 1.5, eff);
       en.hp = Math.max(0, en.hp - d); this.shake = 12; this.flashE = 10;
       const eb = this.enemyBox();
       this.pop(eb.cx, eb.top, `-${d}`, '#fff6d8');
       if (eff > 1) this.pop(eb.cx, eb.top - 12, 'ばつぐん!', '#ffd24a'); else if (eff < 1) this.pop(eb.cx, eb.top - 12, 'いまひとつ', '#c8d0c0');
-    });
-    this.queue.push(this.animStep('e'));
-    this.step(() => { this.hit = false; });
-    this.queue.push(() => { this.checkEnd(); this.next(); });
-    this.next();
+    }));
+    steps.push(this.animStep('e'), this.fnStep(() => { this.hit = false; }), wait(10));
+    return steps;
   }
   // ---- 盤面の上のボタン ----
   pressAction(act) {
@@ -359,7 +368,7 @@ class BattleScene {
       if (p[i].hp <= 0) { this.say(`${p[i].name}は たたかえない！`, () => { this.mode = 'command'; }); return; }
       this.mode = 'busy';
       const from = this.me.name, to = p[i].name;
-      this.step(() => { [p[0], p[i]] = [p[i], p[0]]; this.setMe(); this.charges = { small: 0, mid: 0, strong: 0, guard: 0 }; this.guard = false; this.shownHp.p = this.me.hp; Puzzle.show(this); });
+      this.step(() => { [p[0], p[i]] = [p[i], p[0]]; this.setMe(); this.charges = { small: 0, mid: 0, strong: 0, guard: 0, heal: 0 }; this.guard = false; this.shownHp.p = this.me.hp; Puzzle.show(this); });
       this.msg(`${from}は さがった。 いけっ ${to}！`);
       this.queue.push(() => { this.enemyTick(); this.next(); });
       this.queue.push(() => { this.checkEnd(); this.next(); });
@@ -414,7 +423,7 @@ class BattleScene {
       const alive = party.findIndex(m => m.hp > 0);
       if (alive > 0) {
         // ほかに戦える なかまが いれば 交代
-        this.step(() => { [party[0], party[alive]] = [party[alive], party[0]]; this.setMe(); this.charges = { small: 0, mid: 0, strong: 0, guard: 0 }; this.guard = false; this.shownHp.p = this.me.hp; Puzzle.show(this); });
+        this.step(() => { [party[0], party[alive]] = [party[alive], party[0]]; this.setMe(); this.charges = { small: 0, mid: 0, strong: 0, guard: 0, heal: 0 }; this.guard = false; this.shownHp.p = this.me.hp; Puzzle.show(this); });
         this.queue.push(() => { this.say(`いけっ ${this.me.name}！`, () => { this.mode = 'command'; }); });
       } else {
         this.msg('めのまえが まっくらに なった！');
@@ -512,7 +521,7 @@ class BattleScene {
     const extra = AH - 122;
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
-    const ey = 34 + Math.floor(extra * 0.5);
+    const ey = Math.max(16, Math.min(36 + Math.floor(extra * 0.5), AH - 106));   // 自分のHP窓（AH-36）に足元がかぶらない高さまで
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(146, ey + 66, 40, 7);
@@ -520,7 +529,7 @@ class BattleScene {
     this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
     this._eBox = { x: 112, y: ey, size: 68 };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, AH);
+    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, ey + Mon.drawnBox(en.id, 68 / 24, false).dy);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -568,38 +577,20 @@ class BattleScene {
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
-  // 相手の攻撃情報：丸いターンメーター（残りターンぶん点灯、中央に残り数）＋技名（大きめ・白）＋「あと N ターン」
-  //   相手（右上）と自分（左下）のあいだ、左側の空いた帯に置く。舞台が低くて入らないときは右上に寄せる
-  drawNext(ctx, AH) {
-    const W = CONFIG.W, urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
-    const bw = 110, bh = 44;
-    const roomLeft = (AH - 4 - 64) - 34 >= bh - 12;   // 自分の頭（AH-68）までにほぼ収まるか（少しの重なりは許す）
-    const x = roomLeft ? 2 : W - bw - 2, y = roomLeft ? 34 : 32;
-    // 札
-    ctx.fillStyle = 'rgba(14,30,20,0.9)'; ctx.fillRect(x, y, bw, bh);
-    ctx.fillStyle = col; ctx.fillRect(x, y, bw, 1); ctx.fillRect(x, y, 2, bh);
-    // 丸いターンメーター（左）：外周を ENEMY_COUNT 等分し、残りターンぶん点灯
-    const R = 17, cx = x + 4 + R, cy = y + bh / 2;
+  // 相手の攻撃までの残りターン：相手の頭の上の丸いメーター（ENEMY_COUNT 等分の輪が残りぶん点灯、中央に残り数）。技名は出さない
+  drawNext(ctx, ey) {
+    const urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
+    const R = 13, cx = 146, cy = ey - R - 3;   // ey＝相手の絵の上端。その上に置く
     ctx.save();
-    ctx.fillStyle = '#101810'; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(10,20,14,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, R + 2, 0, Math.PI * 2); ctx.fill();
     for (let i = 0; i < ENEMY_COUNT; i++) {
-      const a0 = -Math.PI / 2 + Math.PI * 2 * i / ENEMY_COUNT + 0.08, a1 = -Math.PI / 2 + Math.PI * 2 * (i + 1) / ENEMY_COUNT - 0.08;
+      const a0 = -Math.PI / 2 + Math.PI * 2 * i / ENEMY_COUNT + 0.1, a1 = -Math.PI / 2 + Math.PI * 2 * (i + 1) / ENEMY_COUNT - 0.1;
       ctx.fillStyle = i < this.count ? col : '#3a4a3a';
-      ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.arc(cx, cy, R - 5, a1, a0, true); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.arc(cx, cy, R - 4, a1, a0, true); ctx.closePath(); ctx.fill();
     }
-    ctx.fillStyle = '#182818'; ctx.beginPath(); ctx.arc(cx, cy, R - 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#182818'; ctx.beginPath(); ctx.arc(cx, cy, R - 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    // 中央の残り数（大きく）
-    ctx.save(); ctx.translate(cx - 5, cy - 9); ctx.scale(2, 2); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    // 右：見出し・技名・残りターン
-    const tx = x + 4 + R * 2 + 6;
-    Text.draw(ctx, 'つぎの こうげき', tx, y + 3, '#c8d4b8');
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(tx - 2, y + 13, x + bw - tx - 2, 14);
-    const name = this.enemyMove.name, nw = Text.width(name), ns = Math.min(1.35, (x + bw - tx - 6) / Math.max(1, nw));
-    ctx.save(); ctx.translate(tx, y + 14); ctx.scale(ns, ns); Text.draw(ctx, name, 0, 0, '#ffffff'); ctx.restore();
-    Text.draw(ctx, 'あと', tx, y + 32, '#c8d4b8');
-    ctx.save(); ctx.translate(tx + 17, y + 29); ctx.scale(1.5, 1.5); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    Text.draw(ctx, 'ターン', tx + 31, y + 32, '#c8d4b8');
+    ctx.save(); ctx.translate(cx - 4, cy - 7); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
