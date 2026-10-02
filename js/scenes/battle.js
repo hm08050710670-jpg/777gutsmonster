@@ -40,19 +40,27 @@ const Puzzle = (() => {
   function openMenu() { $('pz-actions').hidden = false; if (inst) inst.lock(); }
   function closeMenu() { $('pz-actions').hidden = true; }
   const menuOpen = () => !$('pz-actions').hidden;
-  // 技ゲージの枠を作る（小・中・強・防御・回復）
+  // 技ゲージの枠を作る（小・中・強・防御・回復 ＋ メニュー）。ChatGPT製のカード絵に合わせた CSS 描画
+  //   アイコン画像があるタイプ（いまは くさ）は絵を、無いタイプは仮の丸いボールを使う
+  const ICONS = { g: ['leaf1', 'leaf2', 'leaf3'] };
   function buildSkills(s) {
-    const sk = s.skills, col = s.colors;
+    const sk = s.skills, col = s.colors, attr = col.mid[0];
+    const icon = (tier, c, mark) => {
+      const set = ICONS[attr]; const img = tier === 'guard' ? 'shield' : tier === 'heal' ? 'heart' : set ? set[['small', 'mid', 'strong'].indexOf(tier)] : null;
+      return img ? `<div class="icon ${img}"></div>` : `<div class="icon"><div class="ball ${c} ${mark}"></div></div>`;
+    };
     const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', sk.guard, 'white', 'white']];
     let html = tiers.map(([t, name, c, mark]) => {
       const need = SKILL_NEED[t];
-      return `<button class="pz-skill" data-tier="${t}"><div class="ball ${c} ${mark}"></div><div class="name">${name}</div><div class="pips">${'<i class="pip"></i>'.repeat(need)}</div><div class="cnt">0/${need}</div></button>`;
+      return `<button class="pz-skill" data-tier="${t}"><div class="name">${name}</div><div class="row">${icon(t, c, mark)}<div class="col"><div class="pips">${'<i class="pip"></i>'.repeat(need)}</div><div class="cnt">0/${need}</div></div></div></button>`;
     }).join('');
-    html += `<div class="pz-skill info"><div class="ball pink pink"></div><div class="name">かいふく</div><div class="pips"></div><div class="cnt">そくじ</div></div>`;
-    html += `<button class="pz-skill menu" id="pz-menu-btn"><div class="menu-icon">≡</div><div class="name">メニュー</div></button>`;
+    html += `<div class="pz-skill info"><div class="name">かいふく</div><div class="row">${icon('heal', 'pink', 'pink')}<div class="col"><div class="pips"><i class="pip on" style="--c:#ff8fc0"></i></div><div class="cnt">そくじ</div></div></div></div>`;
+    html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
     $('pz-skills').querySelectorAll('.ball').forEach(b => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + b.classList[1]; probe.style.display = 'none'; document.body.appendChild(probe); const cs = getComputedStyle(probe); ['--hi', '--c', '--lo'].forEach(v => b.style.setProperty(v, cs.getPropertyValue(v))); probe.remove(); });
+    // ピップの点灯色（技の段階の色）
+    $('pz-skills').querySelectorAll('[data-tier]').forEach(b => { const t = b.dataset.tier; const probe = document.createElement('div'); probe.className = 'pz-ball ' + (t === 'guard' ? 'white' : col[t]); probe.style.display = 'none'; document.body.appendChild(probe); b.style.setProperty('--c', t === 'guard' ? '#7a8ea8' : getComputedStyle(probe).getPropertyValue('--c')); probe.remove(); });
   }
   // ゲージの表示を現在のチャージに合わせる
   function syncSkills(s) {

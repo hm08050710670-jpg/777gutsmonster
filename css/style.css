@@ -35,8 +35,12 @@ html, body {
   align-items: center;
   height: 100%;
   height: 100svh;
-  padding-top: var(--safe-t);
+  /* 上の余白：ブラウザ（Safari・アプリ内）では上に自前のバーがあるので詰める。ホーム画面に追加した全画面時だけ安全域ぶん空ける */
+  padding-top: 4px;
   padding-bottom: var(--safe-b);
+}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  #app { padding-top: var(--safe-t); }
 }
 
 /* ① ADVENTURE NOTE */

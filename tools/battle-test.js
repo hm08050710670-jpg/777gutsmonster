@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => { const p = path.join(ROOT, req.u
   console.log(await top(), await page.evaluate(() => Game.top().items ? Game.top().items().join('/') : ''));
   const info = () => page.evaluate(() => { const b = Game.top(); return b.enemy ? { mode: b.mode, me: b.me.name + ' ' + b.me.hp + '/' + b.me.maxHp, en: b.enemy.name + ' ' + b.enemy.hp + '/' + b.enemy.maxHp, ch: b.charges, count: b.count, msg: b.text, arena: Puzzle.arena, boardW: document.getElementById('pz-board').style.width } : 'no battle'; });
   const waitCmd = async () => { for (let i = 0; i < 80; i++) { const m = await page.evaluate(() => Game.top().mode); if (m === 'command') return; if (m === 'stats') await key('z'); await page.waitForTimeout(100); } };
-  await waitCmd(); console.log('start', await info());
+  await waitCmd(); await page.evaluate(() => { const b = Game.top(); Game.state.party = [makeMonster('kokegame', 10), ...Game.state.party.slice(1)]; Party.full(Game.state); b.setMe(); b.shownHp.p = b.me.hp; Puzzle.show(b); b.mode = 'command'; }); await page.waitForTimeout(300); console.log('start', await info());
   await page.screenshot({ path: 'nb_01.png' });
   // 盤面：小3つ＋強5つ＋白4つ＋ピンク3つ を消したことにする
   await page.evaluate(() => { const b = Game.top(); b.onPuzzle({ combo: 4, total: 15, counts: {}, groups: [{ color: b.colors.small, n: 3 }, { color: b.colors.strong, n: 5 }, { color: b.colors.guard, n: 4 }, { color: b.colors.heal, n: 3 }] }); });
