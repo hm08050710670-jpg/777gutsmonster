@@ -37,10 +37,10 @@
 
 /* ---- 戦闘中のパズル領域（仮想パッドの場所に出す） ---- */
 #puzzle[hidden]{display:none}
-#puzzle{position:relative;flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:2px 3px 4px;box-sizing:border-box;min-height:140px}
+#puzzle{position:relative;flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:2px 3px 4px;box-sizing:border-box;min-height:140px}
 /* 技ゲージ：小・中・強・防御・回復 ＋ メニュー（ChatGPT製カード絵のデザイン：アイボリー地・深緑の二重枠・角を欠く） */
 #pz-skills{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,0.62fr);gap:3px;width:100%;box-sizing:border-box;padding:3px 0}
-.pz-skill{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;height:52px;min-width:0;padding:4px 4px 3px;box-sizing:border-box;border:none;
+.pz-skill{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;height:var(--card-h,52px);min-width:0;padding:4px 4px 3px;box-sizing:border-box;border:none;
   background:var(--ivory);color:#1f3d2a;font-size:8px;line-height:1.1;touch-action:manipulation;
   box-shadow:inset 0 0 0 2px #1f3d2a,inset 0 0 0 3px var(--ivory),inset 0 0 0 4px #3d6b48;
   clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 4px,100% calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,0 calc(100% - 4px),0 4px)}
@@ -52,7 +52,7 @@
 .pz-skill .ball.big::after{width:48%;height:48%} .pz-skill .ball.small::after{width:16%;height:16%}
 .pz-skill .ball.white::after{width:44%;height:50%;border-radius:0;background:#6a7a8a;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
 .pz-skill .row{display:flex;flex-direction:row;align-items:center;gap:2px}
-.pz-skill canvas.meter{flex:0 0 36px;width:36px;height:36px;image-rendering:pixelated}
+.pz-skill canvas.meter{flex:0 0 calc(var(--card-h,52px) - 16px);width:calc(var(--card-h,52px) - 16px);height:calc(var(--card-h,52px) - 16px);image-rendering:pixelated}
 .pz-skill.has-meter .row{justify-content:center;gap:3px;margin-top:-1px}
 .pz-skill.has-meter .col{flex:0 0 auto}
 .pz-skill.has-meter .cnt{font-size:10px}

@@ -111,21 +111,42 @@ const Puzzle = (() => {
       b.classList.toggle('ready', s.charges[t] >= need && s.mode === 'command');
     });
   }
-  // 舞台の高さ（論理px）：盤面＋ゲージ＋ボタンを下に置き、残りを舞台に使う（ARENA_MIN〜ARENA_MAX）
+  // 舞台の高さ（論理px）。配分の優先順位：盤面6×5を全部見せる → カード列 → 残りを舞台（ARENA_MIN〜ARENA_MAX）
+  //   さらに余れば、カード列（メーター）を少し大きくして使う。舞台を空だらけに伸ばさない
   let arena = 122;
-  const ARENA_MIN = 122, ARENA_MAX = 208, BOARD_PAD = 10;   // 舞台は余った縦幅をぜんぶ使う（最大＝画面の全高 208）
-  function uiH() { return ['pz-skills'].reduce((n, id) => n + ($(id) ? $(id).offsetHeight + 5 : 0), 0) + 8; }
+  const ARENA_MIN = 122, ARENA_MAX = 180;
+  const CARD_MIN = 52, CARD_MAX = 68;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
+  let cardH = CARD_MIN;
+  const px = v => parseFloat(v) || 0;
+  // 盤面と舞台以外が使う高さ（app の上下余白、補助表示、画面枠、カード列、puzzle の余白・隙間）を実測する
+  function overhead() {
+    const app = $('app'), cs = getComputedStyle(app), wrap = $('screen-wrap'), pz = el(), pcs = getComputedStyle(pz);
+    let h = px(cs.paddingTop) + px(cs.paddingBottom);
+    for (const c of app.children) {
+      if (c === wrap || c === pz || c.hidden) continue;
+      const ccs = getComputedStyle(c); if (ccs.display === 'none' || ccs.position === 'fixed') continue;
+      h += c.offsetHeight + px(ccs.marginTop) + px(ccs.marginBottom);
+    }
+    const wcs = getComputedStyle(wrap); h += px(wcs.borderTopWidth) + px(wcs.borderBottomWidth) + px(wcs.marginTop) + px(wcs.marginBottom);
+    h += px(pcs.paddingTop) + px(pcs.paddingBottom) + px(pcs.rowGap || pcs.gap);   // カード列と盤面の間の隙間
+    h += cardH;
+    return h;
+  }
   function calc() {
     const app = $('app');
-    const cs = getComputedStyle(app);
-    // アプリ内ブラウザでは app の高さが実際に見える範囲より大きいことがあるので、見えている高さ（visualViewport）でも抑える
+    // 実際に見えている高さ（アプリ内ブラウザや Safari のツールバーぶんを除く）
     const vis = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    const innerH = Math.min(app.clientHeight, vis) - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     const scale = Game.scale || 1;
-    const ui = el().hidden ? 0 : uiH();
-    const boardW = Math.max(180, Math.min(app.clientWidth - 6, 480, Math.floor((innerH - ARENA_MIN * scale - BOARD_PAD - ui) * 6 / 5)));
+    cardH = CARD_MIN;
+    let avail = Math.min(app.clientHeight, vis) - overhead();
+    // 盤面：幅いっぱい。ただし舞台の最小高さを残せないときは縮める
+    const boardW = Math.max(180, Math.min(app.clientWidth - 6, 480, Math.floor((avail - ARENA_MIN * scale) * 6 / 5)));
     const boardH = boardW * 5 / 6;
-    arena = Math.max(ARENA_MIN, Math.min(ARENA_MAX, Math.floor((innerH - boardH - BOARD_PAD - ui) / scale)));
+    arena = Math.max(ARENA_MIN, Math.min(ARENA_MAX, Math.floor((avail - boardH) / scale)));
+    // まだ余るぶんはカード列へ（上限あり）
+    const left = avail - boardH - arena * scale;
+    if (left > 0) cardH = Math.min(CARD_MAX, CARD_MIN + Math.floor(left));
+    el().style.setProperty('--card-h', cardH + 'px');
     return boardW;
   }
   function fit() {
@@ -499,7 +520,7 @@ class BattleScene {
     this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
     this._eBox = { x: 112, y: ey, size: 68 };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 102, 4, 86, 46);
+    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, AH);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -547,20 +568,38 @@ class BattleScene {
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
-  //   1行目：見出し／2行目：技名（大きめ・白）／3行目：残りターン（数字を大きく）＋ターンの目盛り
-  drawNext(ctx, x, y, w, h) {
-    const urgent = this.count <= 1;
-    ctx.fillStyle = 'rgba(14,30,20,0.9)'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = urgent ? '#ff8a7a' : '#f2d27a'; ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y, 2, h);   // 上と左に色の縁（残り1ターンは赤）
-    Text.draw(ctx, 'つぎの こうげき', x + 6, y + 3, '#c8d4b8');
-    // 技名：1.3倍。背景に埋もれないよう黒い帯の上に白で
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x + 4, y + 13, w - 8, 14);
-    ctx.save(); ctx.translate(x + 6, y + 14); ctx.scale(1.3, 1.3); Text.draw(ctx, this.enemyMove.name, 0, 0, '#ffffff'); ctx.restore();
-    // 残りターン：「あと」＋大きな数字＋「ターン」（残り1ターンは赤）
-    const col = urgent ? '#ff8a7a' : '#f2d27a';
-    Text.draw(ctx, 'あと', x + 6, y + 34, '#c8d4b8');
-    ctx.save(); ctx.translate(x + 24, y + 28); ctx.scale(1.9, 1.9); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    Text.draw(ctx, 'ターン', x + 42, y + 34, '#c8d4b8');
+  // 相手の攻撃情報：丸いターンメーター（残りターンぶん点灯、中央に残り数）＋技名（大きめ・白）＋「あと N ターン」
+  //   相手（右上）と自分（左下）のあいだ、左側の空いた帯に置く。舞台が低くて入らないときは右上に寄せる
+  drawNext(ctx, AH) {
+    const W = CONFIG.W, urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
+    const bw = 110, bh = 44;
+    const roomLeft = (AH - 4 - 64) - 34 >= bh - 12;   // 自分の頭（AH-68）までにほぼ収まるか（少しの重なりは許す）
+    const x = roomLeft ? 2 : W - bw - 2, y = roomLeft ? 34 : 32;
+    // 札
+    ctx.fillStyle = 'rgba(14,30,20,0.9)'; ctx.fillRect(x, y, bw, bh);
+    ctx.fillStyle = col; ctx.fillRect(x, y, bw, 1); ctx.fillRect(x, y, 2, bh);
+    // 丸いターンメーター（左）：外周を ENEMY_COUNT 等分し、残りターンぶん点灯
+    const R = 17, cx = x + 4 + R, cy = y + bh / 2;
+    ctx.save();
+    ctx.fillStyle = '#101810'; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < ENEMY_COUNT; i++) {
+      const a0 = -Math.PI / 2 + Math.PI * 2 * i / ENEMY_COUNT + 0.08, a1 = -Math.PI / 2 + Math.PI * 2 * (i + 1) / ENEMY_COUNT - 0.08;
+      ctx.fillStyle = i < this.count ? col : '#3a4a3a';
+      ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.arc(cx, cy, R - 5, a1, a0, true); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#182818'; ctx.beginPath(); ctx.arc(cx, cy, R - 6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // 中央の残り数（大きく）
+    ctx.save(); ctx.translate(cx - 5, cy - 9); ctx.scale(2, 2); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    // 右：見出し・技名・残りターン
+    const tx = x + 4 + R * 2 + 6;
+    Text.draw(ctx, 'つぎの こうげき', tx, y + 3, '#c8d4b8');
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(tx - 2, y + 13, x + bw - tx - 2, 14);
+    const name = this.enemyMove.name, nw = Text.width(name), ns = Math.min(1.35, (x + bw - tx - 6) / Math.max(1, nw));
+    ctx.save(); ctx.translate(tx, y + 14); ctx.scale(ns, ns); Text.draw(ctx, name, 0, 0, '#ffffff'); ctx.restore();
+    Text.draw(ctx, 'あと', tx, y + 32, '#c8d4b8');
+    ctx.save(); ctx.translate(tx + 17, y + 29); ctx.scale(1.5, 1.5); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    Text.draw(ctx, 'ターン', tx + 31, y + 32, '#c8d4b8');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
