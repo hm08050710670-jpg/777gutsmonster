@@ -107,7 +107,7 @@ const Puzzle = (() => {
   // 舞台の高さ（論理px）。配分の優先順位：盤面6×5を全部見せる → カード列 → 残りを舞台（ARENA_MIN〜ARENA_MAX）
   //   さらに余れば、カード列（メーター）を少し大きくして使う。舞台を空だらけに伸ばさない
   let arena = 122;
-  const ARENA_MIN = 104, ARENA_MAX = 116;   // 舞台はコンパクトに固定気味（盤面を必ず全部見せるため）
+  const ARENA_MIN = 118, ARENA_MAX = 126;   // 舞台はコンパクトに固定気味（盤面を必ず全部見せるため）
   const CARD_MIN = 52, CARD_MAX = 56;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
   let cardH = CARD_MIN;
   const px = v => parseFloat(v) || 0;
@@ -518,8 +518,8 @@ class BattleScene {
     const extra = AH - 122;
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
-    // コンパクト配置：相手は右上のHP窓の下（60px箱）、自分は左下（56px箱）
-    const ES = 56, ey = 24 + Math.floor(extra * 0.3);
+    // コンパクト配置：相手は右上（68px箱、上に「あと N ターン」）、自分は左下（64px箱）
+    const ES = 68, ey = 16 + Math.floor(extra * 0.3);
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, ey + ES - 2, 36, 6);
@@ -527,11 +527,11 @@ class BattleScene {
     this.drawMon(ctx, en, 118 + sx + elx, ey + ely, ES, false, this.flashE);
     this._eBox = { x: 118, y: ey, size: ES };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 3, 96, 24, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx);
+    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 118 + Mon.drawnBox(en.id, ES / 24, false).dx + Mon.drawnBox(en.id, ES / 24, false).w / 2, ey + Mon.drawnBox(en.id, ES / 24, false).dy);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
-      const size = 56, px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
+      const size = 64, px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
       const b = Mon.drawnBox(me.id, size / 24, true);
       const y = AH - 2 - size, x = 6 + px;
       const plx = this.lunge && this.lunge.who === 'p' ? lg : 0, ply = this.lunge && this.lunge.who === 'p' ? -lg * 0.5 : 0;
@@ -550,7 +550,7 @@ class BattleScene {
     }
     // 技名の帯（自分の技を使ったとき）
     if (this.banner) {
-      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 36;
+      const w = Text.width(this.banner.text) + 16, bx = Math.max(2, Math.round(60 - w / 2)), by = 34;   // 自分側（左）の上に出す
       ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(bx, by, w, 14);
       ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx, by, 2, 14); ctx.fillRect(bx + w - 2, by, 2, 14);
       Text.draw(ctx, this.banner.text, bx + 8, by + 2, '#fff6d8');
@@ -575,26 +575,15 @@ class BattleScene {
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
-  // 相手の攻撃までの残りターン：右上（相手のHP窓の横）に丸いメーター＋「あと N ターン」
-  drawNext(ctx) {
+  // 相手の攻撃までの残りターン：相手の頭の上に文字だけ「あと N ターン」（数字は大きめ。残り1ターンは赤）
+  drawNext(ctx, cx, top) {
     const urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
-    const x = 102, y = 3, w = 86, h = 24, R = 9, cx = x + 3 + R, cy = y + h / 2;
-    ctx.fillStyle = 'rgba(10,20,14,0.8)'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = col; ctx.fillRect(x, y, w, 1);
-    ctx.save();
-    ctx.fillStyle = '#101810'; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, Math.PI * 2); ctx.fill();
-    for (let i = 0; i < ENEMY_COUNT; i++) {
-      const a0 = -Math.PI / 2 + Math.PI * 2 * i / ENEMY_COUNT + 0.1, a1 = -Math.PI / 2 + Math.PI * 2 * (i + 1) / ENEMY_COUNT - 0.1;
-      ctx.fillStyle = i < this.count ? col : '#3a4a3a';
-      ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.arc(cx, cy, R - 4, a1, a0, true); ctx.closePath(); ctx.fill();
-    }
-    ctx.fillStyle = '#182818'; ctx.beginPath(); ctx.arc(cx, cy, R - 5, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-    ctx.save(); ctx.translate(cx - 3, cy - 5); ctx.scale(1.2, 1.2); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    const tx = cx + R + 5;
-    Text.draw(ctx, 'あと', tx, y + 8, '#e8f0dc');
-    ctx.save(); ctx.translate(tx + 16, y + 4); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    Text.draw(ctx, 'ターン', tx + 29, y + 8, '#e8f0dc');
+    const n = String(this.count), w = 16 + 10 * n.length + 24 + 4, x = Math.round(cx - w / 2), y = Math.max(4, top - 14);
+    // 背景に埋もれないように薄い黒の帯
+    ctx.fillStyle = 'rgba(10,20,14,0.6)'; ctx.fillRect(x - 3, y - 1, w + 6, 13);
+    Text.draw(ctx, 'あと', x, y + 2, '#f4f8ec');
+    ctx.save(); ctx.translate(x + 17, y - 1); ctx.scale(1.5, 1.5); Text.draw(ctx, n, 0, 0, col); ctx.restore();
+    Text.draw(ctx, 'ターン', x + 17 + 10 * n.length + 4, y + 2, '#f4f8ec');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
