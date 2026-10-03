@@ -80,7 +80,7 @@ const Puzzle = (() => {
       const set = ICONS[attr]; const img = tier === 'guard' ? 'shield' : tier === 'heal' ? 'heart' : set ? set[['small', 'mid', 'strong'].indexOf(tier)] : null;
       return img ? `<div class="icon ${img}"></div>` : `<div class="icon"><div class="ball ${c} ${mark}"></div></div>`;
     };
-    const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', sk.guard, 'white', 'white'], ['heal', 'かいふく', 'pink', 'pink']];
+    const tiers = [['small', sk.small, col.small, 'small'], ['mid', sk.mid, col.mid, ''], ['strong', sk.strong, col.strong, 'big'], ['guard', 'ガード', 'white', 'white'], ['heal', 'かいふく', 'pink', 'pink']];
     let html = tiers.map(([t, name, c, mark]) => {
       const need = SKILL_NEED[t];
       const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
@@ -88,6 +88,8 @@ const Puzzle = (() => {
     }).join('');
     // 技名は別の枠（メーターの上の行）に
     $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name">${name.length >= 8 ? name.slice(0, Math.ceil(name.length / 2)) + '<br>' + name.slice(Math.ceil(name.length / 2)) : name}</div>`).join('') + '<div class="pz-name empty"></div>';
+    // 技名プレートの色を自タイプのボール色（小・中・強）に合わせる
+    [['--n1', col.small], ['--n2', col.mid], ['--n3', col.strong]].forEach(([v, c]) => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + c; probe.style.display = 'none'; document.body.appendChild(probe); $('pz-names').style.setProperty(v, getComputedStyle(probe).getPropertyValue('--c')); probe.remove(); });
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
@@ -316,7 +318,7 @@ class BattleScene {
   }
   // 技の演出と効果のステップ列
   skillSteps(tier) {
-    const me = this.me, en = this.enemy, name = tier === 'heal' ? 'かいふく' : this.skills[tier];
+    const me = this.me, en = this.enemy, name = tier === 'heal' ? 'かいふく' : tier === 'guard' ? 'ガード' : this.skills[tier];
     const wait = n => () => { this.mode = 'wait'; this.waitT = n; this.waitDone = () => this.next(); };
     const steps = [this.fnStep(() => { this.banner = { text: name, t: 50 }; })];
     if (tier === 'guard') {

@@ -55,8 +55,12 @@
 .pz-skill canvas.meter{flex:0 0 var(--meter,50px);width:var(--meter,50px);height:var(--meter,50px);image-rendering:pixelated}
 /* 技名の行（カードとは別の枠） */
 #pz-names{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,0.62fr);gap:3px;width:100%;box-sizing:border-box;padding:0}
-.pz-name{box-sizing:border-box;height:26px;padding:2px 2px;border-radius:3px;background:#1f3d2a;color:var(--ivory);font-size:8.5px;line-height:1.25;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;letter-spacing:-.02em;border:1px solid #3d6b48}
+.pz-name{box-sizing:border-box;height:26px;padding:2px 2px;border-radius:3px;background:#1f3d2a;color:#fff;font-size:8.5px;line-height:1.25;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;letter-spacing:-.02em;border:1px solid #3d6b48}
 .pz-name.empty{background:transparent;border:none}
+/* 技名の色：段階ごと（弱＝明るい・中＝基本・強＝濃い、防御＝灰青、回復＝ピンク）。--n1〜--n3 は自タイプの色 */
+#pz-names .pz-name:nth-child(1){background:var(--n1,#7fb33a);color:#1f3d2a} #pz-names .pz-name:nth-child(2){background:var(--n2,#3e9a3c)} #pz-names .pz-name:nth-child(3){background:var(--n3,#1f6b2e)}
+#pz-names .pz-name:nth-child(4){background:#5a6f8a} #pz-names .pz-name:nth-child(5){background:#c94f8a}
+#pz-names .pz-name{border:1px solid rgba(0,0,0,.35)}
 /* 数字をメーターの右下に重ねる（メーターを大きくしたとき用） */
 .pz-skill.has-meter{position:relative}
 .pz-skill.has-meter .row{position:relative}

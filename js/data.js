@@ -472,21 +472,20 @@ const Party = {
 const SKILL_NEED = { small: 1, mid: 3, strong: 5, guard: 2, heal: 1 };   // 回復も1チャージ（ピンク3つ）でたまったら自動で発動
 const SKILL_HEAL = 0.25;   // 回復量（最大HPに対する割合）
 const SKILL_POWER = { small: 35, mid: 65, strong: 120 };
-// タイプごとの技名（仮）。個別に変えたいモンスターは SKILL_OVERRIDE に
+// タイプごとの技名（仮）。防御は全員「ガード」、回復は「かいふく」で統一。攻撃技を個別に変えたいモンスターは SKILL_OVERRIDE に
 const TYPE_SKILLS = {
-  'くさ':   { small: 'このは',     mid: 'リーフカッター',  strong: 'グリーンバースト', guard: 'リーフガード' },
+  'くさ':   { small: 'このは',     mid: 'リーフカッター',  strong: 'グリーンバースト', guard: 'ガード' },
   'ほのお': { small: 'ひのこ',     mid: 'ファイアクロー',  strong: 'ヒートブラスト',   guard: 'ねっきのまく' },
   'みず':   { small: 'しぶき',     mid: 'アクアスラッシュ', strong: 'ビッグウェーブ',  guard: 'みずのベール' },
-  'でんき': { small: 'スパーク',   mid: 'でんげきアーム',  strong: 'サンダーブレイク', guard: 'せいでんバリア' },
-  'じめん': { small: 'つちけむり', mid: 'ロックスロー',    strong: 'グランドクエイク', guard: 'いわのよろい' },
+  'でんき': { small: 'スパーク',   mid: 'でんげきアーム',  strong: 'サンダーブレイク', guard: 'ガード' },
+  'じめん': { small: 'つちけむり', mid: 'ロックスロー',    strong: 'グランドクエイク', guard: 'ガード' },
   'かぜ':   { small: 'そよかぜ',   mid: 'ウインドカッター', strong: 'テンペスト',      guard: 'かぜのまく' },
-  'ひかり': { small: 'ひかりのつぶ', mid: 'シャインレイ',  strong: 'セイントフラッシュ', guard: 'ひかりのたて' },
-  'やみ':   { small: 'かげつき',   mid: 'ダークスラッシュ', strong: 'ナイトメアブロー', guard: 'やみのころも' },
+  'ひかり': { small: 'ひかりのつぶ', mid: 'シャインレイ',  strong: 'セイントフラッシュ', guard: 'ガード' },
+  'やみ':   { small: 'かげつき',   mid: 'ダークスラッシュ', strong: 'ナイトメアブロー', guard: 'ガード' },
   'ノーマル': { small: 'たいあたり', mid: 'ガッツアタック', strong: 'フルスイング',     guard: 'ガード' },
 };
 const SKILL_OVERRIDE = {
-  kokegame: { guard: 'こうらガード' }, morigame: { guard: 'こうらガード' }, nushigame: { guard: 'こうらガード' },
-  bubu: { small: 'かみつく', mid: 'クラウンヘッド', strong: 'キングスマッシュ', guard: 'おうさまのいげん' },
+  bubu: { small: 'かみつく', mid: 'クラウンヘッド', strong: 'キングスマッシュ' },
 };
 function skillsOf(m) { const t = TYPE_SKILLS[m.type] || TYPE_SKILLS['ノーマル']; return Object.assign({}, t, SKILL_OVERRIDE[m.id] || {}); }
 
