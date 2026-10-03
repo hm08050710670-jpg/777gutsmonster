@@ -84,8 +84,10 @@ const Puzzle = (() => {
     let html = tiers.map(([t, name, c, mark]) => {
       const need = SKILL_NEED[t];
       const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
-      return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
+      return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
+    // 技名は別の枠（メーターの上の行）に
+    $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name${name.length >= 7 ? ' long' : ''}">${name}</div>`).join('') + '<div class="pz-name empty"></div>';
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
@@ -107,8 +109,8 @@ const Puzzle = (() => {
   // 舞台の高さ（論理px）。配分の優先順位：盤面6×5を全部見せる → カード列 → 残りを舞台（ARENA_MIN〜ARENA_MAX）
   //   さらに余れば、カード列（メーター）を少し大きくして使う。舞台を空だらけに伸ばさない
   let arena = 122;
-  const ARENA_MIN = 118, ARENA_MAX = 126;   // 舞台はコンパクトに固定気味（盤面を必ず全部見せるため）
-  const CARD_MIN = 52, CARD_MAX = 56;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
+  const ARENA_MIN = 110, ARENA_MAX = 118;   // 舞台はコンパクトに固定気味（盤面を必ず全部見せるため）
+  const CARD_MIN = 60, CARD_MAX = 64;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
   let cardH = CARD_MIN;
   const px = v => parseFloat(v) || 0;
   // 盤面と舞台以外が使う高さ（app の上下余白、補助表示、画面枠、カード列、puzzle の余白・隙間）を実測する
@@ -121,8 +123,8 @@ const Puzzle = (() => {
       h += c.offsetHeight + px(ccs.marginTop) + px(ccs.marginBottom);
     }
     const wcs = getComputedStyle(wrap); h += px(wcs.borderTopWidth) + px(wcs.borderBottomWidth) + px(wcs.marginTop) + px(wcs.marginBottom);
-    h += px(pcs.paddingTop) + px(pcs.paddingBottom) + px(pcs.rowGap || pcs.gap);   // カード列と盤面の間の隙間
-    h += cardH;
+    h += px(pcs.paddingTop) + px(pcs.paddingBottom) + px(pcs.rowGap || pcs.gap) * 2;   // 技名の行・カード列・盤面の間の隙間
+    h += cardH + ($('pz-names') ? $('pz-names').offsetHeight : 0);
     return h;
   }
   // 実際に見えている高さ。アプリ内ブラウザ（Claude など）は画面全体の高さを返しながら上部をネイティブの見出しで隠すことがあるので、
@@ -519,7 +521,7 @@ class BattleScene {
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
     // コンパクト配置：相手は右上（68px箱、上に「あと N ターン」）、自分は左下（64px箱）
-    const ES = 68, ey = 16 + Math.floor(extra * 0.3);
+    const ES = 68, ey = 4 + Math.floor(extra * 0.3);
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, ey + ES - 2, 36, 6);
