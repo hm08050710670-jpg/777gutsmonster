@@ -87,7 +87,7 @@ const Puzzle = (() => {
       return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
     // 技名は別の枠（メーターの上の行）に
-    $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name${name.length >= 7 ? ' long' : ''}">${name}</div>`).join('') + '<div class="pz-name empty"></div>';
+    $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name">${name.length >= 8 ? name.slice(0, Math.ceil(name.length / 2)) + '<br>' + name.slice(Math.ceil(name.length / 2)) : name}</div>`).join('') + '<div class="pz-name empty"></div>';
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
