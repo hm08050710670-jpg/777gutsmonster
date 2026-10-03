@@ -383,8 +383,9 @@ class BattleScene {
     st.items[name]--;
     const p = this.catchChance(en, DATA.ITEMS[name].ball || 1);
     const ok = Math.random() < p;
-    // 失敗のとき、何回目の揺れで逃げるか（捕獲率が高いほど粘る）
-    const breakAt = ok ? 4 : (p < 0.2 ? 1 : p < 0.45 ? 2 : 3);
+    // 失敗のとき、どこで逃げるか：1〜3＝その回の揺れのあと、4＝3回揺れて「決まった…」の間のあとに逃げる（捕獲率が高いほど粘る。少しばらつく）
+    const q = Math.max(0, Math.min(0.99, p + (Math.random() - 0.5) * 0.25));
+    const breakAt = ok ? 0 : Math.min(4, 1 + Math.floor(q / 0.25));
     this.mode = 'capture'; Puzzle.setEnabled(false);
     const pb = this.meBox(), eb = this.enemyBox();
     this.cap = { phase: 'throw', t: 0, ok, breakAt, shakes: 0, from: { x: pb.cx + 10, y: pb.top + 10 }, to: { x: eb.cx, y: eb.cy }, x: pb.cx, y: pb.top, rot: 0, ground: eb.bottom, particles: [] };
@@ -419,9 +420,9 @@ class BattleScene {
       case 'shake': {   // 1回の揺れ 0.6秒：ぐらぐら（回転＋横ずれ、だんだん収まる）
         const k = c.t / 36, env = Math.max(0, 1 - k * 0.6);
         c.rot = Math.sin(c.t / 36 * Math.PI * 3) * 0.55 * env; c.dx = Math.sin(c.t / 36 * Math.PI * 3) * 2.5 * env;
-        if (c.t >= 36) { c.rot = 0; c.dx = 0; if (c.shakes >= c.breakAt && !c.ok) go('breakout'); else if (c.shakes >= 3) go('hold'); else go('pause'); }
+        if (c.t >= 36) { c.rot = 0; c.dx = 0; if (!c.ok && c.shakes >= c.breakAt) go('breakout'); else if (c.shakes >= 3) go('hold'); else go('pause'); }
         break; }
-      case 'hold': if (c.t >= 44) go('success'); break;   // 3回揺れたあとの一瞬の間（ここが一番の見せ場）
+      case 'hold': if (c.t >= 44) go(c.ok ? 'success' : 'breakout'); break;   // 3回揺れたあとの一瞬の間（ここが一番の見せ場。失敗パターン4はここで逃げる）
       case 'success': {   // カチャッ：ボールが一瞬つぶれて戻る＋白い輪＋「カチッ!」。ボールは閉じたまま残す
         if (c.t === 1) { c.flash = 8; this.pop(c.x, c.y - 26, 'カチッ!', '#fff6d8'); }
         c.squash = c.t <= 4 ? 0.82 : c.t <= 8 ? 1.06 : 1;
