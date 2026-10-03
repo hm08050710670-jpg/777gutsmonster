@@ -19,22 +19,19 @@ const Puzzle = (() => {
   const $ = id => document.getElementById(id);
   function show(s) {
     scene = s;
-    el().hidden = false; $('pad').hidden = true; $('note').hidden = true;
+    el().hidden = false; $('pad').hidden = true; $('note').hidden = true; $('pz-head').hidden = false;
     const colors = Object.values(s.colors);
     if (!inst) {
       inst = PazugoruPuzzle.mount($('pz-board'), { colors, images: CONFIG.BALL_IMAGES || {}, onResolve: r => { if (scene) scene.onPuzzle(r); } });
       $('pz-actions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || !scene) return; if (b.dataset.act === 'close') { closeMenu(); return; } closeMenu(); scene.pressAction(b.dataset.act); });
-      $('pz-skills').addEventListener('click', e => {
-        if (!scene) return;
-        if (e.target.closest('#pz-menu-btn')) { if (scene.mode === 'command' && Game.top() === scene) openMenu(); return; }
-      });
+      $('pz-menu-btn').addEventListener('click', () => { if (scene && scene.mode === 'command' && Game.top() === scene) openMenu(); });
     } else { inst.setColors(colors); inst.reset(); }
     inst.lock();
     buildSkills(s);
     closeMenu();
     fit();
   }
-  function hide() { scene = null; el().hidden = true; $('pad').hidden = false; $('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
+  function hide() { scene = null; el().hidden = true; $('pz-head').hidden = true; $('pad').hidden = false; $('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
   // どうぐ・なかま・にげる は、盤面から離れた「メニュー」ボタンを押したときだけ出す（押しミス防止）
   function openMenu() { $('pz-actions').hidden = false; if (inst) inst.lock(); }
   function closeMenu() { $('pz-actions').hidden = true; }
@@ -89,7 +86,6 @@ const Puzzle = (() => {
       const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
       return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
-    html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
     $('pz-skills').querySelectorAll('.ball').forEach(b => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + b.classList[1]; probe.style.display = 'none'; document.body.appendChild(probe); const cs = getComputedStyle(probe); ['--hi', '--c', '--lo'].forEach(v => b.style.setProperty(v, cs.getPropertyValue(v))); probe.remove(); });
@@ -173,7 +169,7 @@ const Puzzle = (() => {
     const top = scenes[scenes.length - 1];
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = $('pad');
-    if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
+    if (pz.hidden !== padScene) { pz.hidden = padScene; $('pz-head').hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
     Game.setViewH(padScene ? CONFIG.H : arena);
     if (!padScene) syncSkills(scene);
   }
@@ -521,7 +517,7 @@ class BattleScene {
     const extra = AH - 122;
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
-    const ey = Math.max(16, Math.min(36 + Math.floor(extra * 0.5), AH - 106));   // 自分のHP窓（AH-36）に足元がかぶらない高さまで
+    const ey = Math.max(30, Math.min(34 + Math.floor(extra * 0.5), AH - 106));   // 自分のHP窓（AH-36）に足元がかぶらない高さまで
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(146, ey + 66, 40, 7);
@@ -529,7 +525,7 @@ class BattleScene {
     this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
     this._eBox = { x: 112, y: ey, size: 68 };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, ey + Mon.drawnBox(en.id, 68 / 24, false).dy);
+    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -577,12 +573,14 @@ class BattleScene {
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
-  // 相手の攻撃までの残りターン：相手の頭の上の丸いメーター（ENEMY_COUNT 等分の輪が残りぶん点灯、中央に残り数）。技名は出さない
-  drawNext(ctx, ey) {
+  // 相手の攻撃までの残りターン：右上（相手のHP窓の横）に丸いメーター＋「あと N ターン」
+  drawNext(ctx) {
     const urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
-    const R = 13, cx = 146, cy = ey - R - 3;   // ey＝相手の絵の上端。その上に置く
+    const x = 102, y = 4, w = 86, h = 28, R = 10, cx = x + 3 + R, cy = y + h / 2;
+    ctx.fillStyle = 'rgba(10,20,14,0.8)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = col; ctx.fillRect(x, y, w, 1);
     ctx.save();
-    ctx.fillStyle = 'rgba(10,20,14,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, R + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#101810'; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, Math.PI * 2); ctx.fill();
     for (let i = 0; i < ENEMY_COUNT; i++) {
       const a0 = -Math.PI / 2 + Math.PI * 2 * i / ENEMY_COUNT + 0.1, a1 = -Math.PI / 2 + Math.PI * 2 * (i + 1) / ENEMY_COUNT - 0.1;
       ctx.fillStyle = i < this.count ? col : '#3a4a3a';
@@ -590,7 +588,11 @@ class BattleScene {
     }
     ctx.fillStyle = '#182818'; ctx.beginPath(); ctx.arc(cx, cy, R - 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    ctx.save(); ctx.translate(cx - 4, cy - 7); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    ctx.save(); ctx.translate(cx - 3, cy - 5); ctx.scale(1.2, 1.2); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    const tx = cx + R + 5;
+    Text.draw(ctx, 'あと', tx, y + 10, '#e8f0dc');
+    ctx.save(); ctx.translate(tx + 16, y + 6); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    Text.draw(ctx, 'ターン', tx + 29, y + 10, '#e8f0dc');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
