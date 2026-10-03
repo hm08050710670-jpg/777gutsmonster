@@ -409,18 +409,23 @@ class BattleScene {
       case 'drop': {   // 落ちる（小さく弾む）
         const T = 14, k = Math.min(1, c.t / T);
         c.y = c.to.y + (c.ground - c.to.y) * k + (k > 0.8 ? -Math.sin((k - 0.8) / 0.2 * Math.PI) * 3 : 0);
-        if (c.t >= T) go('pause');
+        if (c.t >= T) go('tremble');
         break; }
-      case 'pause': if (c.t >= 34) { c.shakes++; go('shake'); } break;   // 静止（じらし）
+      case 'tremble': {   // ボールの中で暴れている：細かくブルブル（左右に1〜2px、2コマごと）
+        c.dx = (Math.floor(c.t / 2) % 2 ? 1 : -1) * (c.t < 20 ? 2 : 1); c.rot = 0;
+        if (c.t >= 34) { c.dx = 0; go('pause'); }
+        break; }
+      case 'pause': { c.dx = (c.t % 6 < 2) ? (c.t % 12 < 6 ? 1 : -1) * 0.5 : 0; if (c.t >= 34) { c.dx = 0; c.shakes++; go('shake'); } break; }   // 静止（じらし。かすかに震える）
       case 'shake': {   // 1回の揺れ 0.6秒：ぐらぐら（回転＋横ずれ、だんだん収まる）
         const k = c.t / 36, env = Math.max(0, 1 - k * 0.6);
         c.rot = Math.sin(c.t / 36 * Math.PI * 3) * 0.55 * env; c.dx = Math.sin(c.t / 36 * Math.PI * 3) * 2.5 * env;
         if (c.t >= 36) { c.rot = 0; c.dx = 0; if (c.shakes >= c.breakAt && !c.ok) go('breakout'); else if (c.shakes >= 3) go('hold'); else go('pause'); }
         break; }
       case 'hold': if (c.t >= 44) go('success'); break;   // 3回揺れたあとの一瞬の間（ここが一番の見せ場）
-      case 'success': {   // カチッ：小さなフラッシュだけ。ボールは閉じたまま残す
-        if (c.t === 1) c.flash = 8;
-        if (c.t >= 30) { go('done'); this.captured(); }
+      case 'success': {   // カチャッ：ボールが一瞬つぶれて戻る＋白い輪＋「カチッ!」。ボールは閉じたまま残す
+        if (c.t === 1) { c.flash = 8; this.pop(c.x, c.y - 26, 'カチッ!', '#fff6d8'); }
+        c.squash = c.t <= 4 ? 0.82 : c.t <= 8 ? 1.06 : 1;
+        if (c.t >= 36) { c.squash = 1; go('done'); this.captured(); }
         break; }
       case 'breakout': {   // パカッ→相手が光から戻る
         if (c.t === 1) c.flash = 6;
@@ -451,16 +456,16 @@ class BattleScene {
   }
   // ボールの絵（assets/ui/gutsball.png）。足元中央を (x, y) に置く
   static ball() { if (!this._ball) { const im = new Image(); im.src = CONFIG.GUTSBALL_IMG || 'assets/ui/gutsball.png'; this._ball = im; this._ballMeta = CONFIG.GUTSBALL_META || null; if (!this._ballMeta) fetch('assets/ui/gutsball.json').then(r => r.json()).then(m => { this._ballMeta = m; }).catch(() => {}); } return this._ball; }
-  drawBall(ctx, name, x, y, rot = 0, scale = 1) {
+  drawBall(ctx, name, x, y, rot = 0, scale = 1, squash = 1) {
     const im = BattleScene.ball(), m = BattleScene._ballMeta; if (!im.complete || !m || !m[name]) { ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(x, y - 8, 8, 0, Math.PI * 2); ctx.fill(); return; }
     const [sx, sy, sw, sh] = m[name];
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - 8); ctx.rotate(rot); ctx.scale(scale, scale);
+    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - 8 + (1 - squash) * 8); ctx.rotate(rot); ctx.scale(scale * (2 - squash), scale * squash);
     ctx.drawImage(im, sx, sy, sw, sh, -Math.round(sw / 2), -(sh - 8), sw, sh); ctx.restore();
   }
   drawCapture(ctx) {
     const c = this.cap; if (!c) return;
-    const frame = ['throw', 'hit', 'drop', 'pause', 'shake', 'hold', 'success', 'done'].includes(c.phase) ? 'closed'
-      : c.phase === 'open' ? (c.t < 6 ? 'open1' : 'open2') : c.phase === 'absorb' ? (Math.floor(c.t / 4) % 2 ? 'beam1' : 'beam2') : c.phase === 'close' ? (c.t < 6 ? 'open1' : 'closing') : 'burst';
+    const frame = ['throw', 'hit', 'drop', 'tremble', 'pause', 'shake', 'hold', 'success', 'done'].includes(c.phase) ? 'closed'
+      : c.phase === 'open' ? (c.t < 6 ? 'open1' : 'open2') : c.phase === 'absorb' ? (c.t > 30 ? 'beam3' : Math.floor(c.t / 4) % 2 ? 'beam1' : 'beam2') : c.phase === 'close' ? (c.t < 6 ? 'open1' : 'closing') : 'burst';
     // 軌跡
     if (c.phase === 'throw') { for (let i = 1; i <= 3; i++) { const k = Math.max(0, c.t - i * 2) / 24; const px = c.from.x + (c.to.x - c.from.x) * k, py = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; ctx.fillStyle = `rgba(255,255,255,${0.35 - i * 0.1})`; ctx.beginPath(); ctx.arc(px, py - 8, 7 - i, 0, Math.PI * 2); ctx.fill(); } }
     // 吸い込みの光の粒
@@ -468,14 +473,15 @@ class BattleScene {
     // 命中のヒット（黄色の放射）と白フラッシュ
     if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 8, 10 + c.t * 2, 0, Math.PI * 2); ctx.fill(); this.drawSparkle(ctx, c.to.x, c.to.y - 8, c.t * 3, 10); }
     if (c.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${0.7 * c.flash / 8})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 14, 0, Math.PI * 2); ctx.fill(); }
+    if (c.phase === 'success' && c.t < 16) { ctx.strokeStyle = `rgba(255,255,255,${1 - c.t / 16})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 10 + c.t * 1.5, 0, Math.PI * 2); ctx.stroke(); }
     if (c.phase === 'breakout') { ctx.fillStyle = `rgba(200,240,255,${0.8 * (1 - c.t / 22)})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 10 + c.t, 0, Math.PI * 2); ctx.fill(); }
-    this.drawBall(ctx, frame, Math.round(c.x + (c.dx || 0)), Math.round(c.y), c.rot);
+    this.drawBall(ctx, frame, Math.round(c.x + (c.dx || 0)), Math.round(c.y), c.rot, 1, c.squash || 1);
   }
   // 捕獲中の相手の描き方：吸い込み中は白く光りながら小さくなってボールへ。逃げ出すときはボールから戻る
   enemyCaptureView() {
     const c = this.cap; if (!c) return null;
     if (c.phase === 'absorb') { const k = c.t / 42; return { scale: 1 - k, white: Math.min(1, k * 1.5 + 0.3), toBall: k }; }
-    if (['close', 'drop', 'pause', 'shake', 'success', 'done'].includes(c.phase)) return { hidden: true };
+    if (['close', 'drop', 'tremble', 'pause', 'shake', 'hold', 'success', 'done'].includes(c.phase)) return { hidden: true };
     if (c.phase === 'breakout') { const k = Math.min(1, c.t / 16); return { scale: k, white: 1 - k, toBall: 1 - k }; }
     return null;
   }
