@@ -19,19 +19,19 @@ const Puzzle = (() => {
   const $ = id => document.getElementById(id);
   function show(s) {
     scene = s;
-    el().hidden = false; $('pad').hidden = true; $('note').hidden = true; $('pz-head').hidden = false;
+    el().hidden = false; $('pad').hidden = true; $('note').hidden = true;
     const colors = Object.values(s.colors);
     if (!inst) {
       inst = PazugoruPuzzle.mount($('pz-board'), { colors, images: CONFIG.BALL_IMAGES || {}, onResolve: r => { if (scene) scene.onPuzzle(r); } });
       $('pz-actions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || !scene) return; if (b.dataset.act === 'close') { closeMenu(); return; } closeMenu(); scene.pressAction(b.dataset.act); });
-      $('pz-menu-btn').addEventListener('click', () => { if (scene && scene.mode === 'command' && Game.top() === scene) openMenu(); });
+      $('pz-skills').addEventListener('click', e => { if (scene && e.target.closest('#pz-menu-btn') && scene.mode === 'command' && Game.top() === scene) openMenu(); });
     } else { inst.setColors(colors); inst.reset(); }
     inst.lock();
     buildSkills(s);
     closeMenu();
     fit();
   }
-  function hide() { scene = null; el().hidden = true; $('pz-head').hidden = true; $('pad').hidden = false; $('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
+  function hide() { scene = null; el().hidden = true; $('pad').hidden = false; $('note').hidden = false; Game.setViewH(CONFIG.H); Game.fit(); }
   // どうぐ・なかま・にげる は、盤面から離れた「メニュー」ボタンを押したときだけ出す（押しミス防止）
   function openMenu() { $('pz-actions').hidden = false; if (inst) inst.lock(); }
   function closeMenu() { $('pz-actions').hidden = true; }
@@ -86,6 +86,7 @@ const Puzzle = (() => {
       const ic = icon(t, c, mark), meter = ic.startsWith('<canvas');
       return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="name">${name}</div><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
+    html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;
     $('pz-skills').innerHTML = html;
     // ボールの色変数をゲージ側にも適用（.pz-ball と同じクラスで色を引く）
     $('pz-skills').querySelectorAll('.ball').forEach(b => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + b.classList[1]; probe.style.display = 'none'; document.body.appendChild(probe); const cs = getComputedStyle(probe); ['--hi', '--c', '--lo'].forEach(v => b.style.setProperty(v, cs.getPropertyValue(v))); probe.remove(); });
@@ -106,8 +107,8 @@ const Puzzle = (() => {
   // 舞台の高さ（論理px）。配分の優先順位：盤面6×5を全部見せる → カード列 → 残りを舞台（ARENA_MIN〜ARENA_MAX）
   //   さらに余れば、カード列（メーター）を少し大きくして使う。舞台を空だらけに伸ばさない
   let arena = 122;
-  const ARENA_MIN = 122, ARENA_MAX = 180;
-  const CARD_MIN = 52, CARD_MAX = 68;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
+  const ARENA_MIN = 104, ARENA_MAX = 116;   // 舞台はコンパクトに固定気味（盤面を必ず全部見せるため）
+  const CARD_MIN = 52, CARD_MAX = 56;   // カード列の高さ（px）。メーターはこれに合わせて大きくなる
   let cardH = CARD_MIN;
   const px = v => parseFloat(v) || 0;
   // 盤面と舞台以外が使う高さ（app の上下余白、補助表示、画面枠、カード列、puzzle の余白・隙間）を実測する
@@ -169,7 +170,7 @@ const Puzzle = (() => {
     const top = scenes[scenes.length - 1];
     const padScene = top instanceof ItemScene || top instanceof PartyScene;
     const pz = el(), pad = $('pad');
-    if (pz.hidden !== padScene) { pz.hidden = padScene; $('pz-head').hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
+    if (pz.hidden !== padScene) { pz.hidden = padScene; pad.hidden = !padScene; if (!padScene) fit(); }
     Game.setViewH(padScene ? CONFIG.H : arena);
     if (!padScene) syncSkills(scene);
   }
@@ -517,28 +518,29 @@ class BattleScene {
     const extra = AH - 122;
 
     // 相手：右、大きめ（68px箱）。舞台が高いぶん少し下げる。攻撃するときは少し前（左下）に出る
-    const ey = Math.max(30, Math.min(34 + Math.floor(extra * 0.5), AH - 106));   // 自分のHP窓（AH-36）に足元がかぶらない高さまで
+    // コンパクト配置：相手は右上のHP窓の下（60px箱）、自分は左下（56px箱）
+    const ES = 56, ey = 24 + Math.floor(extra * 0.3);
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(146, ey + 66, 40, 7);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(146, ey + 68, 34, 5);
-    this.drawMon(ctx, en, 112 + sx + elx, ey + ely, 68, false, this.flashE);
-    this._eBox = { x: 112, y: ey, size: 68 };
-    this.drawStatus(ctx, en, this.shownHp.e, 4, 4, 96, 26, false);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, ey + ES - 2, 36, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, ey + ES, 30, 4);
+    this.drawMon(ctx, en, 118 + sx + elx, ey + ely, ES, false, this.flashE);
+    this._eBox = { x: 118, y: ey, size: ES };
+    this.drawStatus(ctx, en, this.shownHp.e, 4, 3, 96, 24, false);
     if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
-      const size = 64, px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
+      const size = 56, px = this.pshake ? (this.pshake % 2 ? 2 : -2) : 0;
       const b = Mon.drawnBox(me.id, size / 24, true);
-      const y = AH - 4 - size, x = 8 + px;
+      const y = AH - 2 - size, x = 6 + px;
       const plx = this.lunge && this.lunge.who === 'p' ? lg : 0, ply = this.lunge && this.lunge.who === 'p' ? -lg * 0.5 : 0;
       ctx.fillStyle = this.hit ? 'rgba(255,240,150,0.55)' : 'rgba(0,0,0,0.14)'; oval(x + b.dx + b.w / 2, y + size - 1, b.w / 2 + 2, 4);
       this.drawMon(ctx, me, x + plx, y + ply, size, true, this.flashP);
       this._pBox = { x, y, size, b };
       if (this.sparkle > 0 && this.sparkleIdx === 0) this.drawSparkle(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, frame, 12);
       if (this.guard || this.guardFx > 0) this.drawGuardRing(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, Math.max(b.w, b.h) / 2 + 4, frame, this.guardFx);
-      this.drawStatus(ctx, me, Math.round(this.shownHp.p), 92, AH - 36, 96, 32, true);
+      this.drawStatus(ctx, me, Math.round(this.shownHp.p), 92, AH - 32, 96, 30, true);
     }
     // 浮き文字（ダメージなど）
     for (const p of this.pops) {
@@ -548,14 +550,14 @@ class BattleScene {
     }
     // 技名の帯（自分の技を使ったとき）
     if (this.banner) {
-      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 56;
+      const w = Text.width(this.banner.text) + 16, bx = Math.round((W - w) / 2), by = 36;
       ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(bx, by, w, 14);
       ctx.fillStyle = '#f2d27a'; ctx.fillRect(bx, by, 2, 14); ctx.fillRect(bx + w - 2, by, 2, 14);
       Text.draw(ctx, this.banner.text, bx + 8, by + 2, '#fff6d8');
     }
     // 短いメッセージ（出現・勝利・経験値など）：舞台の中ほどの帯
     if (this.text && !this.viewer) {
-      const ty = 56;
+      const ty = 36;
       ctx.fillStyle = 'rgba(20,40,26,0.85)'; ctx.fillRect(0, ty, W, 16);
       ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(0, ty, W, 1);
       Text.draw(ctx, this.text, 6, ty + 3, '#fff6d8');
@@ -576,7 +578,7 @@ class BattleScene {
   // 相手の攻撃までの残りターン：右上（相手のHP窓の横）に丸いメーター＋「あと N ターン」
   drawNext(ctx) {
     const urgent = this.count <= 1, col = urgent ? '#ff8a7a' : '#f2d27a';
-    const x = 102, y = 4, w = 86, h = 28, R = 10, cx = x + 3 + R, cy = y + h / 2;
+    const x = 102, y = 3, w = 86, h = 24, R = 9, cx = x + 3 + R, cy = y + h / 2;
     ctx.fillStyle = 'rgba(10,20,14,0.8)'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = col; ctx.fillRect(x, y, w, 1);
     ctx.save();
@@ -590,9 +592,9 @@ class BattleScene {
     ctx.restore();
     ctx.save(); ctx.translate(cx - 3, cy - 5); ctx.scale(1.2, 1.2); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
     const tx = cx + R + 5;
-    Text.draw(ctx, 'あと', tx, y + 10, '#e8f0dc');
-    ctx.save(); ctx.translate(tx + 16, y + 6); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
-    Text.draw(ctx, 'ターン', tx + 29, y + 10, '#e8f0dc');
+    Text.draw(ctx, 'あと', tx, y + 8, '#e8f0dc');
+    ctx.save(); ctx.translate(tx + 16, y + 4); ctx.scale(1.6, 1.6); Text.draw(ctx, String(this.count), 0, 0, col); ctx.restore();
+    Text.draw(ctx, 'ターン', tx + 29, y + 8, '#e8f0dc');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
   enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
@@ -632,7 +634,7 @@ class BattleScene {
     drawHpBar(ctx, x + 32, ry + 1, w - 39, hp, m.maxHp, true);
     if (mine) {
       const s = `${hp} / ${m.maxHp}`;
-      Text.draw(ctx, s, x + w - 7 - Text.width(s), y + 22);
+      Text.draw(ctx, s, x + w - 7 - Text.width(s), y + h - 10);
     }
   }
 

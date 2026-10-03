@@ -39,7 +39,7 @@
 #puzzle[hidden]{display:none}
 #puzzle{position:relative;flex:1 1 auto;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:2px 3px 4px;box-sizing:border-box;min-height:140px}
 /* 技ゲージ：小・中・強・防御・回復 ＋ メニュー（ChatGPT製カード絵のデザイン：アイボリー地・深緑の二重枠・角を欠く） */
-#pz-skills{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%;box-sizing:border-box;padding:3px 0}
+#pz-skills{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,0.62fr);gap:3px;width:100%;box-sizing:border-box;padding:3px 0}
 .pz-skill{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;height:var(--card-h,52px);min-width:0;padding:4px 4px 3px;box-sizing:border-box;border:none;
   background:var(--ivory);color:#1f3d2a;font-size:8px;line-height:1.1;touch-action:manipulation;
   box-shadow:inset 0 0 0 2px #1f3d2a,inset 0 0 0 3px var(--ivory),inset 0 0 0 4px #3d6b48;
@@ -52,7 +52,7 @@
 .pz-skill .ball.big::after{width:48%;height:48%} .pz-skill .ball.small::after{width:16%;height:16%}
 .pz-skill .ball.white::after{width:44%;height:50%;border-radius:0;background:#6a7a8a;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
 .pz-skill .row{display:flex;flex-direction:row;align-items:center;gap:2px}
-.pz-skill canvas.meter{flex:0 0 calc(var(--card-h,52px) - 16px);width:calc(var(--card-h,52px) - 16px);height:calc(var(--card-h,52px) - 16px);image-rendering:pixelated}
+.pz-skill canvas.meter{flex:0 0 min(36px,calc(var(--card-h,52px) - 16px));width:min(36px,calc(var(--card-h,52px) - 16px));height:min(36px,calc(var(--card-h,52px) - 16px));image-rendering:pixelated}
 .pz-skill.has-meter .row{justify-content:center;gap:3px;margin-top:-1px}
 .pz-skill.has-meter .col{flex:0 0 auto}
 .pz-skill.has-meter .cnt{font-size:10px}
@@ -67,17 +67,9 @@
 @keyframes pz-glow{from{background:var(--ivory)}to{background:#fff3b0}}
 .pz-skill.info{opacity:.9}
 .pz-skill:disabled{pointer-events:none}
-.pz-skill.menu{padding:0;background:url(../assets/ui/menu.png) no-repeat center/100% 100%;image-rendering:pixelated;box-shadow:none;clip-path:none;justify-content:flex-end;align-items:stretch}
-.pz-skill.menu span{display:block;width:100%;padding-bottom:7px;text-align:center;color:#f2e6a0;font-size:8px;font-weight:700;letter-spacing:-.02em}
+.pz-skill.menu{height:var(--card-h,52px);padding:0 1px;background:url(../assets/ui/menu.png) no-repeat center/100% 100%;image-rendering:pixelated;box-shadow:none;clip-path:none;justify-content:flex-end;align-items:stretch}
+.pz-skill.menu span{display:block;width:100%;padding-bottom:6px;text-align:center;color:#f2e6a0;font-size:7px;font-weight:700;letter-spacing:-.06em;white-space:nowrap;overflow:hidden}
 .pz-skill.menu:active{filter:brightness(1.3)}
-/* 戦闘中の見出し：タイトル＋メニューボタン（右上） */
-#pz-head[hidden]{display:none}
-#pz-head{position:relative;width:100%;max-width:480px;height:30px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--panel);border-bottom:2px solid var(--panel2)}
-#pz-head .pz-title{font-weight:800;font-size:15px;letter-spacing:.06em;color:#eef3e4}
-#pz-menu-btn{position:absolute;right:4px;top:2px;height:26px;padding:0 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:1.5px solid #5fa86e;border-radius:4px;background:#2b5a3a;color:#f2e6a0;touch-action:manipulation}
-#pz-menu-btn .bars{font-size:14px;line-height:1;font-weight:700}
-#pz-menu-btn .lbl{font-size:7px;line-height:1;letter-spacing:-.02em}
-#pz-menu-btn:active{background:var(--btn-active);color:var(--text)}
 /* メニュー：盤面の上に重ねる（押しミスを防ぐため、メニューを押したときだけ出す） */
 #pz-actions[hidden]{display:none}
 #pz-actions{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:20}
