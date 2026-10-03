@@ -24,7 +24,7 @@ class TitleScene {
     if (!st || !st.party.length) {
       st = Save.newGame('テスト', 'm');
       st.party = ['kokegame', 'hinoshishi', 'amepiyo'].filter(id => DATA.MONSTERS[id]).map(id => makeMonster(id, 10)); Party.full(st);
-      st.items = { 'きずぐすり': 5 }; st.flags = { labIntro: true, starter: true, rival1: true };
+      st.items = { 'きずぐすり': 5, 'ガッツボール': 10 }; st.flags = { labIntro: true, starter: true, rival1: true };
     }
     st.map = map; st.x = x; st.y = y; st.dir = 'down';
     Game.state = st;
@@ -36,7 +36,7 @@ class TitleScene {
     const all = Object.keys(DATA.MONSTERS).filter(id => Mon.has(id));
     const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Game.rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
     st.party = shuffle(all.slice()).slice(0, 3).map(id => makeMonster(id, 10)); Party.full(st);
-    st.items = { 'きずぐすり': 5 };
+    st.items = { 'きずぐすり': 5, 'ガッツボール': 10 };
     st.flags = { labIntro: true, starter: true };
     st.map = 'road'; st.x = 7; st.y = 5;
     Game.state = st;

@@ -359,6 +359,7 @@ class BattleScene {
   pressItem() {
     Game.push(new ItemScene({ inBattle: true, onUse: name => {
       const me = this.me;
+      if (DATA.ITEMS[name].ball) { this.throwBall(name); return; }
       if (me.hp >= me.maxHp) { this.say('HPは まんたんだ。', () => { this.mode = 'command'; }); return; }
       this.mode = 'busy';
       this.step(() => { Game.state.items[name]--; const h = Math.min(DATA.ITEMS[name].heal, me.maxHp - me.hp); me.hp += h; this.shownHp.p = me.hp; this.sparkle = 40; this.sparkleIdx = 0; const pb = this.meBox(); this.pop(pb.cx, pb.top, `+${h}`, '#ffb0d8'); });
@@ -368,6 +369,116 @@ class BattleScene {
       this.next();
     } }));
   }
+  // ---- ガッツボール：捕獲 ----
+  //   投げた時点で成否を決め（ロジック）、演出はその結果を再生するだけ（演出と判定を分ける）
+  //   捕獲率 = (1 - 残りHP割合×0.75) × 捕まえやすさ（進化段階） × ボール倍率
+  catchChance(en, ballMul) {
+    const d = DATA.MONSTERS[en.id] || {};
+    const rate = d.special ? DATA.CATCH_RATE.special : (DATA.CATCH_RATE[d.stage] || 0.5);
+    return Math.max(0.02, Math.min(0.95, (1 - (en.hp / en.maxHp) * 0.75) * rate * ballMul));
+  }
+  throwBall(name) {
+    const st = Game.state, en = this.enemy;
+    if (this.trainer) { this.say('ひとの モンスターは ゲットできない！', () => { this.mode = 'command'; }); return; }
+    st.items[name]--;
+    const p = this.catchChance(en, DATA.ITEMS[name].ball || 1);
+    const ok = Math.random() < p;
+    // 失敗のとき、何回目の揺れで逃げるか（捕獲率が高いほど粘る）
+    const breakAt = ok ? 4 : (p < 0.2 ? 1 : p < 0.45 ? 2 : 3);
+    this.mode = 'capture'; Puzzle.setEnabled(false);
+    const pb = this.meBox(), eb = this.enemyBox();
+    this.cap = { phase: 'throw', t: 0, ok, breakAt, shakes: 0, from: { x: pb.cx + 10, y: pb.top + 10 }, to: { x: eb.cx, y: eb.cy }, x: pb.cx, y: pb.top, rot: 0, ground: eb.bottom, particles: [] };
+  }
+  // 毎フレーム：捕獲演出を進める
+  updateCapture() {
+    const c = this.cap, en = this.enemy; c.t++;
+    const go = (phase, t = 0) => { c.phase = phase; c.t = t; };
+    switch (c.phase) {
+      case 'throw': {   // 0.4秒：弧を描いて飛ぶ・回転
+        const T = 24, k = Math.min(1, c.t / T);
+        c.x = c.from.x + (c.to.x - c.from.x) * k; c.y = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; c.rot += 0.35;
+        if (c.t >= T) { go('hit'); this.shake = 8; this.flashE = 6; }
+        break; }
+      case 'hit': if (c.t >= 10) go('open'); break;          // 命中：白フラッシュ＋黄色のヒット
+      case 'open': if (c.t >= 12) go('absorb'); break;       // パカッ
+      case 'absorb': {   // 0.7秒：相手が光って小さくなり、光の粒がボールへ
+        if (c.t % 2 === 0) c.particles.push({ x: c.to.x + (Math.random() - 0.5) * 40, y: c.to.y - 10 + (Math.random() - 0.5) * 40, t: 18 });
+        if (c.t >= 42) go('close');
+        break; }
+      case 'close': if (c.t >= 12) { go('drop'); c.flash = 6; } break;   // 閉じる→カチッ
+      case 'drop': {   // 落ちる（小さく弾む）
+        const T = 14, k = Math.min(1, c.t / T);
+        c.y = c.to.y + (c.ground - c.to.y) * k + (k > 0.8 ? -Math.sin((k - 0.8) / 0.2 * Math.PI) * 3 : 0);
+        if (c.t >= T) go('pause');
+        break; }
+      case 'pause': if (c.t >= 16) { c.shakes++; if (c.shakes >= c.breakAt && !c.ok) go('breakout'); else go('shake'); } break;
+      case 'shake': {   // 1回の揺れ 0.4秒
+        c.rot = Math.sin(c.t / 24 * Math.PI * 2) * 0.35;
+        if (c.t >= 24) { c.rot = 0; if (c.shakes >= 3) go(c.ok ? 'success' : 'breakout'); else go('pause'); }
+        break; }
+      case 'success': {   // カチッ＋星
+        if (c.t === 1) { c.flash = 8; this.sparkle = 40; }
+        if (c.t >= 40) { go('done'); this.captured(); }
+        break; }
+      case 'breakout': {   // パカッ→相手が光から戻る
+        if (c.t === 1) c.flash = 6;
+        if (c.t >= 22) { go('done'); this.breakoutEnd(); }
+        break; }
+    }
+    c.particles.forEach(pt => { pt.t--; pt.x += (c.to.x - pt.x) * 0.18; pt.y += (c.to.y - pt.y) * 0.18; }); c.particles = c.particles.filter(pt => pt.t > 0);
+    if (c.flash > 0) c.flash--;
+  }
+  captured() {
+    const st = Game.state, en = this.enemy;
+    this.capDone = true;
+    const mon = Object.assign({}, en, { hp: en.hp, exp: 0 }); delete mon.regen;
+    if (st.party.length < CONFIG.PARTY_MAX) st.party.push(mon); else { st.box = st.box || []; st.box.push(mon); }
+    this.cap = null;
+    this.say(`${en.name}を ゲットした！`, () => {
+      const dest = st.party.includes(mon) ? 'なかまに くわわった！' : 'ボックスに おくられた。';
+      this.say(`${en.name}は ${dest}`, () => { Save.auto(st); this.finish('capture'); });
+    });
+  }
+  breakoutEnd() {
+    this.cap = null; this.mode = 'busy';
+    this.say('ああっ！ モンスターが でてきた！', () => {
+      this.queue.push(() => { this.enemyTick(); this.next(); });
+      this.queue.push(() => { this.checkEnd(); this.next(); });
+      this.next();
+    });
+  }
+  // ボールの絵（assets/ui/gutsball.png）。足元中央を (x, y) に置く
+  static ball() { if (!this._ball) { const im = new Image(); im.src = CONFIG.GUTSBALL_IMG || 'assets/ui/gutsball.png'; this._ball = im; this._ballMeta = CONFIG.GUTSBALL_META || null; if (!this._ballMeta) fetch('assets/ui/gutsball.json').then(r => r.json()).then(m => { this._ballMeta = m; }).catch(() => {}); } return this._ball; }
+  drawBall(ctx, name, x, y, rot = 0, scale = 1) {
+    const im = BattleScene.ball(), m = BattleScene._ballMeta; if (!im.complete || !m || !m[name]) { ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(x, y - 8, 8, 0, Math.PI * 2); ctx.fill(); return; }
+    const [sx, sy, sw, sh] = m[name];
+    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - 8); ctx.rotate(rot); ctx.scale(scale, scale);
+    ctx.drawImage(im, sx, sy, sw, sh, -Math.round(sw / 2), -(sh - 8), sw, sh); ctx.restore();
+  }
+  drawCapture(ctx) {
+    const c = this.cap; if (!c) return;
+    const frame = c.phase === 'throw' || c.phase === 'hit' || c.phase === 'drop' || c.phase === 'pause' || c.phase === 'shake' || c.phase === 'success' ? 'closed'
+      : c.phase === 'open' ? (c.t < 6 ? 'open1' : 'open2') : c.phase === 'absorb' ? (Math.floor(c.t / 4) % 2 ? 'beam1' : 'beam2') : c.phase === 'close' ? (c.t < 6 ? 'open1' : 'closing') : 'burst';
+    // 軌跡
+    if (c.phase === 'throw') { for (let i = 1; i <= 3; i++) { const k = Math.max(0, c.t - i * 2) / 24; const px = c.from.x + (c.to.x - c.from.x) * k, py = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; ctx.fillStyle = `rgba(255,255,255,${0.35 - i * 0.1})`; ctx.beginPath(); ctx.arc(px, py - 8, 7 - i, 0, Math.PI * 2); ctx.fill(); } }
+    // 吸い込みの光の粒
+    for (const pt of c.particles) { ctx.fillStyle = `rgba(190,235,255,${Math.min(1, pt.t / 10)})`; ctx.fillRect(Math.round(pt.x), Math.round(pt.y), 2, 2); }
+    // 命中のヒット（黄色の放射）と白フラッシュ
+    if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 8, 10 + c.t * 2, 0, Math.PI * 2); ctx.fill(); this.drawSparkle(ctx, c.to.x, c.to.y - 8, c.t * 3, 10); }
+    if (c.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${0.7 * c.flash / 8})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 14, 0, Math.PI * 2); ctx.fill(); }
+    if (c.phase === 'success') this.drawSparkle(ctx, c.x, c.y - 8, this.frameNo || 0, 16);
+    if (c.phase === 'breakout') { ctx.fillStyle = `rgba(200,240,255,${0.8 * (1 - c.t / 22)})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 10 + c.t, 0, Math.PI * 2); ctx.fill(); }
+    this.drawBall(ctx, frame, Math.round(c.x), Math.round(c.y), c.rot);
+  }
+  // 捕獲中の相手の描き方：吸い込み中は白く光りながら小さくなってボールへ。逃げ出すときはボールから戻る
+  enemyCaptureView() {
+    const c = this.cap; if (!c) return null;
+    if (c.phase === 'absorb') { const k = c.t / 42; return { scale: 1 - k, white: Math.min(1, k * 1.5 + 0.3), toBall: k }; }
+    if (['close', 'drop', 'pause', 'shake', 'success', 'done'].includes(c.phase)) return { hidden: true };
+    if (c.phase === 'breakout') { const k = Math.min(1, c.t / 16); return { scale: k, white: 1 - k, toBall: 1 - k }; }
+    return null;
+  }
+
   // なかまを入れかえる（1ターン消費）。チャージは引きつがない
   pressParty() {
     if (this.party().length < 2) { Game.push(new PartyScene()); return; }
@@ -469,6 +580,8 @@ class BattleScene {
     if (this.banner && --this.banner.t <= 0) this.banner = null;
     this.pops.forEach(p => { p.t--; p.y -= 0.4; }); this.pops = this.pops.filter(p => p.t > 0);
     if (this.mode === 'wait') { if (--this.waitT <= 0) { this.mode = 'busy'; const f = this.waitDone; this.waitDone = null; f && f(); } return; }
+    this.frameNo = frame;
+    if (this.mode === 'capture' && this.cap) { this.updateCapture(); return; }
     if (this.mode === 'view') {   // ↑↓であいて、←→でなかま、Aで背景、MENUでランダム、Bで戻る
       const n = this.ids.length;
       if (Input.pressed('down')) this.vi = (this.vi + 1) % n;
@@ -535,10 +648,22 @@ class BattleScene {
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, ey + ES - 2, 36, 6);
     ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, ey + ES, 30, 4);
-    this.drawMon(ctx, en, 118 + sx + elx, ey + ely, ES, false, this.flashE);
+    const cv = this.enemyCaptureView();
+    if (!cv) this.drawMon(ctx, en, 118 + sx + elx, ey + ely, ES, false, this.flashE);
+    else if (!cv.hidden) {
+      // ボールに向かって縮みながら白くなる
+      const eb0 = { x: 118, y: ey, size: ES }, b = Mon.drawnBox(en.id, ES / 24, false);
+      const cx0 = eb0.x + b.dx + b.w / 2, cy0 = eb0.y + b.dy + b.h;   // 足元中央
+      const tx = this.cap.to.x, ty = this.cap.to.y;
+      const cx = cx0 + (tx - cx0) * cv.toBall, cy = cy0 + (ty - cy0) * cv.toBall, sc = Math.max(0.05, cv.scale);
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.translate(-cx0, -cy0);
+      this.drawMon(ctx, en, eb0.x, eb0.y, ES, false, 0);
+      if (cv.white > 0) { const c = BattleScene.tmp(ES); const g = c.getContext('2d'); g.clearRect(0, 0, ES, ES); drawMonster(g, en, 0, 0, ES, false, false); g.globalCompositeOperation = 'source-in'; g.fillStyle = `rgba(220,245,255,${cv.white})`; g.fillRect(0, 0, ES, ES); g.globalCompositeOperation = 'source-over'; ctx.drawImage(c, eb0.x, eb0.y); }
+      ctx.restore();
+    }
     this._eBox = { x: 118, y: ey, size: ES };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 3, 96, 24, false);
-    if (this.mode !== 'end' && !this.viewer) this.drawNext(ctx, 118 + Mon.drawnBox(en.id, ES / 24, false).dx + Mon.drawnBox(en.id, ES / 24, false).w / 2, ey + Mon.drawnBox(en.id, ES / 24, false).dy);
+    if (this.mode !== 'end' && !this.viewer && !this.cap) this.drawNext(ctx, 118 + Mon.drawnBox(en.id, ES / 24, false).dx + Mon.drawnBox(en.id, ES / 24, false).w / 2, ey + Mon.drawnBox(en.id, ES / 24, false).dy);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -553,6 +678,7 @@ class BattleScene {
       if (this.guard || this.guardFx > 0) this.drawGuardRing(ctx, x + b.dx + b.w / 2, y + b.dy + b.h / 2, Math.max(b.w, b.h) / 2 + 4, frame, this.guardFx);
       this.drawStatus(ctx, me, Math.round(this.shownHp.p), 92, AH - 32, 96, 30, true);
     }
+    if (this.cap) this.drawCapture(ctx);
     // 浮き文字（ダメージなど）
     for (const p of this.pops) {
       const a = Math.min(1, p.t / 12); ctx.globalAlpha = a;
@@ -597,7 +723,7 @@ class BattleScene {
     Text.draw(ctx, 'ターン', x + 17 + 10 * n.length + 4, y + 2, '#f4f8ec');
   }
   // 自分・相手の絵の位置（浮き文字の基準）
-  enemyBox() { const e = this._eBox || { x: 112, y: 30, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy }; }
+  enemyBox() { const e = this._eBox || { x: 118, y: 16, size: 68 }; const b = Mon.drawnBox(this.enemy.id, e.size / 24, false); return { cx: e.x + b.dx + b.w / 2, top: e.y + b.dy, cy: e.y + b.dy + b.h / 2, bottom: e.y + b.dy + b.h }; }
   meBox() { const p = this._pBox; if (!p) return { cx: 40, top: 60 }; return { cx: p.x + p.b.dx + p.b.w / 2, top: p.y + p.b.dy }; }
   // モンスターを描く。flash が残っていれば白く光らせる（当たった演出）
   drawMon(ctx, m, x, y, size, back, flash) {

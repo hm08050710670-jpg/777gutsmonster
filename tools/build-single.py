@@ -97,6 +97,10 @@ if os.path.isdir('assets/ui'):
         m = re.match(r'meter_(\w+)\.png$', f)
         if m: meter_imgs[m.group(1)] = 'data:image/png;base64,' + base64.b64encode(open(f'assets/ui/{f}', 'rb').read()).decode()
 print('meters embedded:', list(meter_imgs))
+gutsball_png = gutsball_json = None
+if os.path.exists('assets/ui/gutsball.png'):
+    gutsball_png = 'data:image/png;base64,' + base64.b64encode(open('assets/ui/gutsball.png', 'rb').read()).decode()
+    gutsball_json = open('assets/ui/gutsball.json', encoding='utf-8').read()
 
 html = open('index.html', encoding='utf-8').read()
 css = open('css/style.css', encoding='utf-8').read()
@@ -130,6 +134,8 @@ def inline_js(m):
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  NPC_IMG: '{npc_png}',\n  NPC_META_INLINE: {npc_json},\n  TITLE: 'GUTS MONSTERS',")
     if hero_png:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  HERO_IMG: '{hero_png}',\n  HERO_META_INLINE: {hero_json},\n  TITLE: 'GUTS MONSTERS',")
+    if src == 'js/config.js' and gutsball_png:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  GUTSBALL_IMG: '{gutsball_png}',\n  GUTSBALL_META: {gutsball_json},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and meter_imgs:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  METER_IMAGES: {json.dumps(meter_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:

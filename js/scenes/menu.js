@@ -126,6 +126,7 @@ class ItemScene {
     if (Input.pressed('a')) {
       const [name] = L[this.sel];
       if (this.inBattle) { Game.pop(); this.onUse && this.onUse(name); return; }
+      if (DATA.ITEMS[name] && DATA.ITEMS[name].ball) { say('やせいの モンスターと たたかっている\nときに つかおう。'); return; }
       if (!Game.state.party.length) { say('まだ なかまが いない。'); return; }
       const st = Game.state;
       if (Party.hp(st) >= Party.maxHp(st)) { say('HPは まんたんだ。'); return; }
