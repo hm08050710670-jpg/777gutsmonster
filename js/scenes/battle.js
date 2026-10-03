@@ -36,6 +36,13 @@ const Puzzle = (() => {
   function openMenu() { $('pz-actions').hidden = false; if (inst) inst.lock(); }
   function closeMenu() { $('pz-actions').hidden = true; }
   const menuOpen = () => !$('pz-actions').hidden;
+  // 長い技名を2行に分ける（7文字以上）。小さい「ッ・ャ・ュ・ョ」や「ー」の前では切らない
+  function splitName(name) {
+    if (name.length < 7) return name;
+    let i = Math.ceil(name.length / 2);
+    while (i > 1 && 'ッャュョァィゥェォーっゃゅょ'.includes(name[i])) i--;
+    return name.slice(0, i) + '<br>' + name.slice(i);
+  }
   // 技ゲージの枠を作る（小・中・強・防御・回復 ＋ メニュー）。ChatGPT製のカード絵に合わせた CSS 描画
   //   アイコン画像があるタイプ（いまは くさ）は絵を、無いタイプは仮の丸いボールを使う
   // 円形メーター（ChatGPT製：上段＝空、下段＝満タン。小・中・強・防御・回復の順）。タイプごとのシートがあればそれを使う
@@ -87,7 +94,7 @@ const Puzzle = (() => {
       return `<div class="pz-skill${meter ? ' has-meter' : ''}" data-tier="${t}"><div class="row">${ic}<div class="col">${meter ? '' : `<div class="pips">${'<i class="pip"></i>'.repeat(need)}</div>`}<div class="cnt">0/${need}</div></div></div></div>`;
     }).join('');
     // 技名は別の枠（メーターの上の行）に
-    $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name">${name.length >= 8 ? name.slice(0, Math.ceil(name.length / 2)) + '<br>' + name.slice(Math.ceil(name.length / 2)) : name}</div>`).join('') + '<div class="pz-name empty"></div>';
+    $('pz-names').innerHTML = tiers.map(([t, name]) => `<div class="pz-name">${splitName(name)}</div>`).join('') + '<div class="pz-name empty"></div>';
     // 技名プレートの色を自タイプのボール色（小・中・強）に合わせる
     [['--n1', col.small], ['--n2', col.mid], ['--n3', col.strong]].forEach(([v, c]) => { const probe = document.createElement('div'); probe.className = 'pz-ball ' + c; probe.style.display = 'none'; document.body.appendChild(probe); $('pz-names').style.setProperty(v, getComputedStyle(probe).getPropertyValue('--c')); probe.remove(); });
     html += `<button class="pz-skill menu" id="pz-menu-btn"><span>メニュー</span></button>`;

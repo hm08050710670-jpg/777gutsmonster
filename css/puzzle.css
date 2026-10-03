@@ -32,6 +32,19 @@
 .pz-ball.white::after{width:44%;height:50%;border-radius:0;background:#6a7a8a;box-shadow:none;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
 .pz-ball.pink::after{width:40%;height:36%;border-radius:0;background:#fff;box-shadow:none;clip-path:path('M20 36 L4 20 A8 8 0 0 1 20 8 A8 8 0 0 1 36 20 Z');}
 .pz-ball.pink::after{width:40px;height:36px;transform:translate(-50%,-50%) scale(var(--hs,0.9))}
+
+/* ---- ボールの中のマーク：技メーターと同じアイコン（草・炎・水・雷・土、白＝盾、ピンク＝ハート） ---- */
+.pz-ball.g1::after,.pz-ball.g2::after,.pz-ball.g3::after,.pz-ball.f1::after,.pz-ball.f2::after,.pz-ball.f3::after,.pz-ball.w1::after,.pz-ball.w2::after,.pz-ball.w3::after,.pz-ball.t1::after,.pz-ball.t2::after,.pz-ball.t3::after,.pz-ball.e1::after,.pz-ball.e2::after,.pz-ball.e3::after,.pz-ball.white::after,.pz-ball.pink::after{
+  width:62%;height:62%;border-radius:0;box-shadow:none;clip-path:none;background:none center/contain no-repeat;image-rendering:pixelated;transform:translate(-50%,-50%);filter:drop-shadow(0 1px 0 rgba(0,0,0,.35))}
+.pz-ball.g1::after{background-image:url(../assets/ui/icon_g1.png)} .pz-ball.g2::after{background-image:url(../assets/ui/icon_g2.png)} .pz-ball.g3::after{background-image:url(../assets/ui/icon_g3.png)}
+.pz-ball.f1::after{background-image:url(../assets/ui/icon_f1.png)} .pz-ball.f2::after{background-image:url(../assets/ui/icon_f2.png)} .pz-ball.f3::after{background-image:url(../assets/ui/icon_f3.png)}
+.pz-ball.w1::after{background-image:url(../assets/ui/icon_w1.png)} .pz-ball.w2::after{background-image:url(../assets/ui/icon_w2.png)} .pz-ball.w3::after{background-image:url(../assets/ui/icon_w3.png)}
+.pz-ball.t1::after{background-image:url(../assets/ui/icon_t1.png)} .pz-ball.t2::after{background-image:url(../assets/ui/icon_t2.png)} .pz-ball.t3::after{background-image:url(../assets/ui/icon_t3.png)}
+.pz-ball.e1::after{background-image:url(../assets/ui/icon_e1.png)} .pz-ball.e2::after{background-image:url(../assets/ui/icon_e2.png)} .pz-ball.e3::after{background-image:url(../assets/ui/icon_e3.png)}
+.pz-ball.white::after{background-image:url(../assets/ui/icon_white.png)} .pz-ball.pink::after{background-image:url(../assets/ui/icon_pink.png)}
+/* アイコンの後ろに暗い円（技メーターの内側と同じ見た目。アイコンの輪郭が立つ） */
+.pz-ball.g1::before,.pz-ball.g2::before,.pz-ball.g3::before,.pz-ball.f1::before,.pz-ball.f2::before,.pz-ball.f3::before,.pz-ball.w1::before,.pz-ball.w2::before,.pz-ball.w3::before,.pz-ball.t1::before,.pz-ball.t2::before,.pz-ball.t3::before,.pz-ball.e1::before,.pz-ball.e2::before,.pz-ball.e3::before,.pz-ball.white::before,.pz-ball.pink::before{
+  content:"";position:absolute;left:50%;top:50%;width:70%;height:70%;transform:translate(-50%,-50%);border-radius:50%;background:rgba(16,26,18,.38);box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.3)}
 .pz-ball[style*="background-image"]{background-color:transparent;border-radius:0}
 .pz-ball[style*="background-image"]::after{display:none}
 
@@ -57,10 +70,10 @@
 #pz-names{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,0.62fr);gap:3px;width:100%;box-sizing:border-box;padding:0}
 .pz-name{box-sizing:border-box;height:26px;padding:2px 2px;border-radius:3px;background:#1f3d2a;color:#fff;font-size:8.5px;line-height:1.25;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;letter-spacing:-.02em;border:1px solid #3d6b48}
 .pz-name.empty{background:transparent;border:none}
-/* 技名の色：段階ごと（弱＝明るい・中＝基本・強＝濃い、防御＝灰青、回復＝ピンク）。--n1〜--n3 は自タイプの色 */
-#pz-names .pz-name:nth-child(1){background:var(--n1,#7fb33a);color:#1f3d2a} #pz-names .pz-name:nth-child(2){background:var(--n2,#3e9a3c)} #pz-names .pz-name:nth-child(3){background:var(--n3,#1f6b2e)}
-#pz-names .pz-name:nth-child(4){background:#5a6f8a} #pz-names .pz-name:nth-child(5){background:#c94f8a}
-#pz-names .pz-name{border:1px solid rgba(0,0,0,.35)}
+/* 技名プレート：HP窓と同じ深緑に白文字（ゲーム内のドット書体）。左の色帯で段階（弱＝明るい・中＝基本・強＝濃い、防御＝灰青、回復＝ピンク） */
+.pz-name{font-family:'DotGothic16',monospace;font-size:11px;font-weight:400;letter-spacing:0;height:28px;line-height:1.1;background:#1f3d2a;color:var(--ivory);border:1px solid #3d6b48;border-left:5px solid var(--b,#3d6b48)}
+#pz-names .pz-name:nth-child(1){--b:var(--n1,#9ee04a)} #pz-names .pz-name:nth-child(2){--b:var(--n2,#4cc23e)} #pz-names .pz-name:nth-child(3){--b:var(--n3,#1f7a2e)}
+#pz-names .pz-name:nth-child(4){--b:#9ab0c8} #pz-names .pz-name:nth-child(5){--b:#ff8fc0}
 /* 数字をメーターの右下に重ねる（メーターを大きくしたとき用） */
 .pz-skill.has-meter{position:relative}
 .pz-skill.has-meter .row{position:relative}
