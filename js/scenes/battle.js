@@ -386,7 +386,7 @@ class BattleScene {
       case 'throw': {   // 0.4秒：弧を描いて飛ぶ・回転
         const T = 24, k = Math.min(1, c.t / T);
         c.x = c.from.x + (c.to.x - c.from.x) * k; c.y = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; c.rot += 0.35;
-        if (c.t >= T) { go('hit'); this.shake = 8; this.flashE = 6; }
+        if (c.t >= T) { go('hit'); c.rot = 0; this.shake = 8; this.flashE = 6; }   // 命中したら正立（開く絵が傾かないように）
         break; }
       case 'hit': if (c.t >= 10) go('open'); break;          // 命中：白フラッシュ＋黄色のヒット
       case 'open': if (c.t >= 12) go('absorb'); break;       // パカッ
@@ -447,20 +447,22 @@ class BattleScene {
   static ball() { if (!this._ball) { const im = new Image(); im.src = CONFIG.GUTSBALL_IMG || 'assets/ui/gutsball.png'; this._ball = im; this._ballMeta = CONFIG.GUTSBALL_META || null; if (!this._ballMeta) fetch('assets/ui/gutsball.json').then(r => r.json()).then(m => { this._ballMeta = m; }).catch(() => {}); } return this._ball; }
   drawBall(ctx, name, x, y, rot = 0, scale = 1, squash = 1) {
     const im = BattleScene.ball(), m = BattleScene._ballMeta; if (!im.complete || !m || !m[name]) { ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(x, y - 6, 6, 0, Math.PI * 2); ctx.fill(); return; }
-    const [sx, sy, sw, sh] = m[name], r = Math.round((m.closed ? m.closed[3] : 16) / 2);   // r：閉じたボールの半径（接地位置の基準）
+    const [sx, sy, sw, sh, ax = sw / 2, ay = sh] = m[name], r = Math.round((m.closed ? m.closed[3] : 16) / 2);   // r：閉じたボールの半径（接地位置の基準）。ax, ay：コマ内の接地位置
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - r + (1 - squash) * r); ctx.rotate(rot); ctx.scale(scale * (2 - squash), scale * squash);
-    ctx.drawImage(im, sx, sy, sw, sh, -Math.round(sw / 2), -(sh - r), sw, sh); ctx.restore();
+    ctx.drawImage(im, sx, sy, sw, sh, -Math.round(ax), -Math.round(ay - r), sw, sh); ctx.restore();
   }
   drawCapture(ctx) {
-    const c = this.cap; if (!c) return;
-    const frame = ['throw', 'hit', 'drop', 'tremble', 'pause', 'shake', 'hold', 'success', 'done'].includes(c.phase) ? 'closed'
+    const c = this.cap; if (!c) return; const m = BattleScene._ballMeta;
+    const frame = ['throw', 'drop', 'tremble', 'pause', 'shake', 'hold'].includes(c.phase) ? 'closed'
+      : c.phase === 'hit' ? (m && m.hit && c.t >= 2 && c.t < 8 ? 'hit' : 'closed')
+      : (c.phase === 'success' || c.phase === 'done') ? (m && m.success && c.t >= 8 ? 'success' : 'closed')
       : c.phase === 'open' ? (c.t < 6 ? 'open1' : 'open2') : c.phase === 'absorb' ? (c.t > 30 ? 'beam3' : Math.floor(c.t / 4) % 2 ? 'beam1' : 'beam2') : c.phase === 'close' ? (c.t < 6 ? 'open1' : 'closing') : 'burst';
     // 軌跡
     if (c.phase === 'throw') { for (let i = 1; i <= 3; i++) { const k = Math.max(0, c.t - i * 2) / 24; const px = c.from.x + (c.to.x - c.from.x) * k, py = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; ctx.fillStyle = `rgba(255,255,255,${0.35 - i * 0.1})`; ctx.beginPath(); ctx.arc(px, py - 6, 5 - i, 0, Math.PI * 2); ctx.fill(); } }
     // 吸い込みの光の粒
     for (const pt of c.particles) { ctx.fillStyle = `rgba(190,235,255,${Math.min(1, pt.t / 10)})`; ctx.fillRect(Math.round(pt.x), Math.round(pt.y), 2, 2); }
     // 命中のヒット（黄色の放射）と白フラッシュ
-    if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 6, 8 + c.t * 2, 0, Math.PI * 2); ctx.fill(); this.drawSparkle(ctx, c.to.x, c.to.y - 6, c.t * 3, 8); }
+    if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 6, 8 + c.t * 2, 0, Math.PI * 2); ctx.fill(); if (!(m && m.hit)) this.drawSparkle(ctx, c.to.x, c.to.y - 6, c.t * 3, 8); }   // 命中の放射はボールの絵（hit コマ）に含まれる
     if (c.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${0.7 * c.flash / 8})`; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 11, 0, Math.PI * 2); ctx.fill(); }
     if (c.phase === 'success' && c.t < 16) { ctx.strokeStyle = `rgba(255,255,255,${1 - c.t / 16})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 8 + c.t * 1.5, 0, Math.PI * 2); ctx.stroke(); }
     if (c.phase === 'breakout') { ctx.fillStyle = `rgba(200,240,255,${0.8 * (1 - c.t / 22)})`; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 8 + c.t, 0, Math.PI * 2); ctx.fill(); }
