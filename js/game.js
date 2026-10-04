@@ -52,10 +52,8 @@ const Game = (() => {
     const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 224);
     const availW = landscape ? Math.floor(app.clientWidth * 0.5) : app.clientWidth;
     const availH = visibleHeight(app) - auxH - padMin - 8;
-    let scale = Math.min(availW / CONFIG.W, availH / H_BASE);
-    // 2倍以上なら整数に丸めてドットを揃える。それ未満は小数倍を許容（1倍だと小さすぎる）
-    if (scale >= 2) scale = Math.floor(scale);
-    scale = Math.max(1, scale);
+    // 横幅いっぱいに拡大する（整数倍にはしない。端末によってドットの太さは少し不揃いになるが、左右に黒い帯を残さない）
+    let scale = Math.max(1, Math.min(availW / CONFIG.W, availH / H_BASE));
     const h = Math.max(H_BASE, Math.min(H_MAX, Math.floor(availH / scale)));
     const hChanged = h !== CONFIG.H;
     if (hChanged) { if (viewH === CONFIG.H) viewH = h; CONFIG.H = h; }
