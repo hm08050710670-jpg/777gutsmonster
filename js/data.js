@@ -151,7 +151,7 @@ const DATA = {
         { x: 12, y: 1, kind: 'sign', text: 'この先 ガーデンロード\nガーデンプレースまで つづく' },
         { x: 19, y: 8, kind: 'sign', text: 'オクムラ モンスター研究所は\n町の 北西' },
         { x: 15, y: 10, kind: 'npc', img: 'v02', sprite: 'npc_woman', dir: 'down',
-          text: '北の ガーデンロードには\nやせいの GUTS MONSTERSが いるのよ。' },
+          text: '北の ガーデンロードには\nやせいの ガッツモンスターが いるのよ。' },
         { x: 20, y: 6, kind: 'npc', img: 'v23', sprite: 'npc_man', dir: 'down',
           text: 'この帽子は ゴルフ場の 売店で かった。\n日ざしが つよい日に ちょうどいい。' },
         { x: 5, y: 17, kind: 'npc', img: 'v21', sprite: 'npc_woman', dir: 'right',
@@ -452,7 +452,7 @@ const DATA = {
       events: [
         { x: 5, y: 6, kind: 'warp', to: { map: 'town2', x: 16, y: 3, dir: 'down' } },
         { x: 6, y: 3, kind: 'npc', img: 'v05', sprite: 'npc_man', dir: 'left', name: 'おじいさん',
-          text: 'わしは むかし ゴルフ場で\nキャディを しておった。\nGUTS MONSTERSは ゴルフの魂が\nやどった いきものじゃよ。' },
+          text: 'わしは むかし ゴルフ場で\nキャディを しておった。\nガッツモンスターは ゴルフの魂が\nやどった いきものじゃよ。' },
         { x: 7, y: 1, kind: 'look', text: 'テレビ。むかしの ゴルフ大会の\nビデオが ながれている。' },
       ],
     },

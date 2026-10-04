@@ -310,9 +310,9 @@ class FieldScene {
   profIntro(then) {
     const st = Game.state, n = 'オクムラ博士';
     const prof = this.events().find(e => e.prof); if (prof) prof.face = 'down';
-    say(`おお ${st.name}くん、よく来たね！\nきみに GUTS MONSTERSの せかいを おしえよう。`, () => {
+    say(`おお ${st.name}くん、よく来たね！\nきみに ガッツモンスターの せかいを おしえよう。`, () => {
       say('この せかいには ゴルフ場の しぜんと\nゴルフボールが とけこんだ', () => {
-        say('GUTS MONSTERSが すんでいる。\nなかまにして いっしょに 冒険するんだ。', () => {
+        say('ガッツモンスターが すんでいる。\nなかまにして いっしょに 冒険するんだ。', () => {
           say('これが ガッツボールだ！\nゴルフの魂が つまった 特別なボールなんだよ。', () => {
           say('テーブルの 3つの ガッツボールから\nすきな 1つを えらびなさい。', () => {
             Game.setFlag('labIntro'); Save.auto(st);
