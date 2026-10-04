@@ -30,7 +30,9 @@ const Game = (() => {
     let h = Math.min(document.documentElement.clientHeight || vis, vis);
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
     let hidden = 0;
-    if (!standalone && screen.height && window.innerHeight >= screen.height - 4) {
+    // iOS のアプリ内ブラウザ（WKWebView）は UA に "Safari/" が付かない。Safari 本体や全画面なら申告値を信用する
+    const ua = navigator.userAgent, inAppIOS = /iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua);
+    if (!standalone && ((screen.height && window.innerHeight >= screen.height - 4) || inAppIOS)) {
       const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
       const sat = probe.offsetHeight; probe.remove();
       hidden = sat + 72;
