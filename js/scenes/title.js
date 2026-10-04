@@ -59,7 +59,8 @@ class TitleScene {
   update(frame) {
     if (this.checkCode()) return;
     if (!this.menu) {
-      if (Input.pressed('a') || Input.pressed('start')) this.menu = true;
+      // メニューを開いたとき、つづきがあれば「つづきから」にカーソル（Aですぐ再開できる）
+      if (Input.pressed('a') || Input.pressed('start')) { this.menu = true; this.sel = Save.exists() ? 1 : 0; }
       return;
     }
     const it = this.items();
@@ -116,6 +117,8 @@ class TitleScene {
   }
 
   draw(ctx, frame) {
+    const art = Bg.get('title');
+    if (art) { this.drawArt(ctx, art, frame); return; }
     this.drawBackground(ctx, frame);
     // ロゴ
     const W = CONFIG.W;
@@ -144,6 +147,27 @@ class TitleScene {
       });
     }
     Text.draw(ctx, 'v0.2', W - 22, CONFIG.H - 10, '#ffffff');
+  }
+  // タイトル絵（assets/bg/title.png、縦長）：横幅に合わせて拡大し、ロゴ〜主人公たちが入る範囲を切り出す。
+  //   絵の中のメニュー枠の位置（x62〜130, y61〜98）に、こちらのメニューを重ねる
+  drawArt(ctx, art, frame) {
+    const W = CONFIG.W, H = CONFIG.H;
+    const k = W / art.width, top = Math.round(300 / 939 * W);   // 元絵の y=300px から
+    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(art, 0, top / k, art.width, H / k, 0, 0, W, H);
+    ctx.restore();
+    const bx = 60, by = 60, bw = 72;
+    if (!this.menu) {
+      Text.box(ctx, bx, by, bw, 38);
+      if (Math.floor(frame / 30) % 2 === 0) { const t = 'PUSH START'; Text.draw(ctx, t, bx + bw / 2 - Text.width(t) / 2, by + 15); }
+    } else {
+      const it = this.items(); const h = it.length * 14 + 12, w = this.debug ? 116 : bw, x = this.debug ? W / 2 - 58 : bx;
+      Text.box(ctx, x, by, w, h);
+      it.forEach((label, i) => {
+        Text.draw(ctx, label, x + 20, by + 7 + i * 14);
+        if (i === this.sel) Text.cursor(ctx, x + 10, by + 7 + i * 14);
+      });
+    }
   }
 }
 

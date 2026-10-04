@@ -9,7 +9,7 @@ const Bg = (() => {
 
   async function load() {
     const src = CONFIG.BG_IMAGES || {};
-    await Promise.all(NAMES.map(n => new Promise(res => {
+    await Promise.all([...NAMES, 'title'].map(n => new Promise(res => {   // title はタイトル画面の絵（戦闘背景の一覧には入れない）
       const img = new Image();
       img.onload = () => { imgs[n] = img; res(); };
       img.onerror = () => { console.warn('背景の読込に失敗', n); res(); };

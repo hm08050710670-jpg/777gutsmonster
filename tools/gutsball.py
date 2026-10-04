@@ -8,7 +8,8 @@ from PIL import Image
 import numpy as np
 src = Image.open('assets/src/gutsball_sheet.png').convert('RGB'); A = np.asarray(src).astype(int)
 mag = (A[:, :, 0] > 150) & (A[:, :, 2] > 150) & ((A[:, :, 0] + A[:, :, 2]) / 2 - A[:, :, 1] > 60)   # マゼンタ（縁のにじみも含めて広めに）
-DOT = 4.1   # 元絵の1ドット（ボール直径 ≈ 65px ≈ 16ドット）
+import os
+DOT = float(os.environ.get('DOT', '4.1'))   # 元絵の1ドット（4.1 → ボール直径 ≈ 16ドット）
 FRAMES = {  # name: (x, y, w, h) 元絵のpx
     'closed': (56, 346, 73, 68), 'open1': (209, 345, 74, 69), 'open2': (365, 322, 75, 91),
     'beam1': (519, 293, 80, 125), 'beam2': (677, 277, 80, 141), 'beam3': (1708, 283, 73, 137), 'burst': (2056, 544, 74, 101), 'closing': (160, 548, 73, 94),

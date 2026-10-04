@@ -424,7 +424,7 @@ class BattleScene {
         break; }
       case 'hold': if (c.t >= 44) go(c.ok ? 'success' : 'breakout'); break;   // 3回揺れたあとの一瞬の間（ここが一番の見せ場。失敗パターン4はここで逃げる）
       case 'success': {   // カチャッ：ボールが一瞬つぶれて戻る＋白い輪＋「カチッ!」。ボールは閉じたまま残す
-        if (c.t === 1) { c.flash = 8; this.pop(c.x, c.y - 26, 'カチッ!', '#fff6d8'); }
+        if (c.t === 1) { c.flash = 8; this.pop(c.x, c.y - 22, 'カチッ!', '#fff6d8'); }
         c.squash = c.t <= 4 ? 0.82 : c.t <= 8 ? 1.06 : 1;
         if (c.t >= 36) { c.squash = 1; go('done'); this.captured(); }
         break; }
@@ -458,24 +458,24 @@ class BattleScene {
   // ボールの絵（assets/ui/gutsball.png）。足元中央を (x, y) に置く
   static ball() { if (!this._ball) { const im = new Image(); im.src = CONFIG.GUTSBALL_IMG || 'assets/ui/gutsball.png'; this._ball = im; this._ballMeta = CONFIG.GUTSBALL_META || null; if (!this._ballMeta) fetch('assets/ui/gutsball.json').then(r => r.json()).then(m => { this._ballMeta = m; }).catch(() => {}); } return this._ball; }
   drawBall(ctx, name, x, y, rot = 0, scale = 1, squash = 1) {
-    const im = BattleScene.ball(), m = BattleScene._ballMeta; if (!im.complete || !m || !m[name]) { ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(x, y - 8, 8, 0, Math.PI * 2); ctx.fill(); return; }
-    const [sx, sy, sw, sh] = m[name];
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - 8 + (1 - squash) * 8); ctx.rotate(rot); ctx.scale(scale * (2 - squash), scale * squash);
-    ctx.drawImage(im, sx, sy, sw, sh, -Math.round(sw / 2), -(sh - 8), sw, sh); ctx.restore();
+    const im = BattleScene.ball(), m = BattleScene._ballMeta; if (!im.complete || !m || !m[name]) { ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(x, y - 6, 6, 0, Math.PI * 2); ctx.fill(); return; }
+    const [sx, sy, sw, sh] = m[name], r = Math.round((m.closed ? m.closed[3] : 16) / 2);   // r：閉じたボールの半径（接地位置の基準）
+    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(x, y - r + (1 - squash) * r); ctx.rotate(rot); ctx.scale(scale * (2 - squash), scale * squash);
+    ctx.drawImage(im, sx, sy, sw, sh, -Math.round(sw / 2), -(sh - r), sw, sh); ctx.restore();
   }
   drawCapture(ctx) {
     const c = this.cap; if (!c) return;
     const frame = ['throw', 'hit', 'drop', 'tremble', 'pause', 'shake', 'hold', 'success', 'done'].includes(c.phase) ? 'closed'
       : c.phase === 'open' ? (c.t < 6 ? 'open1' : 'open2') : c.phase === 'absorb' ? (c.t > 30 ? 'beam3' : Math.floor(c.t / 4) % 2 ? 'beam1' : 'beam2') : c.phase === 'close' ? (c.t < 6 ? 'open1' : 'closing') : 'burst';
     // 軌跡
-    if (c.phase === 'throw') { for (let i = 1; i <= 3; i++) { const k = Math.max(0, c.t - i * 2) / 24; const px = c.from.x + (c.to.x - c.from.x) * k, py = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; ctx.fillStyle = `rgba(255,255,255,${0.35 - i * 0.1})`; ctx.beginPath(); ctx.arc(px, py - 8, 7 - i, 0, Math.PI * 2); ctx.fill(); } }
+    if (c.phase === 'throw') { for (let i = 1; i <= 3; i++) { const k = Math.max(0, c.t - i * 2) / 24; const px = c.from.x + (c.to.x - c.from.x) * k, py = c.from.y + (c.to.y - c.from.y) * k - Math.sin(Math.PI * k) * 34; ctx.fillStyle = `rgba(255,255,255,${0.35 - i * 0.1})`; ctx.beginPath(); ctx.arc(px, py - 6, 5 - i, 0, Math.PI * 2); ctx.fill(); } }
     // 吸い込みの光の粒
     for (const pt of c.particles) { ctx.fillStyle = `rgba(190,235,255,${Math.min(1, pt.t / 10)})`; ctx.fillRect(Math.round(pt.x), Math.round(pt.y), 2, 2); }
     // 命中のヒット（黄色の放射）と白フラッシュ
-    if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 8, 10 + c.t * 2, 0, Math.PI * 2); ctx.fill(); this.drawSparkle(ctx, c.to.x, c.to.y - 8, c.t * 3, 10); }
-    if (c.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${0.7 * c.flash / 8})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 14, 0, Math.PI * 2); ctx.fill(); }
-    if (c.phase === 'success' && c.t < 16) { ctx.strokeStyle = `rgba(255,255,255,${1 - c.t / 16})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 10 + c.t * 1.5, 0, Math.PI * 2); ctx.stroke(); }
-    if (c.phase === 'breakout') { ctx.fillStyle = `rgba(200,240,255,${0.8 * (1 - c.t / 22)})`; ctx.beginPath(); ctx.arc(c.x, c.y - 8, 10 + c.t, 0, Math.PI * 2); ctx.fill(); }
+    if (c.phase === 'hit') { ctx.fillStyle = `rgba(255,255,255,${0.6 * (1 - c.t / 10)})`; ctx.beginPath(); ctx.arc(c.to.x, c.to.y - 6, 8 + c.t * 2, 0, Math.PI * 2); ctx.fill(); this.drawSparkle(ctx, c.to.x, c.to.y - 6, c.t * 3, 8); }
+    if (c.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${0.7 * c.flash / 8})`; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 11, 0, Math.PI * 2); ctx.fill(); }
+    if (c.phase === 'success' && c.t < 16) { ctx.strokeStyle = `rgba(255,255,255,${1 - c.t / 16})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 8 + c.t * 1.5, 0, Math.PI * 2); ctx.stroke(); }
+    if (c.phase === 'breakout') { ctx.fillStyle = `rgba(200,240,255,${0.8 * (1 - c.t / 22)})`; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 8 + c.t, 0, Math.PI * 2); ctx.fill(); }
     this.drawBall(ctx, frame, Math.round(c.x + (c.dx || 0)), Math.round(c.y), c.rot, 1, c.squash || 1);
   }
   // 捕獲中の相手の描き方：吸い込み中は白く光りながら小さくなってボールへ。逃げ出すときはボールから戻る
