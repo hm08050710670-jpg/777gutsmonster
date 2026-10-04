@@ -136,19 +136,7 @@ const Puzzle = (() => {
     h += cardH + ($('pz-names') ? $('pz-names').offsetHeight : 0);
     return h;
   }
-  // 実際に見えている高さ。アプリ内ブラウザ（Claude など）は画面全体の高さを返しながら上部をネイティブの見出しで隠すことがあるので、
-  //   「全画面でないのに画面の全高と同じ」ときは、見出しぶん（安全域の上 ＋ 約72px）を差し引く
-  function visibleHeight(app) {
-    const vis = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    let h = Math.min(app.clientHeight, vis);
-    const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
-    if (!standalone && screen.height && window.innerHeight >= screen.height - 4) {
-      const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
-      const sat = probe.offsetHeight; probe.remove();
-      h -= sat + 72;
-    }
-    return h;
-  }
+  const visibleHeight = app => Game.visibleHeight(app);
   function calc() {
     const app = $('app');
     // 実際に見えている高さ（アプリ内ブラウザや Safari のツールバーぶんを除く）
