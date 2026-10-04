@@ -46,6 +46,7 @@ class FieldScene {
     const f = Game.state.flags;
     if (ev.if && !f[ev.if]) return false;
     if (ev.unless && f[ev.unless]) return false;
+    if (ev.kind === 'starter' && f.starterId === ev.id) return false;   // えらんだボールだけ消える
     return true;
   }
   events() { return this.map.events.filter(e => this.eventActive(e)); }
@@ -82,6 +83,7 @@ class FieldScene {
   update(frame) {
     const st = Game.state;
     if (this.bump > 0) this.bump--;
+    if (this.ballFx) { const f = this.ballFx; f.t++; if (f.t >= 44) { this.ballFx = null; f.done(); } return; }   // ボールを取る演出中は操作不可
     if (this.updateActor()) return;   // カットシーン中は操作不可
     if (this.moving > 0) {
       this.moving--;
@@ -193,10 +195,13 @@ class FieldScene {
   pickStarter(ev) {
     const st = Game.state, sp = DATA.MONSTERS[ev.id];
     if (!st.flags.labIntro) { this.profIntro(() => this.pickStarter(ev)); return; }
+    if (st.flags.starter) { say('のこりの ガッツボールは\n博士が だいじに あずかっている。'); return; }
     ask(`${sp.name}（${sp.type}タイプ）\n${sp.desc}\n${sp.name}を えらびますか？`, ['はい', 'いいえ'], i => {
       if (i !== 0) return;
+      // えらんだボールだけが光って浮き上がり、主人公の手に（他の2つは残る）
+      this.ballFx = { ev, t: 0, done: () => {
       st.party = [makeMonster(ev.id, 7)]; Party.full(st);
-      Game.setFlag('starter');
+      Game.setFlag('starter'); st.flags.starterId = ev.id;
       const n = 'オクムラ博士';
       say(`${st.name}は ${sp.name}を なかまにした！`, () => {
         say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => {
@@ -211,6 +216,7 @@ class FieldScene {
           }, n);
         }, n);
       });
+      } };
     });
   }
 
@@ -509,8 +515,17 @@ class FieldScene {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
       if (sx < -T || sy < -T || sx > W || sy > H) continue;
       if (ev.kind === 'starter') {   // 一枚絵の部屋では台座の位置にガッツボールの絵を置く。画像タイルの部屋ではテーブルの絵にボールが描いてある
-        if (this.map.image) FieldScene.drawGutsBall(ctx, sx + Math.floor(T / 2) + (ev.dx || 0), sy + T + (ev.dy || 0));
-        else if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
+        const fx = this.ballFx && this.ballFx.ev === ev ? this.ballFx : null;
+        if (fx && fx.t >= 36) continue;   // 手に取ったあと
+        let bxp = sx + Math.floor(T / 2) + (ev.dx || 0), byp = sy + T + (ev.dy || 0);
+        if (fx) {   // 0〜20：光りながら浮き上がる → 20〜36：主人公の手元へ飛んで消える
+          const k = Math.min(1, fx.t / 20); byp -= Math.round(Math.sin(k * Math.PI / 2) * 8);
+          if (fx.t >= 20) { const q = (fx.t - 20) / 16, hx = st.x * T - camX + bx + T / 2, hy = st.y * T - camY + by + 6; bxp = Math.round(bxp + (hx - bxp) * q); byp = Math.round(byp + (hy - byp) * q); }
+          if (fx.t < 20 && fx.t % 4 < 2) { ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(bxp, byp - 6, 9, 0, Math.PI * 2); ctx.fill(); }
+          for (let i = 0; i < 4; i++) { const a = fx.t * 0.3 + i * Math.PI / 2, r = 9 + (fx.t % 10); ctx.fillStyle = '#fff7b0'; ctx.fillRect(Math.round(bxp + Math.cos(a) * r), Math.round(byp - 6 + Math.sin(a) * r), 2, 2); }
+        }
+        if (this.map.image) FieldScene.drawGutsBall(ctx, bxp, byp);
+        else if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), bxp - 8, byp - 12);
       }
       else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); }
     }
