@@ -8,10 +8,10 @@ from PIL import Image
 import numpy as np
 SRC = 'assets/src/'; OUT = 'assets/ui/pad/'
 OUTLINE = np.array([22, 56, 30])
-ARM_LEN = 144      # 腕の長さ（元絵px、帯の縁から外へ）。通常の腕 ≈ 139px
-CEN = 225          # 中央の正方形（元絵px）に揃える
-S_ARM = (252, 165) # 出力：腕 63×41.2 CSS px の4倍
-S_CEN = 258        # 出力：中央 64.4 CSS px の4倍
+ARM_LEN = 130      # 腕の長さ（元絵px、帯の縁から外へ）。通常の腕 ≈ 126px
+CEN = 196          # 中央の正方形（元絵px）に揃える（帯 196×193）
+S_ARM = (329, 212) # 出力：腕 82.3×53 CSS px の4倍（十字キー全体 188px）
+S_CEN = 329        # 出力：中央 82.3 CSS px の4倍
 
 def mag(A): return (A[:, :, 0] > 150) & (A[:, :, 2] > 150) & ((A[:, :, 0] + A[:, :, 2]) / 2 - A[:, :, 1] > 55)
 def key(A):
@@ -56,6 +56,27 @@ def cut_center(C):
 sheet = np.asarray(Image.open(SRC + 'pad_hd_dpad_sheet.png').convert('RGB')).astype(int)
 N = quadrant(sheet, 'TL'); P = {'up': quadrant(sheet, 'TR'), 'left': quadrant(sheet, 'BL'), 'right': quadrant(sheet, 'BR')}
 P['down'] = np.asarray(Image.fromarray(P['up'].astype(np.uint8)).rotate(180)).astype(int)
+
+def darken_like_left(d):
+    """シートの上押下が通常とほぼ同じ絵のときは、左押下と通常の明るさの比を上（下）の腕に掛けて押下を合成する"""
+    y0, y1, x0, x1 = bands(N); Nl = N[y0:y1, x0 - ARM_LEN:x0]; Pl = P['left'][y0:y1, x0 - ARM_LEN:x0]
+    m = ~mag(Nl) & ~mag(Pl)
+    bright = Nl.mean(2) > 190   # 矢印（クリーム色）と、それ以外（緑の面）で別々に比をとる
+    r_arrow = np.median(Pl[m & bright] / np.maximum(1, Nl[m & bright]), axis=0)
+    r_body = np.median(Pl[m & ~bright] / np.maximum(1, Nl[m & ~bright]), axis=0)
+    out = N.copy()
+    if d == 'up':   reg = (slice(y0 - ARM_LEN, y0), slice(x0, x1))
+    else:           reg = (slice(y1, y1 + ARM_LEN), slice(x0, x1))
+    sub = out[reg]; mm = ~mag(sub); br = sub.mean(2) > 190
+    sub[mm & br] = np.clip(sub[mm & br] * r_arrow, 0, 255).astype(int)
+    sub[mm & ~br] = np.clip(sub[mm & ~br] * r_body, 0, 255).astype(int)
+    out[reg] = sub
+    return out
+y0, y1, x0, x1 = bands(N); reg = (slice(y0 - ARM_LEN, y0), slice(x0, x1))
+diff = np.abs(P['up'][reg] - N[reg]).sum(2).mean()
+if diff < 25:
+    print(f'up: sheet pressed looks same as normal (diff {diff:.1f}) -> synthesize up/down by darkening')
+    P['up'] = darken_like_left('up'); P['down'] = darken_like_left('down')
 
 for d in ['up', 'down', 'left', 'right']:
     cut_arm(N, d).save(f'{OUT}d_{d}_n.png')
