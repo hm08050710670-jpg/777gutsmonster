@@ -58,10 +58,10 @@ const server = http.createServer((req, res) => {
   // 新規開始 → 研究所で御三家
   await tap('start'); await tap('a'); await page.waitForTimeout(400);
   await page.fill('#name-input', 'テスト'); await page.click('#name-ok'); await page.waitForTimeout(300); await tap('a'); await page.waitForTimeout(200); await tap('a'); await page.waitForTimeout(400);
-  await goto('lab', 7, 7, 'up'); await advance(40);
-  await page.evaluate(() => { Game.state.x = 6; Game.state.y = 6; Game.state.dir = 'up'; }); await tap('a'); await page.waitForTimeout(600); await advance(); await tap('a'); await page.waitForTimeout(300);
+  await goto('lab', 8, 8, 'up'); await advance(40);
+  await page.evaluate(() => { Game.state.x = 7; Game.state.y = 6; Game.state.dir = 'up'; }); await tap('a'); await page.waitForTimeout(600); await advance(); await tap('a'); await page.waitForTimeout(300);
   await advance(3); await shot('01_device'); await closeAll(); console.log('after starter:', await st(), 'note:', await note());
-  await page.evaluate(() => { Game.state.x = 7; Game.state.y = 2; Game.state.dir = 'down'; }); await tap('a'); await page.waitForTimeout(300); await shot('02_prof_device'); await closeAll();
+  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 2; Game.state.dir = 'down'; }); await tap('a'); await page.waitForTimeout(300); await shot('02_prof_device'); await closeAll();
   // ノブオ戦
   await goto('town', 13, 3, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(300);
   for (let i = 0; i < 40; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }

@@ -70,12 +70,12 @@ const server = http.createServer((req, res) => {
   // 研究所へ
   await page.evaluate(() => { Game.state.x = 6; Game.state.y = 8; Game.state.dir = 'up'; });
   await walk('up'); await page.waitForTimeout(400); await shot('10_lab'); console.log('lab:', await st()); await page.waitForTimeout(800); console.log('bgm@lab:', await snd()); await advance(40); await shot('10b_lab_after_intro');
-  await page.evaluate(() => { Game.state.x = 7; Game.state.y = 2; Game.state.dir = 'down'; }); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
-  await page.evaluate(() => { Game.state.x = 6; Game.state.y = 6; Game.state.dir = 'up'; }); await tap('a'); await page.waitForTimeout(600); await advance(); await shot('12_starter_ask');
+  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 2; Game.state.dir = 'down'; }); await tap('a'); await page.waitForTimeout(300); await shot('11_prof'); await advance();
+  await page.evaluate(() => { Game.state.x = 7; Game.state.y = 6; Game.state.dir = 'up'; }); await tap('a'); await page.waitForTimeout(600); await advance(); await shot('12_starter_ask');
   await tap('a'); await page.waitForTimeout(300); for (let i = 0; i < 40 && (await top()) === 'DialogScene'; i++) { await advance(2); await page.waitForTimeout(80); } console.log('after starter:', await st());
   await shot('13_after_starter');
   // 研究所を出る → ノブオ
-  await page.evaluate(() => { Game.state.x = 7; Game.state.y = 7; Game.state.dir = 'down'; });
+  await page.evaluate(() => { Game.state.x = 8; Game.state.y = 8; Game.state.dir = 'down'; });
   await walk('down'); await page.waitForTimeout(400);
   await page.evaluate(() => { Game.state.x = 13; Game.state.y = 3; Game.state.dir = 'up'; });
   await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('14_rival_call');

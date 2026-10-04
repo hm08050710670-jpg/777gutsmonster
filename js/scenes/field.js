@@ -446,6 +446,18 @@ class FieldScene {
     return false;
   }
 
+  // 一枚絵マップの画像（単一ファイル版は CONFIG.MAP_IMAGES に埋め込み）
+  static mapImage(path) {
+    this._maps = this._maps || {};
+    if (!this._maps[path]) { const im = new Image(); im.src = (CONFIG.MAP_IMAGES && CONFIG.MAP_IMAGES[path]) || path; this._maps[path] = im; }
+    return this._maps[path];
+  }
+  // ガッツボール（閉じた絵）を接地位置 (x, y) 中央下に描く
+  static drawGutsBall(ctx, x, y) {
+    const im = BattleScene.ball(), m = BattleScene._ballMeta && BattleScene._ballMeta.closed;
+    if (!im.complete || !m) { ctx.drawImage(Gfx.get('ball'), x - 8, y - 12); return; }
+    const [sx, sy, sw, sh] = m; ctx.drawImage(im, sx, sy, sw, sh, x - Math.round(sw / 2), y - sh, sw, sh);
+  }
   draw(ctx, frame) {
     const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
     // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
@@ -471,7 +483,9 @@ class FieldScene {
     const cx0 = Math.floor(camX / T), cy0 = Math.floor(camY / T);
     const useImg = Tiles.ready && (!this.map.indoor || !!this.map.tileset);   // 屋内は tileset 指定のあるマップだけ画像タイル
     const trees = [];
-    for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
+    const bgImg = this.map.image ? FieldScene.mapImage(this.map.image) : null;   // 一枚絵マップ：タイルの代わりに絵を敷く（rows は当たり判定だけ）
+    if (bgImg && bgImg.complete && bgImg.naturalWidth) ctx.drawImage(bgImg, -camX + bx, -camY + by);
+    else if (!this.map.image) for (let ty = cy0 - 1; ty <= cy0 + Math.ceil(H / T) + 1; ty++) {
       for (let tx = cx0 - 1; tx <= cx0 + Math.ceil(W / T) + 1; tx++) {
         const t = this.tileAt(tx, ty);
         if (t === ' ') continue;
@@ -494,7 +508,10 @@ class FieldScene {
     for (const ev of this.events()) {
       const sx = ev.x * T - camX + bx, sy = ev.y * T - camY + by;
       if (sx < -T || sy < -T || sx > W || sy > H) continue;
-      if (ev.kind === 'starter') { if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), sx, sy - 4); }   // 画像タイルの部屋ではテーブルの絵にボールが描いてある
+      if (ev.kind === 'starter') {   // 一枚絵の部屋では台座の位置にガッツボールの絵を置く。画像タイルの部屋ではテーブルの絵にボールが描いてある
+        if (this.map.image) FieldScene.drawGutsBall(ctx, sx + Math.floor(T / 2) + (ev.dx || 0), sy + T + (ev.dy || 0));
+        else if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), sx, sy - 4);
+      }
       else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); }
     }
     // カットシーンの人物

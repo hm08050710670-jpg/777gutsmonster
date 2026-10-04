@@ -139,7 +139,9 @@ def inline_js(m):
     if src == 'js/config.js' and meter_imgs:
         code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  METER_IMAGES: {json.dumps(meter_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     if src == 'js/config.js' and atlas_png:
-        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  ATLAS_IMG: '{atlas_png}',\n  ATLAS_META: {atlas_json},\n  TITLE: 'GUTS MONSTERS',")
+    if src == 'js/config.js' and map_imgs:
+        code = code.replace("  TITLE: 'GUTS MONSTERS',", f"  MAP_IMAGES: {json.dumps(map_imgs)},\n  TITLE: 'GUTS MONSTERS',")
     return f'<script>\n{code}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline_js, html)
 
