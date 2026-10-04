@@ -196,7 +196,8 @@ class FieldScene {
     const st = Game.state, sp = DATA.MONSTERS[ev.id];
     if (!st.flags.labIntro) { this.profIntro(() => this.pickStarter(ev)); return; }
     if (st.flags.starter) { say('のこりの ガッツボールは\n博士が だいじに あずかっている。'); return; }
-    ask(`${sp.name}（${sp.type}タイプ）\n${sp.desc}\n${sp.name}を えらびますか？`, ['はい', 'いいえ'], i => {
+    const title = `${sp.name}（${sp.type}タイプ）`, pg = ev.pick || [sp.desc, `${sp.name}を えらびますか？`];
+    const onPick = i => {
       if (i !== 0) return;
       // えらんだボールだけが光って浮き上がり、主人公の手に（他の2つは残る）
       this.ballFx = { ev, t: 0, done: () => {
@@ -217,7 +218,10 @@ class FieldScene {
         }, n);
       });
       } };
-    });
+    };
+    // 説明を2行ずつ見せて、最後のページで はい／いいえ
+    const show = k => { if (k === pg.length - 1) ask(pg[k], ['はい', 'いいえ'], onPick, title); else say(pg[k], () => show(k + 1), title); };
+    show(0);
   }
 
   runTrigger(ev) {

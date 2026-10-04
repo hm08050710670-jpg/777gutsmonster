@@ -182,10 +182,13 @@ const DATA = {
         { x: 8, y: 9, kind: 'warp', to: { map: 'town', x: 6, y: 8, dir: 'down' } },
         { x: 8, y: 3, kind: 'npc', img: 'npc_prof', sprite: 'npc_prof', dir: 'down', name: 'オクムラ博士', prof: true },
         // 机の台座（絵の位置に合わせてボールをずらして描く）
-        // 机の台座（マスの中央に置く。えらんだボールだけ消える：flags.starterId）
-        { x: 7, y: 5, kind: 'starter', id: 'kokegame',   dy: -12 },
-        { x: 8, y: 5, kind: 'starter', id: 'hinoshishi', dy: -12 },
-        { x: 9, y: 5, kind: 'starter', id: 'amepiyo',    dy: -12 },
+        // 机の台座（マスの中央に置く。えらんだボールだけ消える：flags.starterId）。pick：えらぶときのせりふ（2行ずつ3ページ、最後に はい／いいえ）
+        { x: 7, y: 5, kind: 'starter', id: 'kokegame',   dy: -12,
+          pick: ['いわのような こうらに\nコケを まとった ちいさな リクガメ。', 'のんびりやだけど\nとっても がまんづよい。', 'この コケガメを\nはじめての なかまに しますか？'] },
+        { x: 8, y: 5, kind: 'starter', id: 'hinoshishi', dy: -12,
+          pick: ['あたまと しっぽに\nほのおを ともした ちいさな イノシシ。', 'まけずぎらいで\nつよい あいてほど もえてくる。', 'この ヒノシシを\nはじめての なかまに しますか？'] },
+        { x: 9, y: 5, kind: 'starter', id: 'amepiyo',    dy: -12,
+          pick: ['あたまに おおきな あまつぶを のせた\nあおと しろの ちいさな ヒヨコ。', 'あめが ふると\nいつもより げんきになる。', 'この アメピヨを\nはじめての なかまに しますか？'] },
         { x: 1, y: 2, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
         { x: 2, y: 2, kind: 'look', text: 'モンスターの データを しらべる 装置だ。' },
         { x: 14, y: 2, kind: 'look', text: 'モンスターの エネルギーを はかる 装置。\nブーンと 音が している。' },
