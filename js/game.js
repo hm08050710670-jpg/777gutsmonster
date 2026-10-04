@@ -44,11 +44,10 @@ const Game = (() => {
   function fit() {
     const app = document.getElementById('app');
     const landscape = matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
-    const noteH = landscape ? 0 : (document.getElementById('note').offsetHeight + 10);
     const auxH = landscape ? 0 : 18;
-    const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 176);
+    const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 224);
     const availW = landscape ? Math.floor(app.clientWidth * 0.5) : app.clientWidth;
-    const availH = visibleHeight(app) - noteH - auxH - padMin - 8;
+    const availH = visibleHeight(app) - auxH - padMin - 8;
     let scale = Math.min(availW / CONFIG.W, availH / H_BASE);
     // 2倍以上なら整数に丸めてドットを揃える。それ未満は小数倍を許容（1倍だと小さすぎる）
     if (scale >= 2) scale = Math.floor(scale);
@@ -91,6 +90,14 @@ const Game = (() => {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
     for (; i < scenes.length; i++) scenes[i].draw(ctx, frame);
+    syncNote();
+  }
+  // ADVENTURE NOTE は画面の上端に重ねているので、フィールド（と、その上の会話ウィンドウ）のときだけ見せる。タイトルやメニューでは隠す
+  const noteEl = document.getElementById('note');
+  function syncNote() {
+    const s = top(), under = scenes[scenes.length - 2];
+    const show = (typeof FieldScene !== 'undefined') && (s instanceof FieldScene || (s instanceof DialogScene && under instanceof FieldScene));
+    if (noteEl.hidden === show) noteEl.hidden = !show;
   }
 
   let last = 0, acc = 0;

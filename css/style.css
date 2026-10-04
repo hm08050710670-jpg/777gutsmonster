@@ -37,7 +37,7 @@ html, body {
   height: 100svh;
   height: 100dvh;   /* 対応ブラウザでは実際に見えている高さ（iPhone Safari のツールバー分を含めない） */
   /* 上の余白：ブラウザ（Safari・アプリ内）では上に自前のバーがあるので詰める。ホーム画面に追加した全画面時だけ安全域ぶん空ける */
-  padding-top: 4px;
+  padding-top: 0;
   padding-bottom: var(--safe-b);
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
@@ -46,14 +46,13 @@ html, body {
 
 /* ① ADVENTURE NOTE */
 #note {
-  width: 100%;
-  max-width: 480px;
-  flex: 0 0 auto;
-  background: var(--ivory);
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  box-sizing: border-box;
+  background: rgba(246, 241, 222, 0.92);
   color: var(--text);
-  border: 2px solid var(--green);
-  border-radius: 6px;
-  margin: 6px 0 4px;
+  border: none;
+  border-bottom: 2px solid var(--green);
+  margin: 0;
   padding: 4px 10px;
   font-size: 12px;
   line-height: 1.4;
@@ -65,10 +64,11 @@ html, body {
 
 /* ② フィールド */
 #screen-wrap {
+  position: relative;   /* #note を上端に重ねる */
   display: flex; align-items: center; justify-content: center;
   width: 100%;
   flex: 0 0 auto;
-  border-top: 2px solid var(--panel2);
+  border-top: none;
   border-bottom: 2px solid var(--panel2);
   background: #000;
 }
@@ -85,8 +85,9 @@ html, body {
   width: 100%;
   max-width: 480px;
   position: relative;
-  min-height: 176px;
+  min-height: 224px;
 }
+@media (max-height: 700px) { #pad { min-height: 176px; } }   /* 背の低い端末では操作エリアを詰めて画面の倍率を優先 */
 /* 十字キー：ChatGPT製の芝生ボタン（assets/ui/pad/、1ドット＝2.25px）。腕は 63×45 / 45×63、中央 63×63。
    マスを絵より少し大きくして、親指がずれても当たるようにする（隣とは重ならない） */
 #dpad {

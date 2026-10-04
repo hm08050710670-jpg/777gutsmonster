@@ -14,12 +14,10 @@
 </head>
 <body>
 <div id="app">
-  <!-- ① ADVENTURE NOTE（現在の目的） -->
-  <div id="note"><span id="note-label">ADVENTURE NOTE</span><span id="note-text"></span></div>
-
-  <!-- ② ゲームフィールド -->
+  <!-- ② ゲームフィールド（① ADVENTURE NOTE は画面の上端に半透明で重ねる） -->
   <div id="screen-wrap">
     <canvas id="screen" width="192" height="208"></canvas>
+    <div id="note"><span id="note-label">ADVENTURE NOTE</span><span id="note-text"></span></div>
   </div>
 
   <!-- ③ 操作エリア（フィールドに重ねない） -->
