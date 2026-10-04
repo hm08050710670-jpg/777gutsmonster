@@ -49,7 +49,7 @@ const Game = (() => {
     const app = document.getElementById('app');
     const landscape = matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
     const auxH = landscape ? 0 : 18;
-    const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 224);
+    const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 250);
     const availW = landscape ? Math.floor(app.clientWidth * 0.5) : app.clientWidth;
     const availH = visibleHeight(app) - auxH - padMin - 8;
     // 横幅いっぱいに拡大する（整数倍にはしない。端末によってドットの太さは少し不揃いになるが、左右に黒い帯を残さない）
