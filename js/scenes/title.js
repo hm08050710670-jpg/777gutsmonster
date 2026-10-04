@@ -148,15 +148,15 @@ class TitleScene {
     }
     Text.draw(ctx, 'v0.2', W - 22, CONFIG.H - 10, '#ffffff');
   }
-  // タイトル絵（assets/bg/title.png、縦長）：横幅に合わせて拡大し、ロゴ〜主人公たちが入る範囲を切り出す。
-  //   絵の中のメニュー枠の位置（x62〜130, y61〜98）に、こちらのメニューを重ねる
+  // タイトル絵（assets/bg/title.png 1024×1536、縦長）：横幅に合わせて拡大し、縦は中央を基準に切り出す（端末の縦横比で上下が少し切れる）。
+  //   メニュー枠は絵のロゴ下（元絵 y≈680px）に合わせて置く
   drawArt(ctx, art, frame) {
     const W = CONFIG.W, H = CONFIG.H;
-    const k = W / art.width, top = Math.round(300 / 939 * W);   // 元絵の y=300px から
+    const k = W / art.width, srcH = H / k, top = Math.max(0, (art.height - srcH) / 2);
     ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(art, 0, top / k, art.width, H / k, 0, 0, W, H);
+    ctx.drawImage(art, 0, top, art.width, srcH, 0, 0, W, H);
     ctx.restore();
-    const bx = 60, by = 60, bw = 72;
+    const bw = 72, bx = Math.round(W / 2 - bw / 2), by = Math.round((680 - top) * k);
     if (!this.menu) {
       Text.box(ctx, bx, by, bw, 38);
       if (Math.floor(frame / 30) % 2 === 0) { const t = 'PUSH START'; Text.draw(ctx, t, bx + bw / 2 - Text.width(t) / 2, by + 15); }
