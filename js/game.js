@@ -36,7 +36,9 @@ const Game = (() => {
       hidden = sat + 72;
       h -= hidden;
     }
-    if (app) { app.style.boxSizing = 'border-box'; app.style.height = hidden ? h + 'px' : ''; }
+    // #app の高さは常にこの値に固定する。ブラウザが報告する高さ（100dvh・innerHeight・visualViewport）が食い違う端末があり、
+    //   レイアウト上の箱が見えている範囲より大きいと、下に寄せた操作パッドが画面外に出てしまうため
+    if (app) { app.style.boxSizing = 'border-box'; app.style.height = h + 'px'; }
     return h;
   }
   // ---- スケーリング：端末幅に合わせて拡大。縦に余る端末では画面の高さ（CONFIG.H）を 208〜272 の範囲で広げて、フィールドをより広く見せる ----
