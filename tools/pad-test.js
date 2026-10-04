@@ -1,0 +1,17 @@
+const { chromium } = require('playwright'); const http=require('http'),fs=require('fs'),path=require('path');
+const ROOT='/home/claude/gb-rpg-skeleton'; const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.json':'application/json','.ttf':'font/ttf','.mp3':'audio/mpeg'};
+const server=http.createServer((req,res)=>{const p=path.join(ROOT,req.url.split('?')[0]==='/'?'/index.html':req.url.split('?')[0]);fs.readFile(p,(e,d)=>{if(e){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':MIME[path.extname(p)]||'application/octet-stream'});res.end(d);});});
+(async()=>{await new Promise(r=>server.listen(8784,r));const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+const ctx=await b.newContext({viewport:{width:390,height:845},deviceScaleFactor:2,isMobile:true,hasTouch:true}); const page=await ctx.newPage();
+const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://localhost:8784/');await page.waitForTimeout(800);
+await page.evaluate(()=>{const st=Save.newGame('T','m');st.party=[makeMonster('kokegame',10)];Party.full(st);st.map='town';st.x=13;st.y=10;st.flags={labIntro:true,starter:true,rival1:true};Game.state=st;Game.replace(new FieldScene());});
+await page.waitForTimeout(500); await page.screenshot({path:'pad_normal.png'});
+const cdp=await ctx.newCDPSession(page);
+const box=await page.locator('.pbtn[data-key="up"]').boundingBox(); const x=box.x+box.width/2,y=box.y+box.height/2;
+const before=await page.evaluate(()=>Game.state.y);
+await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]}); await page.waitForTimeout(900); await page.screenshot({path:'pad_pressed.png'});
+const during=await page.evaluate(()=>Game.state.y); await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await page.waitForTimeout(100);
+const ab=await page.locator('.pbtn[data-key="a"]').boundingBox(); await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:ab.x+ab.width/2,y:ab.y+ab.height/2}]}); await page.waitForTimeout(100); await page.screenshot({path:'pad_a.png'}); await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+console.log('moved up', before, '->', during, 'active class cleared', await page.evaluate(()=>!document.querySelector('.pbtn.active')), 'errors', errors);
+await b.close();server.close();})();

@@ -85,30 +85,41 @@ html, body {
   width: 100%;
   max-width: 480px;
   position: relative;
-  min-height: 140px;
+  min-height: 176px;
 }
+/* 十字キー：ChatGPT製の芝生ボタン（assets/ui/pad/、1ドット＝2.25px）。腕は 63×45 / 45×63、中央 63×63。
+   マスを絵より少し大きくして、親指がずれても当たるようにする（隣とは重ならない） */
 #dpad {
-  position: absolute; left: 14px; top: 50%;
+  position: absolute; left: 10px; top: 50%;
   transform: translateY(-50%);
   display: grid;
-  grid-template-columns: repeat(3, 42px);
-  grid-template-rows: repeat(3, 42px);
-  gap: 2px;
+  grid-template-columns: 50px 66px 50px;
+  grid-template-rows: 50px 66px 50px;
+  gap: 0;
 }
-#dpad .dir[data-key="up"]    { grid-area: 1 / 2; border-radius: 8px 8px 2px 2px; }
-#dpad .dir[data-key="left"]  { grid-area: 2 / 1; border-radius: 8px 2px 2px 8px; }
-#dpad-center                 { grid-area: 2 / 2; background: var(--btn); }
-#dpad .dir[data-key="right"] { grid-area: 2 / 3; border-radius: 2px 8px 8px 2px; }
-#dpad .dir[data-key="down"]  { grid-area: 3 / 2; border-radius: 2px 2px 8px 8px; }
+#dpad .dir { background: none; border: none; border-radius: 0; color: transparent; font-size: 0; image-rendering: pixelated; background-repeat: no-repeat; background-position: center; }
+#dpad .dir[data-key="up"]    { grid-area: 1 / 2; background-image: url(../assets/ui/pad/d_up_n.png);    background-size: 63px 45px; background-position: center bottom; }
+#dpad .dir[data-key="left"]  { grid-area: 2 / 1; background-image: url(../assets/ui/pad/d_left_n.png);  background-size: 45px 63px; background-position: right center; }
+#dpad-center                 { grid-area: 2 / 2; background: url(../assets/ui/pad/d_center.png) center / 63px 63px no-repeat; image-rendering: pixelated; }
+#dpad .dir[data-key="right"] { grid-area: 2 / 3; background-image: url(../assets/ui/pad/d_right_n.png); background-size: 45px 63px; background-position: left center; }
+#dpad .dir[data-key="down"]  { grid-area: 3 / 2; background-image: url(../assets/ui/pad/d_down_n.png);  background-size: 63px 45px; background-position: center top; }
+#dpad .dir[data-key="up"].active    { background-image: url(../assets/ui/pad/d_up_p.png); }
+#dpad .dir[data-key="left"].active  { background-image: url(../assets/ui/pad/d_left_p.png); }
+#dpad .dir[data-key="right"].active { background-image: url(../assets/ui/pad/d_right_p.png); }
+#dpad .dir[data-key="down"].active  { background-image: url(../assets/ui/pad/d_down_p.png); }
+#dpad .dir.active { transform: translateY(1px); }
 
+/* A/B：白いゴルフボール（A 112px、B 80px）。押すと暗い絵に替わり 1px 沈む */
 #abtn {
-  position: absolute; right: 14px; top: 50%;
+  position: absolute; right: 12px; top: 50%;
   transform: translateY(-50%);
-  display: flex; gap: 12px; align-items: center;
+  display: flex; gap: 8px; align-items: center;
 }
-.round { border-radius: 50% !important; }
-.round.a { width: 66px; height: 66px; font-size: 22px; }
-.round.b { width: 44px; height: 44px; font-size: 14px; margin-top: 30px; }
+.round { border-radius: 50% !important; background: none !important; border: none !important; color: transparent !important; font-size: 0 !important; image-rendering: pixelated; background-repeat: no-repeat !important; background-position: center !important; }
+.round.a { width: 104px; height: 104px; background-image: url(../assets/ui/pad/a_n.png) !important; background-size: 104px 104px !important; }
+.round.b { width: 72px; height: 72px; margin-top: 36px; background-image: url(../assets/ui/pad/b_n.png) !important; background-size: 72px 72px !important; }
+.round.a.active { background-image: url(../assets/ui/pad/a_p.png) !important; transform: translateY(1px) scaleY(0.98); }
+.round.b.active { background-image: url(../assets/ui/pad/b_p.png) !important; transform: translateY(1px) scaleY(0.98); }
 
 #menu-btn {
   position: absolute; left: 50%; bottom: 8px;
@@ -128,7 +139,6 @@ html, body {
   touch-action: none;
 }
 .pbtn.active { background: var(--btn-active); color: var(--text); border-bottom-color: #b89a2a; transform: translateY(1px); }
-.pbtn.round.active { transform: translateY(1px); }
 
 /* ④ 補助表示 */
 #aux {

@@ -103,14 +103,14 @@ if os.path.exists('assets/ui/gutsball.png'):
     gutsball_json = open('assets/ui/gutsball.json', encoding='utf-8').read()
 
 html = open('index.html', encoding='utf-8').read()
-css = open('css/style.css', encoding='utf-8').read()
+def css_img(m):
+    path = 'assets/ui/' + m.group(1)
+    return 'url(data:image/png;base64,' + base64.b64encode(open(path, 'rb').read()).decode() + ')'
+css = re.sub(r'url\(\.\./assets/ui/([^)]+)\)', css_img, open('css/style.css', encoding='utf-8').read())
 html = html.replace('<link rel="stylesheet" href="css/style.css">', f'<style>\n{css}\n</style>')
 if os.path.exists('css/puzzle.css'):
     pcss = open('css/puzzle.css', encoding='utf-8').read()
     # CSS が参照する UI 画像（assets/ui/*.png）を data: URI に
-    def css_img(m):
-        path = 'assets/ui/' + m.group(1)
-        return 'url(data:image/png;base64,' + base64.b64encode(open(path, 'rb').read()).decode() + ')'
     pcss = re.sub(r'url\(\.\./assets/ui/([^)]+)\)', css_img, pcss)
     html = html.replace('<link rel="stylesheet" href="css/puzzle.css">', '<style>\n' + pcss + '\n</style>')
 
