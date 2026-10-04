@@ -88,25 +88,29 @@ html, body {
   min-height: 224px;
 }
 @media (max-height: 700px) { #pad { min-height: 176px; } }   /* 背の低い端末では操作エリアを詰めて画面の倍率を優先 */
-/* 十字キー：ChatGPT製の芝生ボタン（assets/ui/pad/、1ドット＝2.25px）。腕は 63×45 / 45×63、中央 63×63。
-   マスを絵より少し大きくして、親指がずれても当たるようにする（隣とは重ならない） */
+/* 十字キー：ChatGPT製の芝生ボタン（assets/ui/pad/、高解像度を縮小表示）。腕は 63×47.5 / 47.5×63、中央 64.4 角（絵の比率どおり）。
+   中央のマスは絵と同じ 64.4px にして腕と隙間なくつなぐ。押した方向の腕の根元が暗くなるよう、中央の絵も方向ごとに差し替える */
 #dpad {
   position: absolute; left: 10px; top: 40px;   /* 上基準。端末が高さを多めに申告しても、はみ出すのは下の余白だけになる */
   display: grid;
-  grid-template-columns: 50px 66px 50px;
-  grid-template-rows: 50px 66px 50px;
+  grid-template-columns: 50px 64.4px 50px;
+  grid-template-rows: 50px 64.4px 50px;
   gap: 0;
 }
-#dpad .dir { background: none; border: none; border-radius: 0; color: transparent; font-size: 0; image-rendering: pixelated; background-repeat: no-repeat; background-position: center; }
-#dpad .dir[data-key="up"]    { grid-area: 1 / 2; background-image: url(../assets/ui/pad/d_up_n.png);    background-size: 63px 45px; background-position: center bottom; }
-#dpad .dir[data-key="left"]  { grid-area: 2 / 1; background-image: url(../assets/ui/pad/d_left_n.png);  background-size: 45px 63px; background-position: right center; }
-#dpad-center                 { grid-area: 2 / 2; background: url(../assets/ui/pad/d_center.png) center / 63px 63px no-repeat; image-rendering: pixelated; }
-#dpad .dir[data-key="right"] { grid-area: 2 / 3; background-image: url(../assets/ui/pad/d_right_n.png); background-size: 45px 63px; background-position: left center; }
-#dpad .dir[data-key="down"]  { grid-area: 3 / 2; background-image: url(../assets/ui/pad/d_down_n.png);  background-size: 63px 45px; background-position: center top; }
+#dpad .dir { background: none; border: none; border-radius: 0; color: transparent; font-size: 0; background-repeat: no-repeat; background-position: center; }
+#dpad .dir[data-key="up"]    { grid-area: 1 / 2; background-image: url(../assets/ui/pad/d_up_n.png);    background-size: 63px 47.5px; background-position: center bottom; }
+#dpad .dir[data-key="left"]  { grid-area: 2 / 1; background-image: url(../assets/ui/pad/d_left_n.png);  background-size: 47.5px 63px; background-position: right center; }
+#dpad-center                 { grid-area: 2 / 2; background: url(../assets/ui/pad/d_center.png) center / 64.4px 64.4px no-repeat; }
+#dpad .dir[data-key="right"] { grid-area: 2 / 3; background-image: url(../assets/ui/pad/d_right_n.png); background-size: 47.5px 63px; background-position: left center; }
+#dpad .dir[data-key="down"]  { grid-area: 3 / 2; background-image: url(../assets/ui/pad/d_down_n.png);  background-size: 63px 47.5px; background-position: center top; }
 #dpad .dir[data-key="up"].active    { background-image: url(../assets/ui/pad/d_up_p.png); }
 #dpad .dir[data-key="left"].active  { background-image: url(../assets/ui/pad/d_left_p.png); }
 #dpad .dir[data-key="right"].active { background-image: url(../assets/ui/pad/d_right_p.png); }
 #dpad .dir[data-key="down"].active  { background-image: url(../assets/ui/pad/d_down_p.png); }
+#dpad:has(.dir[data-key="up"].active)    #dpad-center { background-image: url(../assets/ui/pad/d_center_up.png); }
+#dpad:has(.dir[data-key="left"].active)  #dpad-center { background-image: url(../assets/ui/pad/d_center_left.png); }
+#dpad:has(.dir[data-key="right"].active) #dpad-center { background-image: url(../assets/ui/pad/d_center_right.png); }
+#dpad:has(.dir[data-key="down"].active)  #dpad-center { background-image: url(../assets/ui/pad/d_center_down.png); }
 #dpad .dir.active { transform: translateY(1px); }
 
 /* A/B：白いゴルフボール（A 112px、B 80px）。押すと暗い絵に替わり 1px 沈む */
@@ -114,7 +118,7 @@ html, body {
   position: absolute; right: 12px; top: 90px;
   display: flex; gap: 8px; align-items: center;
 }
-.round { border-radius: 50% !important; background: none !important; border: none !important; color: transparent !important; font-size: 0 !important; image-rendering: pixelated; background-repeat: no-repeat !important; background-position: center !important; }
+.round { border-radius: 50% !important; background: none !important; border: none !important; color: transparent !important; font-size: 0 !important; background-repeat: no-repeat !important; background-position: center !important; }
 .round.a { width: 104px; height: 104px; background-image: url(../assets/ui/pad/a_n.png) !important; background-size: 104px 104px !important; }
 .round.b { width: 72px; height: 72px; margin-top: 36px; background-image: url(../assets/ui/pad/b_n.png) !important; background-size: 72px 72px !important; }
 .round.a.active { background-image: url(../assets/ui/pad/a_p.png) !important; transform: translateY(1px) scaleY(0.98); }
