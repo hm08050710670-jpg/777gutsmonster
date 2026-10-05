@@ -197,7 +197,9 @@ class FieldScene {
     if (!st.flags.labIntro) { this.profIntro(() => this.pickStarter(ev)); return; }
     if (st.flags.starter) { say('のこりの ガッツボールは\n博士が だいじに あずかっている。'); return; }
     const title = `${sp.name}（${sp.type}タイプ）`, pg = ev.pick || [sp.desc, `${sp.name}を えらびますか？`];
+    this.pickPreview = { id: ev.id, ev };
     const onPick = i => {
+      this.pickPreview = null;
       if (i !== 0) return;
       // えらんだボールだけが光って浮き上がり、主人公の手に（他の2つは残る）
       this.ballFx = { ev, t: 0, done: () => {
@@ -468,6 +470,42 @@ class FieldScene {
     if (!im.complete || !m) { ctx.drawImage(Gfx.get('ball'), x - 8, y - 12); return; }
     const [sx, sy, sw, sh] = m; ctx.drawImage(im, sx, sy, sw, sh, x - Math.round(sw / 2), y - sh, sw, sh);
   }
+  drawPickPreview(ctx, frame, camX, camY) {
+    const pv = this.pickPreview, sp = DATA.MONSTERS[pv.id], W = CONFIG.W, T = CONFIG.TILE, style = pv.style || CONFIG.PICK_PREVIEW || 'card-br';   // 採用：右下（せりふ枠のすぐ上）
+    const bob = Math.floor(frame / 16) % 2;   // ゆっくり上下
+    // 絵を枠の中央に置く（スプライトの実際の描画範囲で中央を合わせる）
+    const monCentered = (cx, cy, size) => { const b = Mon.drawnBox(pv.id, size / 24, false); drawMonster(ctx, pv.id, Math.round(cx - b.dx - b.w / 2), Math.round(cy - b.dy - b.h / 2) + bob, size); };
+    if (style === 'card' || style === 'card-top') {   // A：名札つきカード（画面の上端。博士の頭より上に収める）
+      const w = 76, h = 70, x = Math.round(W / 2 - w / 2), y = 2;
+      Text.box(ctx, x, y, w, h); monCentered(x + w / 2, y + 30, 48);
+      Text.draw(ctx, sp.name, x + w / 2 - Text.width(sp.name) / 2, y + h - 14, THEME.green);
+    } else if (style === 'card-left' || style === 'card-right') {   // A2：机の左右（博士と並ばない）
+      const w = 76, h = 70, x = style === 'card-left' ? 6 : W - w - 6, y = 30;
+      Text.box(ctx, x, y, w, h); monCentered(x + w / 2, y + 30, 48);
+      Text.draw(ctx, sp.name, x + w / 2 - Text.width(sp.name) / 2, y + h - 14, THEME.green);
+    } else if (style === 'card-br' || style === 'card-bl') {   // A5：せりふ枠のすぐ上、右下／左下
+      const w = 76, h = 70, x = style === 'card-bl' ? 6 : W - w - 6, y = CONFIG.H - 56 - h - 4;
+      Text.box(ctx, x, y, w, h); monCentered(x + w / 2, y + 30, 48);
+      Text.draw(ctx, sp.name, x + w / 2 - Text.width(sp.name) / 2, y + h - 14, THEME.green);
+    } else if (style === 'card-wide') {   // A3：横長カード（絵＋名前＋タイプ）を上端に
+      const w = 132, h = 58, x = Math.round(W / 2 - w / 2), y = 2;
+      Text.box(ctx, x, y, w, h); monCentered(x + 30, y + h / 2, 48);
+      Text.draw(ctx, sp.name, x + 60, y + 18, THEME.green); Text.draw(ctx, `${sp.type}タイプ`, x + 60, y + 34);
+    } else if (style === 'big') {  // B：画面の右に大きく、丸い光の背景
+      const size = 72, x = W - size - 6, y = 20;
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(x + size / 2, y + size / 2, size / 2 + 4, 0, Math.PI * 2); ctx.fill();
+      drawMonster(ctx, pv.id, x, y + bob, size);
+    } else if (style === 'table') { // C：ボールの上にモンスターが出てきて はねる
+      const ev = pv.ev, x = ev.x * T - camX + T / 2 - 12, y = ev.y * T - camY - 20 - bob * 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x + 12, y + 24, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+      drawMonster(ctx, pv.id, x, y, 24);
+    } else if (style === 'panel') { // D：上半分を図鑑ふうのパネルで覆う（絵・名前・タイプ）
+      const h = 96; Text.box(ctx, 4, 4, W - 8, h, { fill: THEME.ivory2 });
+      drawMonster(ctx, pv.id, 16, 14 + bob, 72);
+      Text.draw(ctx, sp.name, 100, 22, THEME.green); Text.draw(ctx, `${sp.type}タイプ`, 100, 38);
+      const b = sp.base || {}; Text.draw(ctx, `HP ${b.hp}  こうげき ${b.atk}`, 100, 58, THEME.textDim); Text.draw(ctx, `まもり ${b.def}  はやさ ${b.spd}`, 100, 72, THEME.textDim);
+    }
+  }
   draw(ctx, frame) {
     const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
     // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
@@ -533,6 +571,8 @@ class FieldScene {
       }
       else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); }
     }
+    // 御三家をえらぶとき：どんな姿か見せる（this.pickPreview = { id, ev, style }）
+    if (this.pickPreview) this.drawPickPreview(ctx, frame, camX, camY);
     // カットシーンの人物
     if (this.actor) {
       const a = this.actor; let ax = 0, ay = 0;

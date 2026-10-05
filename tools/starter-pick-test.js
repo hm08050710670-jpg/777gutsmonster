@@ -9,7 +9,7 @@ await page.evaluate(()=>{const st=Save.newGame('ゆら','m');st.map='lab';st.x=7
 await page.waitForTimeout(500); await page.screenshot({path:'fx0.png'});
 const tap=async(k,ms=60)=>{const code={a:'KeyZ',up:'ArrowUp'}[k];await page.keyboard.down(code);await page.waitForTimeout(ms);await page.keyboard.up(code);};
 await tap('a'); await page.waitForTimeout(600); // 質問が出るまで文字送り
-for(let i=0;i<6;i++){ await tap('a'); await page.waitForTimeout(150); const t=await page.evaluate(()=>Game.top().choosing); if(t) break; }
+for(let i=0;i<12;i++){ const t=await page.evaluate(()=>Game.top().choosing); if(t) break; await tap('a'); await page.waitForTimeout(500); }
 await tap('a'); // はい
 const shots=[]; for(let i=0;i<5;i++){ await page.waitForTimeout(130); await page.screenshot({path:`fx${i+1}.png`}); }
 await page.waitForTimeout(800); await page.screenshot({path:'fx6.png'});
