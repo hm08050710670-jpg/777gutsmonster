@@ -794,8 +794,8 @@ class BattleScene {
 }
 
 // 遭遇時のヘルパ（フィールドから呼ぶ）
-function startWildBattle(mapId, onEnd) {
-  const tbl = DATA.MAPS[mapId].encounters;
+function startWildBattle(mapId, onEnd, table) {
+  const tbl = table || DATA.MAPS[mapId].encounters;
   const total = tbl.reduce((n, e) => n + e.weight, 0);
   let r = Math.random() * total, pick = tbl[0];
   for (const e of tbl) { if ((r -= e.weight) < 0) { pick = e; break; } }

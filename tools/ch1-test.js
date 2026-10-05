@@ -77,8 +77,11 @@ const server = http.createServer((req, res) => {
   await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('08_garden_enter'); console.log('garden:', await st());
   // 奥へ（道なりに）
   await goto('garden', 9, 3, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('09_sound'); await closeAll(); console.log('after sound:', await st(), 'note:', await note()); await shot('10_sound_after');
-  // 入口のカエデへ → 公式戦
-  await goto('garden', 9, 13, 'right'); await tap('a'); await page.waitForTimeout(300); await shot('11_kaede_challenge');
+  // クラブハウスへ：会員トレーナー → チャンピオンルームのカエデ → 公式戦
+  await goto('clubhouse', 3, 3, 'left'); await tap('a'); await page.waitForTimeout(300); await shot('10b_trainer');
+  for (let i = 0; i < 40; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }
+  await page.evaluate(() => { Game.top().enemy.hp = 1; }); await finishBattle(); await closeAll(); console.log('after trainer:', await st());
+  await goto('clubhouse', 11, 4, 'up'); await tap('a'); await page.waitForTimeout(300); await shot('11_kaede_challenge');
   for (let i = 0; i < 40; i++) { if ((await top()) === 'BattleScene') break; await advance(); await page.waitForTimeout(150); }
   await advance(); await page.waitForTimeout(300); await shot('12_kaede_battle');
   // 相手を弱らせて回復を確認

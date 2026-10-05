@@ -51,7 +51,7 @@ class FieldScene {
   }
   events() { return this.map.events.filter(e => this.eventActive(e)); }
   eventAt(x, y) { return this.events().find(e => e.x === x && e.y === y); }
-  blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look'].includes(ev.kind); }
+  blocksWalk(ev) { return ev && ['npc', 'sign', 'starter', 'rival', 'look', 'trainer'].includes(ev.kind); }
   // 建物などの置き物（map.objects）：足元の範囲は通れない。ドアの1マスだけ通れる
   objects() { return this.map.objects || []; }
   objectBlocks(x, y) {
@@ -116,13 +116,14 @@ class FieldScene {
     const ev = this.eventAt(st.x, st.y);
     if (ev && ev.kind === 'warp') { this.warp(ev.to); return; }
     if (ev && ev.kind === 'trigger') { this.runTrigger(ev); return; }
-    if (this.tileAt(st.x, st.y) === 'T' && this.map.encounters && st.grace === 0 && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
+    const here = this.tileAt(st.x, st.y), encTable = here === 'T' ? this.map.encounters : here === 'K' ? (this.map.bunker || this.map.encounters) : null;   // ラフ（草むら）とバンカーで出る
+    if (encTable && st.grace === 0 && Math.random() * 100 < CONFIG.ENCOUNTER_RATE) {
       if (st.party.length && Party.hp(st) > 0) {
         startWildBattle(st.map, result => {
           st.grace = CONFIG.GRACE_STEPS;
           if (result === 'lose') this.wipeOut();
           else Save.auto(st);
-        });
+        }, encTable);
       }
     }
   }
@@ -154,6 +155,7 @@ class FieldScene {
       case 'npc': this.talkNpc(ev); break;
       case 'starter': this.pickStarter(ev); break;
       case 'rival': this.runRival(ev); break;
+      case 'trainer': this.runTrainer(ev); break;
     }
   }
 
@@ -184,9 +186,9 @@ class FieldScene {
       if (!st.flags.labIntro) this.profIntro();
       else say('テーブルの 3つの ガッツボールから\nすきな 1つを えらびなさい。', null, n);
     } else if (!st.flags.rival1) {
-      say('観測機は ガーデンプレースの カエデに。\n町の北から ガーデンロードへ いける。', null, n);
+      say('観測機は ガーデンCCの カエデに。\n町の北の ゲートから 1番ホールへ いける。', null, n);
     } else if (st.flags.kaedeWin) {
-      say('カエデに 認定されたか！ おめでとう。\nシブヤの 停電も 気になるな…。', null, n);
+      say('カエデの クラブ認定を もらったか！\nおめでとう。シブヤの 停電も 気になるな…。', null, n);
     } else {
       say('ノブオと たたかったのか。\nライバルが いると つよくなれるぞ。', null, n);
     }
@@ -210,9 +212,9 @@ class FieldScene {
         say('だいじに そだてるんだよ。\n研究所を 出たら 冒険の はじまりだ。', () => {
           say('それと ひとつ たのみが ある。\nこの 観測機を あずかってくれ。', () => {
             say(`${st.name}は 観測機を うけとった！`, () => {
-              say('森の むこうの ガーデンプレースで\n庭園の 管理人 カエデに わたしてほしい。', () => {
-                say('庭園の モンスターの ようすが\nおかしいと れんらくが あってな。', () => {
-                  say('町の北の ガーデンロードから\nグリーンの森を ぬければ つくぞ。', () => { Game.setFlag('device'); Save.auto(st); }, n);
+              say('町の北の ガーデンカントリークラブで\nグリーンキーパーの カエデに わたしてほしい。', () => {
+                say('コースの モンスターの ようすが\nおかしいと れんらくが あってな。', () => {
+                  say('1番ホールと 2番ホールを ぬけた先に\nクラブハウスが あるぞ。', () => { Game.setFlag('device'); Save.auto(st); }, n);
                 }, n);
               }, n);
             });
@@ -252,7 +254,7 @@ class FieldScene {
     say('…！ なにか 北から はしってくる！', () => {
       run('kinomushi', () => run('nyakimi', () => run('kokemogu', () => {
         say('モンスターたちが みんな 北から\nにげてきた…。', () => {
-          say('ガーデンプレースの ほうで\nなにか おきているのか？', () => { Game.setFlag('forestRun'); Save.auto(st); });
+          say('クラブハウスの ほうで\nなにか おきているのか？', () => { Game.setFlag('forestRun'); Save.auto(st); });
         });
       })));
     });
@@ -266,25 +268,25 @@ class FieldScene {
     say('……ゴォォ……', () => {
       say('地面の 下から ひくい 音が\nひびいてくる…！', () => {
         say('観測機が ピピッと 反応した。', () => {
-          say('「ガーデンプレース 地下に 反応。\n おなじ 反応を シブヤ方面でも 記録」', () => {
-            say('モンスターたちが おびえていたのは\nこの音の せいか…。カエデに ほうこくしよう。', () => { Game.setFlag('gardenSound'); Save.auto(st); });
+          say('「ガーデンCC 地下に 反応。\n おなじ 反応を シブヤ方面でも 記録」', () => {
+            say('モンスターたちが おびえていたのは\nこの音の せいか…。クラブハウスの カエデに ほうこくしよう。', () => { Game.setFlag('gardenSound'); Save.auto(st); });
           });
         });
       });
     });
   }
 
-  // カエデ（庭園の管理人・ガーデンプレースのタウンマスター）
+  // カエデ（ガーデンCCのグリーンキーパー・クラブチャンピオン）
   talkKaede(ev) {
     const st = Game.state, n = 'カエデ';
     if (!st.flags.deviceGiven) {
-      if (!st.flags.device) { say('ここは ガーデンプレースの 庭園。\nいまは モンスターが 落ちつかなくて…。', null, n); return; }
+      if (!st.flags.device) { say('ここは ガーデンカントリークラブ。\nいまは コースの モンスターが 落ちつかなくて…。', null, n); return; }
       say('あなた、オクムラ博士の ところの 子ね？', () => {
         say(`${st.name}は 観測機を カエデに わたした！`, () => {
           say('ありがとう。これで 地下の ようすを\nはかれるわ。', () => {
-            say('じつは 庭園の モンスターたちが\nずっと 落ちつかないの。', () => {
-              say('わたしは 入口で 観測するから\nあなたは 庭園の いちばん奥を しらべてきて。', () => {
-                say('花壇の おくの 行き止まりよ。\n気をつけてね。', () => { Game.setFlag('deviceGiven'); Save.auto(st); }, n);
+            say('じつは コースの モンスターたちが\nずっと 落ちつかないの。', () => {
+              say('わたしは 9番ホールの 入口で 観測するから\nあなたは コースの いちばん奥を しらべてきて。', () => {
+                say('クラブハウス前の 北から 9番ホールへ。\n花壇の おくの 行き止まりよ。気をつけてね。', () => { Game.setFlag('deviceGiven'); Save.auto(st); }, n);
               }, n);
             }, n);
           }, n);
@@ -292,12 +294,12 @@ class FieldScene {
       }, n);
       return;
     }
-    if (!st.flags.gardenSound) { say('庭園の いちばん奥を しらべてきて。\n道なりに 北へ すすんで、行き止まりよ。', null, n); return; }
+    if (!st.flags.gardenSound) { say('9番ホールの いちばん奥を しらべてきて。\n道なりに 北へ すすんで、行き止まりよ。', null, n); return; }
     if (st.flags.kaedeWin) { say('シブヤタウンでも 停電が つづいてるって。\nきっと この音と 関係が あるわ。\n（つづきは じゅんびちゅう）', null, n); return; }
     say('地下から 音…！ 観測機にも\nシブヤ方面の 反応が 出てるわ。', () => {
       say('原因は まだ わからないけど\nあなたの おかげで 手がかりが つかめた。', () => {
-        say('そこで… タウンマスターとして\nあなたに 公式戦を もうしこむわ！', () => {
-          say('庭園の 力を 見せてあげる。\nいくわよ、シバモグ！', () => this.kaedeBattle(), n);
+        say('そこで… クラブチャンピオンとして\nあなたに 公式戦を もうしこむわ！', () => {
+          say('このコースの 芝で 育った 力を 見せてあげる。\nいくわよ、シバモグ！', () => this.kaedeBattle(), n);
         }, n);
       }, n);
     }, n);
@@ -309,8 +311,8 @@ class FieldScene {
       if (result === 'lose') { Party.full(st); say('なかまを 回復して あげたわ。\nもう一度 ちょうせんしてね。', () => Save.auto(st), 'カエデ'); return; }
       Game.setFlag('kaedeWin');
       say('…まいったわ。 あなたの 勝ちよ。', () => {
-        say(`${st.name}は ガーデンプレースの\n認定を 手に入れた！`, () => {
-          say('認定を 集めれば ガッツリーグに\n出られるわ。つぎは シブヤタウンね。', () => {
+        say(`${st.name}は ガーデンCCの\nクラブ認定を 手に入れた！`, () => {
+          say('スコアカードに スタンプを 押しておくわ。\n認定を 集めれば ガッツリーグに 出られる。つぎは シブヤタウンね。', () => {
             say('シブヤでは 停電が つづいてるそうよ。\nきっと この音と 関係が あるわ。', () => Save.auto(st), 'カエデ');
           }, 'カエデ');
         });
@@ -344,7 +346,7 @@ class FieldScene {
     say('おーい！ ちょっと まてよ！', () => {
       this.walkActor(actor, ['up', 'up', 'up', 'up', 'up', 'up'], () => {
         say('よぉ！ オレは ノブオ！\nおまえも モンスターを もらったのか。', () => {
-          say(`ガーデンロードに いくまえに\nオレと しょうぶだ！ いけっ ${this.rivalMon().name}！`, () => this.rivalBattle(() => {
+          say(`コースに 出るまえに\nオレと しょうぶだ！ いけっ ${this.rivalMon().name}！`, () => this.rivalBattle(() => {
             // 勝負のあと、来た道を もどる
             this.walkActor(actor, ['down', 'down', 'down', 'down', 'down', 'down'], () => { this.actor = null; Save.auto(st); });
           }), 'ノブオ');
@@ -365,12 +367,27 @@ class FieldScene {
     const enemy = makeMonster(rm.id, 5);
     Game.push(new BattleScene({ enemy, trainer: { name: 'ノブオ' }, onEnd: result => {
       Game.setFlag('rival1');
-      if (result === 'lose') { Party.full(st); say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', after, 'ノブオ'); }
-      else say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, after, 'ノブオ');
+      if (result === 'lose') { Party.full(st); say('ま、そんなもんだろ。\nラフで きたえてこい！', after, 'ノブオ'); }
+      else say(`くっ… ${rm.name}が まけるなんて！\n1番ホールの オナーは ゆずってやるよ。`, after, 'ノブオ');
     } }));
   }
 
   // （旧）話しかけて勝負する版。データ側で kind:'rival' を使えば動く
+  // 会員トレーナー（kind: 'trainer'）：1回だけ勝負。勝つと flag が立つ
+  runTrainer(ev) {
+    const st = Game.state, n = ev.name;
+    ev.face = FACE[st.dir];
+    if (ev.flag && st.flags[ev.flag]) { say(ev.after || ev.win, null, n); return; }
+    say(ev.intro, () => {
+      const enemy = makeMonster(ev.mon, ev.level || 5);
+      Game.push(new BattleScene({ enemy, trainer: { name: n }, onEnd: result => {
+        if (result === 'lose') { Party.full(st); say(ev.lose, () => Save.auto(st), n); return; }
+        if (ev.flag) Game.setFlag(ev.flag);
+        say(ev.win, () => Save.auto(st), n);
+      } }));
+    }, n);
+  }
+
   runRival(ev) {
     const st = Game.state;
     ev.face = FACE[st.dir];
@@ -382,9 +399,9 @@ class FieldScene {
           Game.setFlag('rival1');
           if (result === 'lose') {
             Party.full(st);
-            say('ま、そんなもんだろ。\nガーデンロードで きたえてこい！', () => Save.auto(st), 'ノブオ');
+            say('ま、そんなもんだろ。\nラフで きたえてこい！', () => Save.auto(st), 'ノブオ');
           } else {
-            say(`くっ… ${rm.name}が まけるなんて！\nガーデンロードは ゆずってやるよ。`, () => Save.auto(st), 'ノブオ');
+            say(`くっ… ${rm.name}が まけるなんて！\n1番ホールの オナーは ゆずってやるよ。`, () => Save.auto(st), 'ノブオ');
           }
         } }));
       }, 'ノブオ');
@@ -443,6 +460,12 @@ class FieldScene {
     const grass = () => ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py);
     switch (t) {
       case 'G': grass(); return true;
+      // ゴルフ場：g フェアウェイ（2列ごとの縦じま） n グリーン K バンカー Y ピンフラッグ（グリーン上） y ティーマーカー（フェアウェイ上）
+      case 'g': ctx.drawImage(Tiles.get(`fairway${Math.floor(tx / 2) % 2}`), px, py); return true;
+      case 'n': ctx.drawImage(Tiles.variant('green', 2, tx, ty), px, py); return true;
+      case 'K': ctx.drawImage(Tiles.variant('bunker', 2, tx, ty), px, py); return true;
+      case 'Y': ctx.drawImage(Tiles.variant('green', 2, tx, ty), px, py); this.drawProp(ctx, 'flag', px, py); return true;
+      case 'y': ctx.drawImage(Tiles.get(`fairway${Math.floor(tx / 2) % 2}`), px, py); this.drawProp(ctx, 'tee', px, py); return true;
       case 'P': ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
       case '~': ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
       case 'W': grass(); trees.push([px, py]); return true;
