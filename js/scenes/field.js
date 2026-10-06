@@ -448,6 +448,56 @@ class FieldScene {
   drawFairway(ctx, tx, ty, px, py) {
     ctx.drawImage(Tiles.get(`fairway${((tx + ty) % 4 + 4) % 4}`), px, py, CONFIG.TILE, CONFIG.TILE);
   }
+  // グリーン：タイルの升目ではなく楕円（の和）で描く丸いグリーン。map.greens = [[cx, cy, rx, ry] または [[cx,cy,rx,ry], ...], ...]（マス単位・小数可。配列なら楕円の和でいびつな形）。
+  //   未指定なら n/Y のかたまりを囲む楕円を自動で作る。外側から：輪郭1px → カラー（少し長い芝の帯） → 明るい線 → 市松の刈り目
+  //   FieldScene.greenStyle = { collar: 帯の幅(px), outline, tuft, line }
+  greens() {
+    const mid = Game.state.map; if (this._greens && this._greens.mid === mid) return this._greens.list;
+    const T = CONFIG.TILE, out = [];
+    if (this.map.greens) for (const gr of this.map.greens) out.push((Array.isArray(gr[0]) ? gr : [gr]).map(([cx, cy, rx, ry]) => [cx * T, cy * T, rx * T, ry * T]));   // 1つのグリーン＝楕円1つ、または楕円の配列（和集合）
+    else {
+      const seen = new Set();
+      this.map.rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) {
+        if (!'nY'.includes(row[x]) || seen.has(x + ',' + y)) continue;
+        const q = [[x, y]], pts = []; seen.add(x + ',' + y);
+        while (q.length) { const [px, py] = q.pop(); pts.push([px, py]);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = px + dx, ny = py + dy, k = nx + ',' + ny; if (!seen.has(k) && 'nY'.includes(this.tileAt(nx, ny))) { seen.add(k); q.push([nx, ny]); } } }
+        const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+        out.push([[(x0 + x1 + 1) / 2 * T, (y0 + y1 + 1) / 2 * T, ((x1 - x0 + 1) / 2 + 0.55) * T, ((y1 - y0 + 1) / 2 + 0.55) * T]]);
+      } });
+    }
+    this._greens = { mid, list: out }; return out;
+  }
+  greenCanvas(i) {
+    const st = FieldScene.greenStyle, key = `${Game.state.map}:${i}:${JSON.stringify(st)}`;
+    FieldScene.greenCache = FieldScene.greenCache || new Map();
+    if (FieldScene.greenCache.has(key)) return FieldScene.greenCache.get(key);
+    const ells = this.greens()[i], T = CONFIG.TILE, pad = st.collar + 3;
+    const bx0 = Math.floor(Math.min(...ells.map(e => e[0] - e[2]))) - pad, by0 = Math.floor(Math.min(...ells.map(e => e[1] - e[3]))) - pad;
+    const bx1 = Math.ceil(Math.max(...ells.map(e => e[0] + e[2]))) + pad, by1 = Math.ceil(Math.max(...ells.map(e => e[1] + e[3]))) + pad;
+    const w = bx1 - bx0, h = by1 - by0, c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'), img = g.createImageData(w, h), d = img.data;
+    // k = その点を含む最小の「k px 外側に広げた楕円」。0=グリーン本体, 1..collar=カラー, collar+1=輪郭
+    const kOf = (x, y) => { let best = 99; for (const [cx, cy, rx, ry] of ells) for (let k = -1; k <= st.collar + 1 && k < best; k++) { if (((x - cx) / (rx + k)) ** 2 + ((y - cy) / (ry + k)) ** 2 <= 1) { best = k; break; } } return best; };
+    const L = [182, 240, 124], D = [166, 232, 110], DIT = [174, 236, 117];
+    const OUT = [98, 162, 66], CL = [122, 194, 82], CD = [108, 178, 72], HL = [206, 248, 150];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const gx = bx0 + x, gy = by0 + y, k = kOf(gx + 0.5, gy + 0.5);
+      if (k > st.collar + 1) continue;
+      let col;
+      if (k === st.collar + 1) { if (!st.outline) continue; col = OUT; }
+      else if (k >= 1) col = st.tuft ? ((((gx + (gy >> 1) * 2) % 4) === 0 && (gy & 1)) ? CD : CL) : CL;
+      else if (k === 0 && st.line) col = HL;
+      else { col = ((Math.floor(gx / T) + Math.floor(gy / T)) & 1) ? L : D; if (((gx * 7 + gy * 13) % 11) === 0) col = DIT; }
+      const o = (y * w + x) * 4; d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); c._ox = bx0; c._oy = by0; FieldScene.greenCache.set(key, c); return c;
+  }
+  drawGreens(ctx, camX, camY) {
+    const T = CONFIG.TILE;
+    this.greens().forEach((_, i) => { const c = this.greenCanvas(i); ctx.drawImage(c, c._ox - camX, c._oy - camY); });
+    this.map.rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] === 'Y') this.drawProp(ctx, 'flag', x * T - camX, y * T - camY); });   // 旗はグリーンの上
+  }
   // ラフの縁：ラフでないマス（フェアウェイ・道・砂・水・木の根元…すべて）の、ラフに接している辺に葉先を重ねる。どの地形に接しても同じ輪郭になる
   drawRoughEdge(ctx, tx, ty, px, py) {
     if (!(this.map.golf && Tiles.has('fr_u')) || 'TK~B'.includes(this.tileAt(tx, ty))) return;   // 砂・水の上には葉先を出さない（縁取りを隠さない）
@@ -515,9 +565,9 @@ class FieldScene {
       case 'G': grass(); return true;
       // ゴルフ場（ChatGPT製タイル）：g フェアウェイ（ラフとの境目は自動） n グリーン K バンカー（13枚オートタイル） Y ピンフラッグ y ティーマーカー
       case 'g': this.drawFairway(ctx, tx, ty, px, py); return true;
-      case 'n': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); return true;
+      case 'n': if (this.map.golf && Tiles.has('fairway0')) { this.drawFairway(ctx, tx, ty, px, py); return true; } ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); return true;   // コースのグリーンは drawGreens で楕円に描く
       case 'K': grass(); this.drawBlob(ctx, 'bk', c => c === 'K', tx, ty, px, py); return true;
-      case 'Y': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); this.drawProp(ctx, 'flag', px, py); return true;
+      case 'Y': if (this.map.golf && Tiles.has('fairway0')) { this.drawFairway(ctx, tx, ty, px, py); return true; } ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); this.drawProp(ctx, 'flag', px, py); return true;
       case 'y': this.drawFairway(ctx, tx, ty, px, py); this.drawProp(ctx, 'tee', px, py); return true;
       case 'P': if (this.map.golf && Tiles.has('fairway0')) { this.drawFairway(ctx, tx, ty, px, py); ctx.drawImage(Tiles.auto('cart', mask(), tx, ty), px, py); return true; } ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
       case '~': if (this.map.golf && Tiles.has('pd_c0')) { grass(); this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); return true; } ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
@@ -620,6 +670,7 @@ class FieldScene {
         ctx.drawImage(Gfx.get(DATA.TILE_ART[t] || 'grass'), px, py);
       }
     }
+    if (useImg && this.map.golf && Tiles.has('fairway0') && !this.map.image) this.drawGreens(ctx, camX - bx, camY - by);
     // 木（2×2、少し重ねて森らしく）。主人公より上の行の木はここで、下の行の木は主人公の後で描く（木の上に乗って見えないように）
     const heroPy = st.y * T - camY + by;
     const frontTrees = trees.filter(([, py]) => py > heroPy);
@@ -676,3 +727,4 @@ class FieldScene {
     if (useImg) for (const [px, py] of frontTrees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
   }
 }
+FieldScene.greenStyle = { collar: 4, outline: true, tuft: true, line: true };   // グリーンの見た目（drawGreen 参照）

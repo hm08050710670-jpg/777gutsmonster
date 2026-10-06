@@ -643,7 +643,7 @@ const DATA = {
       ],
     },
     course4: {
-      golf: true, name: 'ガーデンCC 18番（最終ホール）', bgm: 'town', battleBg: 'rough',
+      greens: [[[8.5, 2.6, 5.6, 2.5], [5.6, 3.4, 3.2, 2.1]]], golf: true, name: 'ガーデンCC 18番（最終ホール）', bgm: 'town', battleBg: 'rough',
       // 長い フェアウェイの 先に 荒れた グリーン。いちばん奥（旗の上）が 調査ポイント
       rows: [
         'WWWWWWWWWWWWWWWWWW',
