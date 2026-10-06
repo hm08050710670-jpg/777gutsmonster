@@ -175,11 +175,28 @@ class TitleScene {
 
 // ---- 主人公設定 ----
 class SetupScene {
-  constructor() { this.overlay = false; this.step = 'name'; this.name = ''; this.gender = 'm'; this.sel = 0; this.asked = false; }
+  constructor() { this.overlay = false; this.step = 'pick'; this.name = ''; this.gender = 'm'; this.sel = 0; this.pickSel = 0; this.asked = false; }
+  static get PRESETS() { return ['ガッツ', 'ハル', 'ユウ', 'ソラ', 'じぶんで つける']; }   // 先頭が基本の名前
   enter() { this.kb = new NameKeyboard(name => { this.name = name; this.step = 'gender'; }); }
-  tap(x, y) { if (this.step === 'name') this.kb.tap(x, y); }
+  pickRowY(i) { return 48 + i * 18; }
+  pick(i) {
+    const P = SetupScene.PRESETS;
+    if (i === P.length - 1) { this.step = 'name'; return; }
+    this.name = P[i]; this.step = 'gender';
+  }
+  tap(x, y) {
+    if (this.step === 'name') return this.kb.tap(x, y);
+    if (this.step === 'pick') { const i = Math.floor((y - this.pickRowY(0) + 4) / 18); if (i >= 0 && i < SetupScene.PRESETS.length) { this.pickSel = i; this.pick(i); } }
+  }
   update(frame) {
-    if (this.step === 'name') { this.kb.update(frame); return; }
+    if (this.step === 'pick') {
+      const n = SetupScene.PRESETS.length;
+      if (Input.pressed('up')) this.pickSel = (this.pickSel + n - 1) % n;
+      if (Input.pressed('down')) this.pickSel = (this.pickSel + 1) % n;
+      if (Input.pressed('a')) this.pick(this.pickSel);
+      return;
+    }
+    if (this.step === 'name') { this.kb.update(frame); if (Input.pressed('b') && !this.kb.name) this.step = 'pick'; return; }
     if (this.step === 'gender') {
       if (Input.pressed('left') || Input.pressed('right') || Input.pressed('up') || Input.pressed('down')) this.sel ^= 1;
       if (Input.pressed('a')) { this.gender = this.sel === 0 ? 'm' : 'f'; this.step = 'preview'; }
@@ -198,6 +215,21 @@ class SetupScene {
   draw(ctx, frame) {
     const W = CONFIG.W, H = CONFIG.H;
     ctx.fillStyle = THEME.ivory2; ctx.fillRect(0, 0, W, H);
+    if (this.step === 'pick') {
+      Text.draw(ctx, '01. なまえを きめよう', 24, 8, THEME.green);
+      const P = SetupScene.PRESETS;
+      Text.box(ctx, 24, this.pickRowY(0) - 10, W - 48, P.length * 18 + 14);
+      P.forEach((nm, i) => {
+        const y = this.pickRowY(i), last = i === P.length - 1;
+        if (last) Text.rule(ctx, 32, y - 4, W - 64);
+        Text.draw(ctx, nm, 48, y, last ? THEME.textDim : THEME.text);
+        if (i === 0) Text.draw(ctx, '(きほん)', 48 + Text.width(nm) + 8, y, THEME.textDim);
+        if (this.pickSel === i) Text.cursor(ctx, 36, y);
+      });
+      const hint = Math.floor(frame / 120) % 2 ? 'タップしても えらべるよ' : 'A: これにする';
+      Text.draw(ctx, hint, W / 2 - Text.width(hint) / 2, this.pickRowY(P.length) + 16, THEME.textDim);
+      return;
+    }
     if (this.step === 'name') { this.kb.draw(ctx, frame); return; }
     if (this.step === 'gender') {
       Text.draw(ctx, '02. せいべつを えらぼう', 24, 24, THEME.green);
