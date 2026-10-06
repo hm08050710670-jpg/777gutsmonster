@@ -176,9 +176,12 @@ class TitleScene {
 // ---- 主人公設定 ----
 class SetupScene {
   constructor() { this.overlay = false; this.step = 'pick'; this.name = ''; this.gender = 'm'; this.sel = 0; this.pickSel = 0; this.asked = false; }
-  static get PRESETS() { return ['ガッツ', 'ハル', 'ユウ', 'ソラ', 'じぶんで つける']; }   // 先頭が基本の名前
+  static get PRESETS() { return ['ガッツ', 'じぶんで つける']; }   // 先頭が基本の名前
+  static get CARD() { return { x: 24, w: CONFIG.W - 48, h: 40, gap: 12 }; }
   enter() { this.kb = new NameKeyboard(name => { this.name = name; this.step = 'gender'; }); }
-  pickRowY(i) { return 48 + i * 18; }
+  // 主人公の絵(32)＋余白12＋カード2枚＋余白14＋案内(8) をタイトル下の領域の中央に置く
+  pickTop() { const C = SetupScene.CARD, n = SetupScene.PRESETS.length; return 24 + Math.round(((CONFIG.H - 24) - (32 + 12 + n * C.h + (n - 1) * C.gap + 22)) / 2); }
+  pickRowY(i) { const C = SetupScene.CARD; return this.pickTop() + 44 + i * (C.h + C.gap); }
   pick(i) {
     const P = SetupScene.PRESETS;
     if (i === P.length - 1) { this.step = 'name'; return; }
@@ -186,7 +189,7 @@ class SetupScene {
   }
   tap(x, y) {
     if (this.step === 'name') return this.kb.tap(x, y);
-    if (this.step === 'pick') { const i = Math.floor((y - this.pickRowY(0) + 4) / 18); if (i >= 0 && i < SetupScene.PRESETS.length) { this.pickSel = i; this.pick(i); } }
+    if (this.step === 'pick') { const C = SetupScene.CARD; SetupScene.PRESETS.forEach((_, i) => { const cy = this.pickRowY(i); if (x >= C.x && x < C.x + C.w && y >= cy && y < cy + C.h) { this.pickSel = i; this.pick(i); } }); }
   }
   update(frame) {
     if (this.step === 'pick') {
@@ -217,17 +220,18 @@ class SetupScene {
     ctx.fillStyle = THEME.ivory2; ctx.fillRect(0, 0, W, H);
     if (this.step === 'pick') {
       Text.draw(ctx, '01. なまえを きめよう', 24, 8, THEME.green);
-      const P = SetupScene.PRESETS;
-      Text.box(ctx, 24, this.pickRowY(0) - 10, W - 48, P.length * 18 + 14);
-      P.forEach((nm, i) => {
-        const y = this.pickRowY(i), last = i === P.length - 1;
-        if (last) Text.rule(ctx, 32, y - 4, W - 64);
-        Text.draw(ctx, nm, 48, y, last ? THEME.textDim : THEME.text);
-        if (i === 0) Text.draw(ctx, '(きほん)', 48 + Text.width(nm) + 8, y, THEME.textDim);
-        if (this.pickSel === i) Text.cursor(ctx, 36, y);
+      const C = SetupScene.CARD, subs = ['きほんの なまえで はじめる', 'すきな なまえを いれる'];
+      ctx.drawImage(Gfx.get('hm_down0', 2), W / 2 - 16, this.pickTop());   // 主人公（性別は次で選ぶ）
+      SetupScene.PRESETS.forEach((nm, i) => {
+        const y = this.pickRowY(i), sel = this.pickSel === i;
+        Text.box(ctx, C.x, y, C.w, C.h);
+        if (sel) { ctx.fillStyle = '#dfe9d2'; ctx.fillRect(C.x + 4, y + 4, C.w - 8, C.h - 8); }
+        Text.draw(ctx, nm, C.x + 20, y + 9, sel ? THEME.green : THEME.text);
+        Text.draw(ctx, subs[i], C.x + 20, y + 22, THEME.textDim);
+        if (sel) Text.cursor(ctx, C.x + 9, y + 9);
       });
       const hint = Math.floor(frame / 120) % 2 ? 'タップしても えらべるよ' : 'A: これにする';
-      Text.draw(ctx, hint, W / 2 - Text.width(hint) / 2, this.pickRowY(P.length) + 16, THEME.textDim);
+      Text.draw(ctx, hint, W / 2 - Text.width(hint) / 2, this.pickRowY(SetupScene.PRESETS.length - 1) + C.h + 14, THEME.textDim);
       return;
     }
     if (this.step === 'name') { this.kb.draw(ctx, frame); return; }
