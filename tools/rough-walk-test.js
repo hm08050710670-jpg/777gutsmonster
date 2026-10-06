@@ -1,0 +1,14 @@
+const { chromium } = require('playwright'); const http=require('http'),fs=require('fs'),path=require('path');
+const ROOT='/home/claude/gb-rpg-skeleton'; const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.json':'application/json'};
+const server=http.createServer((req,res)=>{const p=path.join(ROOT,req.url.split('?')[0]==='/'?'/index.html':req.url.split('?')[0]);fs.readFile(p,(e,d)=>{if(e){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':MIME[path.extname(p)]||'application/octet-stream'});res.end(d);});});
+(async()=>{await new Promise(r=>server.listen(8800,r));const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+const ctx=await b.newContext({viewport:{width:430,height:853},deviceScaleFactor:2,isMobile:true,hasTouch:true}); const page=await ctx.newPage();
+const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://localhost:8800/');await page.waitForTimeout(800);
+await page.evaluate(()=>{CONFIG.ENCOUNTER_RATE=0;const st=Save.newGame('T','m');st.party=[makeMonster('kokegame',10)];Party.full(st);st.map='course1';st.x=9;st.y=9;st.dir='up';st.flags={labIntro:true,starter:true};Game.state=st;Game.replace(new FieldScene());});
+await page.waitForTimeout(300); await page.screenshot({path:'rw0.png'});
+await page.evaluate(()=>{Game.state.x=11;Game.state.y=10;}); await page.waitForTimeout(100);
+await page.keyboard.down('ArrowRight'); await page.waitForTimeout(140); await page.screenshot({path:'rw1.png'}); await page.waitForTimeout(160); await page.keyboard.up('ArrowRight'); await page.waitForTimeout(60); await page.screenshot({path:'rw2.png'});
+await page.waitForTimeout(400); await page.screenshot({path:'rw3.png'});
+console.log(await page.evaluate(()=>[Game.state.x,Game.state.y,FieldScene&&Game.top().tileAt(Game.state.x,Game.state.y)]), errors);
+await b.close();server.close();})();

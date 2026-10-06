@@ -84,6 +84,7 @@ class FieldScene {
   update(frame) {
     const st = Game.state;
     if (this.bump > 0) this.bump--;
+    if (this.stepFx && this.stepFx.t > 0) this.stepFx.t--;
     if (this.ballFx) { const f = this.ballFx; f.t++; if (f.t >= 44) { this.ballFx = null; f.done(); } return; }   // ボールを取る演出中は操作不可
     if (this.updateActor()) return;   // カットシーン中は操作不可
     if (this.moving > 0) {
@@ -113,6 +114,7 @@ class FieldScene {
   onArrive() {
     const st = Game.state;
     st.steps++;
+    if (this.tileAt(st.x, st.y) === 'T') this.stepFx = { x: st.x, y: st.y, t: 10, side: st.steps % 2 };   // ラフを踏んだ：芝がパサッと倒れる
     if (st.grace > 0) st.grace--;
     const ev = this.eventAt(st.x, st.y);
     if (ev && ev.kind === 'warp') {
@@ -442,6 +444,35 @@ class FieldScene {
   }
 
   // 小物：マスの下中央に置く（絵の大きさが16×16でなくてもよい。街灯など背の高いものは上にはみ出す）
+  // フェアウェイ：隣がラフなら 境目タイル（上下左右・外角）。斜めの刈り跡は 4枚を x でずらして つなぐ
+  drawFairway(ctx, tx, ty, px, py) {
+    const T = CONFIG.TILE, isR = (dx, dy) => this.tileAt(tx + dx, ty + dy) === 'T';
+    const n = isR(0, -1), e = isR(1, 0), s = isR(0, 1), w = isR(-1, 0), cnt = n + e + s + w;
+    let name = null;
+    if (cnt === 1) name = n ? 'fr_u' : s ? 'fr_d' : w ? 'fr_l' : 'fr_r';
+    else if (cnt === 2 && !(n && s) && !(e && w)) name = n && w ? 'fr_ul' : n && e ? 'fr_ur' : s && w ? 'fr_dl' : 'fr_dr';
+    if (name && Tiles.has(name)) { ctx.drawImage(Tiles.get(name), px, py); return; }
+    ctx.drawImage(Tiles.get(`fairway${((tx + ty) % 4 + 4) % 4}`), px, py);
+  }
+  // 13枚ブロブ型オートタイル（中央・辺4・外角4・内角4）。kind: 'bk' バンカー / 'pd' 池。same(c) で同じ地形か判定（マップ外は同じ扱い）
+  drawBlob(ctx, kind, same, tx, ty, px, py) {
+    const at = (dx, dy) => { const c = this.tileAt(tx + dx, ty + dy); return c === ' ' || same(c); };
+    const n = at(0, -1), e = at(1, 0), s = at(0, 1), w = at(-1, 0), cnt = n + e + s + w;
+    let name;
+    if (cnt === 4) {
+      if (!at(-1, -1)) name = `${kind}_iul`; else if (!at(1, -1)) name = `${kind}_iur`; else if (!at(-1, 1)) name = `${kind}_idl`; else if (!at(1, 1)) name = `${kind}_idr`;
+    } else if (cnt === 3) name = !n ? `${kind}_u` : !s ? `${kind}_d` : !w ? `${kind}_l` : `${kind}_r`;
+    else if (cnt === 2 && !(n && s) && !(e && w)) name = !n && !w ? `${kind}_ul` : !n && !e ? `${kind}_ur` : !s && !w ? `${kind}_dl` : `${kind}_dr`;
+    if (!name || !Tiles.has(name)) {   // 中央（池は 3コマで ゆらぎ）
+      name = kind === 'pd' ? `pd_c${(Math.floor(this.frame / 24) + tx + ty) % 3}` : `bk_c${((tx * 7 + ty * 13) % 2 + 2) % 2}`;
+    }
+    ctx.drawImage(Tiles.get(name), px, py);
+  }
+  // ラフの前景：そのマスに立っている人物の足元に 芝の下半分を重ねて「埋もれて」見せる
+  drawRoughFront(ctx, tx, ty, px, py) {
+    if (!(this.map.golf && Tiles.has('rough_fg0')) || this.tileAt(tx, ty) !== 'T') return;
+    ctx.drawImage(Tiles.variant('rough_fg', 4, tx, ty), px, py + 8);
+  }
   drawProp(ctx, name, px, py) {
     const im = Tiles.get(name); if (!im) return;
     ctx.drawImage(im, px + Math.floor((CONFIG.TILE - im.width) / 2), py + CONFIG.TILE - im.height);
@@ -479,23 +510,24 @@ class FieldScene {
     const grass = () => ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py);
     switch (t) {
       case 'G': grass(); return true;
-      // ゴルフ場：g フェアウェイ（2列ごとの縦じま） n グリーン K バンカー Y ピンフラッグ（グリーン上） y ティーマーカー（フェアウェイ上）
-      case 'g': ctx.drawImage(Tiles.get(`fairway${Math.floor(tx / 2) % 2}`), px, py); return true;
-      case 'n': ctx.drawImage(Tiles.variant('green', 2, tx, ty), px, py); return true;
-      case 'K': ctx.drawImage(Tiles.variant('bunker', 2, tx, ty), px, py); return true;
-      case 'Y': ctx.drawImage(Tiles.variant('green', 2, tx, ty), px, py); this.drawProp(ctx, 'flag', px, py); return true;
-      case 'y': ctx.drawImage(Tiles.get(`fairway${Math.floor(tx / 2) % 2}`), px, py); this.drawProp(ctx, 'tee', px, py); return true;
+      // ゴルフ場（ChatGPT製タイル）：g フェアウェイ（ラフとの境目は自動） n グリーン K バンカー（13枚オートタイル） Y ピンフラッグ y ティーマーカー
+      case 'g': this.drawFairway(ctx, tx, ty, px, py); return true;
+      case 'n': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py); return true;
+      case 'K': this.drawBlob(ctx, 'bk', c => c === 'K', tx, ty, px, py); return true;
+      case 'Y': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py); this.drawProp(ctx, 'flag', px, py); return true;
+      case 'y': this.drawFairway(ctx, tx, ty, px, py); this.drawProp(ctx, 'tee', px, py); return true;
       case 'P': ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
-      case '~': ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
+      case '~': if (this.map.golf && Tiles.has('pd_c0')) { this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); return true; } ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
       case 'W': grass(); trees.push([px, py]); return true;
-      case 'T': ctx.drawImage(Tiles.get('tall'), px, py); return true;
+      case 'T': if (this.map.golf && Tiles.has('rough0')) { const fx = this.stepFx; if (fx && fx.x === tx && fx.y === ty && fx.t > 0) ctx.drawImage(Tiles.get(fx.side ? 'rough_stepR' : 'rough_stepL'), px, py); else ctx.drawImage(Tiles.variant('rough', 4, tx, ty), px, py); return true; } ctx.drawImage(Tiles.get('tall'), px, py); return true;
       case 'F': grass(); ctx.drawImage(Tiles.variant('flower', 2, tx, ty), px, py); return true;
       case 'H': grass(); this.drawProp(ctx, 'hedge', px, py); return true;
       case 'S': grass(); this.drawProp(ctx, 'sign', px, py); return true;
       case '=': grass(); this.drawProp(ctx, 'fence', px, py); return true;
       case 'Q': ctx.drawImage(Tiles.variant('stone', 5, tx, ty), px, py); return true;
       case 'L': grass(); if (Tiles.has('lamp')) this.drawProp(ctx, 'lamp', px, py); else ctx.drawImage(Gfx.get('lamp', 1, false, 'gGh'), px, py); return true;
-      case 'B': ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); if (Tiles.has('bridge')) { ctx.drawImage(Tiles.get('bridge'), px, py); return true; } return false;   // 橋
+      case 'B': if (this.map.golf && Tiles.has('pd_c0')) { this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); ctx.drawImage(Tiles.get(this.tileAt(tx, ty - 1) === '~' || this.tileAt(tx, ty + 1) === '~' ? 'bridge_v' : 'bridge_h'), px, py); return true; }
+        ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); if (Tiles.has('bridge')) { ctx.drawImage(Tiles.get('bridge'), px, py); return true; } return false;   // 橋
     }
     return false;
   }
@@ -549,6 +581,7 @@ class FieldScene {
     }
   }
   draw(ctx, frame) {
+    this.frame = frame;
     const st = Game.state, T = CONFIG.TILE, W = CONFIG.W, H = CONFIG.H;
     // カメラ：主人公中心。マップ端では止め、マップが画面より小さければ中央寄せ
     let ox = 0, oy = 0;
@@ -612,7 +645,7 @@ class FieldScene {
         else if (!this.map.tileset) ctx.drawImage(Gfx.get('ball'), bxp - 8, byp - 12);
       }
       else if (ev.kind === 'item') { if (ev.item === 'ガッツボール') FieldScene.drawGutsBall(ctx, sx + T / 2, sy + T - 2); else { ctx.fillStyle = '#e8503c'; ctx.fillRect(sx + 5, sy + 6, 6, 7); ctx.fillStyle = '#fff'; ctx.fillRect(sx + 5, sy + 6, 6, 3); ctx.fillStyle = '#1a1a20'; ctx.fillRect(sx + 4, sy + 5, 8, 1); ctx.fillRect(sx + 4, sy + 13, 8, 1); } }
-      else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); }
+      else if (ev.sprite) { const im = this.npcSprite(ev); ctx.drawImage(im, sx + Math.floor((T - im.width) / 2), sy + T - im.height - 1); this.drawRoughFront(ctx, ev.x, ev.y, sx, sy); }
     }
     // 御三家をえらぶとき：どんな姿か見せる（this.pickPreview = { id, ev, style }）
     if (this.pickPreview) this.drawPickPreview(ctx, frame, camX, camY);
@@ -631,6 +664,9 @@ class FieldScene {
     const step = this.moving > 0 ? 1 + this.animStep : 0;
     const hs = this.heroSprite(st.dir, step);
     ctx.drawImage(hs, st.x * T - ox - camX + bx + Math.floor((T - hs.width) / 2), st.y * T - oy - camY + by + T - hs.height - 1);
+    // ラフの中：足元に芝を重ねる（立っているマスと、歩き出したマスの両方）
+    this.drawRoughFront(ctx, st.x, st.y, st.x * T - camX + bx, st.y * T - camY + by);
+    if (this.moving > 0) { const [dx, dy] = DIRS[st.dir]; this.drawRoughFront(ctx, st.x - dx, st.y - dy, (st.x - dx) * T - camX + bx, (st.y - dy) * T - camY + by); }
     if (useImg) for (const [px, py] of frontTrees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
   }
 }

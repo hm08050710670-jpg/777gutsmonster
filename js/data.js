@@ -481,7 +481,7 @@ const DATA = {
     // ===== コース（サファリ）：4エリア。奥ほど強い。カート道（P）は安全、T ラフ・K バンカー・W の林ぎわで出る =====
     // スタート広場：クラブハウスの奥の扉を出たところ。左が西コース、右が林間コース
     plaza: {
-      name: 'ガーデンCC スタート広場', bgm: 'town', battleBg: 'rough', flagOnEnter: 'courseIn',
+      golf: true, name: 'ガーデンCC スタート広場', bgm: 'town', battleBg: 'rough', flagOnEnter: 'courseIn',
       rows: [
         'WWWWWWWWWWWWWWWWWWWW',
         'WGGGGGGGGGGGGGGGGGGW',
@@ -512,7 +512,7 @@ const DATA = {
     },
     // 丘コース（North-East）：高台とバンカー群。北の18番と 南の林間を つなぐ
     course5: {
-      name: 'ガーデンCC 丘コース（10〜12番）', bgm: 'town', battleBg: 'rough',
+      golf: true, name: 'ガーデンCC 丘コース（10〜12番）', bgm: 'town', battleBg: 'rough',
       rows: [
         'WWWWWWWWWWWWWWWWWWWW',
         'WGGGGQQQQQGGGGGGGGGW',
@@ -543,7 +543,7 @@ const DATA = {
       ],
     },
     course1: {
-      name: 'ガーデンCC 西コース（1〜3番）', bgm: 'town', battleBg: 'rough',
+      golf: true, name: 'ガーデンCC 西コース（1〜3番）', bgm: 'town', battleBg: 'rough',
       rows: [
         'WWWWWWWWWWWWWWWWWWWPWWWW',
         'WGGnnnGGGGTTTGGGGGGPGGGW',
@@ -551,7 +551,7 @@ const DATA = {
         'WGGnnnGGGGTTGGGggggPggGW',
         'WGGGggGGGGGGGGGggggPggGW',
         'WGTTggggggggggKKgggPgTGW',
-        'WGTTTggggggggggKKggPgTTW',
+        'WGTTTgggggggggKKgggPgTTW',
         'WGGTTggPPPPPPPPPPPPPPPPP',
         'WGGGGgggggggggggggGGGGGW',
         'WGFGGgggggGGGTTTTGGFGGGW',
@@ -576,23 +576,23 @@ const DATA = {
       ],
     },
     course2: {
-      name: 'ガーデンCC 池コース（4〜6番）', bgm: 'town', battleBg: 'rough',
+      golf: true, name: 'ガーデンCC 池コース（4〜6番）', bgm: 'town', battleBg: 'rough',
       rows: [
         'WWWWWWWWWWWWWWWWPWWWWW',
         'WGGGGGGGGGGGGGGGPGGGGW',
         'WGnnnGGGTTTGGGGgPggGGW',
         'WGnYnGGGTTTGGGGgPggGGW',
         'WGnnnGGPPPPPPPPPPggGGW',
-        'WGGgGGGPGGGGGG~~~~~GGW',
+        'WGGgGGGPGGGG~~~~~~GGGW',
         'WGGgGGGPGG~~~~~~~~~~GW',
-        'WGGgGGGPG~~~~~~~~~~~~W',
-        'WGGgGGGPG~~~~GG~~~~GGW',
-        'WGGgggGPG~~~GGGGG~~GGW',
-        'WGGTTGGPG~~~GTTGG~~GGW',
-        'WGGTTGGPPBBB~GGGG~~GGW',
-        'WGGGGGGGGGGG~~~~~~GGGW',
-        'WGGGGGSGGGGGG~~~~GGGGW',
-        'WGKKGGGGGGGGGGGGGGGGGW',
+        'WGGgGGGPG~~~~~~~~~~~GW',
+        'WGGgGGGPG~~~~GGG~~~~GW',
+        'WGGgggGPG~~~~GGG~~~~GW',
+        'WGGTTGGPG~~~~GGG~~~~GW',
+        'WGGTTGGPG~~~~~B~~~~~GW',
+        'WGGGGGGGG~~~~~B~~~~~GW',
+        'WGGGGGSGGGGGGGPGGGGGGW',
+        'WGKKGGGGGGGGGGPGGGGGGW',
         'WGKKGGPPPPPPPPPGGGGGGW',
         'WGGGGGPGGGGGGGGGGGGGGW',
         'WGGGgyPygGGGGGGGGGGGGW',
@@ -610,7 +610,7 @@ const DATA = {
       ],
     },
     course3: {
-      name: 'ガーデンCC 林間コース（7〜9番）', bgm: 'town', battleBg: 'rough',
+      golf: true, name: 'ガーデンCC 林間コース（7〜9番）', bgm: 'town', battleBg: 'rough',
       rows: [
         'WWWWWWWWWWWWWWWWWPWW',
         'WWWGGGGGGGGGWWWWWPWW',
@@ -643,7 +643,7 @@ const DATA = {
       ],
     },
     course4: {
-      name: 'ガーデンCC 18番（最終ホール）', bgm: 'town', battleBg: 'rough',
+      golf: true, name: 'ガーデンCC 18番（最終ホール）', bgm: 'town', battleBg: 'rough',
       // 長い フェアウェイの 先に 荒れた グリーン。いちばん奥（旗の上）が 調査ポイント
       rows: [
         'WWWWWWWWWWWWWWWWWW',
