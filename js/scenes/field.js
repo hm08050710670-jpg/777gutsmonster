@@ -450,7 +450,7 @@ class FieldScene {
   }
   // ラフの縁：ラフでないマス（フェアウェイ・道・砂・水・木の根元…すべて）の、ラフに接している辺に葉先を重ねる。どの地形に接しても同じ輪郭になる
   drawRoughEdge(ctx, tx, ty, px, py) {
-    if (!(this.map.golf && Tiles.has('fr_u')) || this.tileAt(tx, ty) === 'T') return;
+    if (!(this.map.golf && Tiles.has('fr_u')) || 'TK~B'.includes(this.tileAt(tx, ty))) return;   // 砂・水の上には葉先を出さない（縁取りを隠さない）
     const T = CONFIG.TILE, isR = (dx, dy) => this.tileAt(tx + dx, ty + dy) === 'T';
     if (isR(0, -1)) ctx.drawImage(Tiles.get('fr_u'), px, py, T, T);
     if (isR(0, 1)) ctx.drawImage(Tiles.get('fr_d'), px, py, T, T);
