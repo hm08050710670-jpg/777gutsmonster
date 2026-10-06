@@ -451,8 +451,8 @@ class FieldScene {
     let name = null;
     if (cnt === 1) name = n ? 'fr_u' : s ? 'fr_d' : w ? 'fr_l' : 'fr_r';
     else if (cnt === 2 && !(n && s) && !(e && w)) name = n && w ? 'fr_ul' : n && e ? 'fr_ur' : s && w ? 'fr_dl' : 'fr_dr';
-    if (name && Tiles.has(name)) { ctx.drawImage(Tiles.get(name), px, py, T, T); return; }
     ctx.drawImage(Tiles.get(`fairway${((tx + ty) % 4 + 4) % 4}`), px, py, T, T);
+    if (name && Tiles.has(name)) ctx.drawImage(Tiles.get(name), px, py, T, T);   // 境目（透明つき）を重ねる
   }
   // 13枚ブロブ型オートタイル（中央・辺4・外角4・内角4）。kind: 'bk' バンカー / 'pd' 池。same(c) で同じ地形か判定（マップ外は同じ扱い）
   drawBlob(ctx, kind, same, tx, ty, px, py) {
