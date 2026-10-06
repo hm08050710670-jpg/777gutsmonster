@@ -59,6 +59,7 @@ const Input = (() => {
       const cur = active.get(e.pointerId);
       if (cur) setKey(cur, false);
       active.delete(e.pointerId);
+      if (typeof UI !== 'undefined') UI.focusPending();   // 名前入力が開いていれば、この操作の中でキーボードを出す
     };
     pad.addEventListener('pointerup', release);
     pad.addEventListener('pointercancel', release);
@@ -86,6 +87,7 @@ const Input = (() => {
       if (k !== swipe.key) { if (swipe.key) state[swipe.key] = false; if (k) state[k] = true; swipe.key = k; }
     });
     const swipeEnd = e => {
+      if (typeof UI !== 'undefined') UI.focusPending();
       if (!swipe || swipe.id !== e.pointerId) return;
       if (swipe.key) state[swipe.key] = false;
       else tapA = true; // スワイプせずにタップ → A（会話送りに便利）

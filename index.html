@@ -55,6 +55,17 @@
   <!-- ④ 補助表示 -->
   <div id="aux"><span id="saved">AUTO SAVE ✓</span></div>
 
+  <!-- 名前入力：iPhoneのキーボードで入力する（「じぶんで つける」と、せっていの名前変更） -->
+  <div id="name-overlay" hidden>
+    <div id="name-card">
+      <div class="nc-title" id="name-title">なまえを いれてね</div>
+      <input id="name-input" type="text" maxlength="8" autocomplete="off" autocapitalize="off" enterkeyhint="done" placeholder="8もじまで">
+      <div class="nc-note">※ あとから「せってい」で いつでも かえられます</div>
+      <button id="name-ok" class="nc-btn">これで きめる</button>
+      <button id="name-cancel" class="nc-btn nc-sub">もどる</button>
+    </div>
+  </div>
+
 </div>
 
 <script src="js/config.js"></script>

@@ -152,6 +152,31 @@ html, body {
 #saved { opacity: 0; transition: opacity 0.3s; }
 #saved.show { opacity: 1; }
 
+/* 名前入力（HTML。iPhoneのキーボードで入力） */
+#name-overlay[hidden] { display: none; }
+#name-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-start; justify-content: center; padding-top: max(14vh, env(safe-area-inset-top, 0px) + 60px); z-index: 10;
+}
+#name-card {
+  background: var(--ivory); color: var(--text);
+  border: 3px solid var(--green); border-radius: 8px;
+  padding: 16px; width: min(320px, 88vw);
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+}
+.nc-title { font-weight: 700; letter-spacing: 0.05em; font-size: 15px; }
+#name-input {
+  font-size: 20px; padding: 10px 12px; border: 2px solid var(--green); border-radius: 6px;
+  background: #fff; color: var(--text); width: 100%; box-sizing: border-box;
+}
+.nc-note { font-size: 11px; color: #6c7a62; line-height: 1.5; }
+.nc-btn {
+  background: var(--green); color: #fff; border: none; border-radius: 6px;
+  padding: 12px; font-size: 15px; font-weight: 700;
+}
+.nc-sub { background: #dfe6d8; color: var(--text); font-weight: 600; padding: 9px; }
+
 /* 横向き（補助的な対応。基本は縦画面） */
 @media (orientation: landscape) and (max-height: 500px) {
   #app { flex-direction: row; justify-content: center; align-items: stretch; }

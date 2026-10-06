@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
   await shot('01_title'); console.log('font', await page.evaluate(() => Text.isReady()));
   await tap('start'); await page.waitForTimeout(150); await shot('02_title_menu');
   await tap('a'); await page.waitForTimeout(400); await shot('03_name');
-  await page.evaluate(() => { Game.top().kb.name = 'テスト'; Game.top().kb.finish(); }); await page.waitForTimeout(300); await shot('04_gender');
+  await page.evaluate(() => { Game.top().name = 'テスト'; Game.top().step = 'gender'; }); await page.waitForTimeout(300); await shot('04_gender');
   await tap('right'); await tap('a'); await page.waitForTimeout(200); await shot('05_preview');
   await tap('a'); await page.waitForTimeout(400); await shot('06_home');
   console.log('bgm@home:', await snd());

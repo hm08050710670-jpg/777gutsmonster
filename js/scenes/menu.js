@@ -54,6 +54,7 @@ class SettingsScene {
     return [
       { label: `もじの はやさ：${s.textSpeed <= 1 ? 'はやい' : 'ふつう'}`, action: () => { s.textSpeed = s.textSpeed <= 1 ? 2 : 1; } },
       { label: `BGM：${s.bgm === false ? 'OFF' : 'ON'}`, action: () => { s.bgm = s.bgm === false; Sound.setEnabled(s.bgm); } },
+      { label: `なまえ：${Game.state ? Game.state.name : ''}`, action: () => { if (!Game.state) return; UI.promptName(n => { Game.state.name = n; Save.auto(Game.state); }, { title: 'なまえを かえる', defaultName: Game.state.name, onCancel: () => {} }); } },
       { label: 'とじる', action: () => Game.pop() },
     ];
   }
