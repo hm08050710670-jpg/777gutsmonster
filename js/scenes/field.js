@@ -451,8 +451,8 @@ class FieldScene {
     let name = null;
     if (cnt === 1) name = n ? 'fr_u' : s ? 'fr_d' : w ? 'fr_l' : 'fr_r';
     else if (cnt === 2 && !(n && s) && !(e && w)) name = n && w ? 'fr_ul' : n && e ? 'fr_ur' : s && w ? 'fr_dl' : 'fr_dr';
-    if (name && Tiles.has(name)) { ctx.drawImage(Tiles.get(name), px, py); return; }
-    ctx.drawImage(Tiles.get(`fairway${((tx + ty) % 4 + 4) % 4}`), px, py);
+    if (name && Tiles.has(name)) { ctx.drawImage(Tiles.get(name), px, py, T, T); return; }
+    ctx.drawImage(Tiles.get(`fairway${((tx + ty) % 4 + 4) % 4}`), px, py, T, T);
   }
   // 13枚ブロブ型オートタイル（中央・辺4・外角4・内角4）。kind: 'bk' バンカー / 'pd' 池。same(c) で同じ地形か判定（マップ外は同じ扱い）
   drawBlob(ctx, kind, same, tx, ty, px, py) {
@@ -466,12 +466,12 @@ class FieldScene {
     if (!name || !Tiles.has(name)) {   // 中央（池は 3コマで ゆらぎ）
       name = kind === 'pd' ? `pd_c${(Math.floor(this.frame / 24) + tx + ty) % 3}` : `bk_c${((tx * 7 + ty * 13) % 2 + 2) % 2}`;
     }
-    ctx.drawImage(Tiles.get(name), px, py);
+    ctx.drawImage(Tiles.get(name), px, py, CONFIG.TILE, CONFIG.TILE);
   }
   // ラフの前景：そのマスに立っている人物の足元に 芝の下半分を重ねて「埋もれて」見せる
   drawRoughFront(ctx, tx, ty, px, py) {
     if (!(this.map.golf && Tiles.has('rough_fg0')) || this.tileAt(tx, ty) !== 'T') return;
-    ctx.drawImage(Tiles.variant('rough_fg', 4, tx, ty), px, py + 8);
+    ctx.drawImage(Tiles.variant('rough_fg', 4, tx, ty), px, py + 8, CONFIG.TILE, CONFIG.TILE / 2);
   }
   drawProp(ctx, name, px, py) {
     const im = Tiles.get(name); if (!im) return;
@@ -507,26 +507,26 @@ class FieldScene {
     // 道は建物のドアにも繋がる（ドア前の道が丸い孤島にならないように）
     const same = (dx, dy) => this.tileAt(tx + dx, ty + dy) === t || (t === 'P' && this.doorAt(tx + dx, ty + dy));
     const mask = () => (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0);
-    const grass = () => ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py);
+    const grass = () => { if (this.map.golf && Tiles.has('fairway0')) this.drawFairway(ctx, tx, ty, px, py); else ctx.drawImage(Tiles.variant('grass', 3, tx, ty), px, py); };   // コースでは地面＝フェアウェイ
     switch (t) {
       case 'G': grass(); return true;
       // ゴルフ場（ChatGPT製タイル）：g フェアウェイ（ラフとの境目は自動） n グリーン K バンカー（13枚オートタイル） Y ピンフラッグ y ティーマーカー
       case 'g': this.drawFairway(ctx, tx, ty, px, py); return true;
-      case 'n': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py); return true;
+      case 'n': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); return true;
       case 'K': this.drawBlob(ctx, 'bk', c => c === 'K', tx, ty, px, py); return true;
-      case 'Y': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py); this.drawProp(ctx, 'flag', px, py); return true;
+      case 'Y': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); this.drawProp(ctx, 'flag', px, py); return true;
       case 'y': this.drawFairway(ctx, tx, ty, px, py); this.drawProp(ctx, 'tee', px, py); return true;
       case 'P': ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
       case '~': if (this.map.golf && Tiles.has('pd_c0')) { this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); return true; } ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
       case 'W': grass(); trees.push([px, py]); return true;
-      case 'T': if (this.map.golf && Tiles.has('rough0')) { const fx = this.stepFx; if (fx && fx.x === tx && fx.y === ty && fx.t > 0) ctx.drawImage(Tiles.get(fx.side ? 'rough_stepR' : 'rough_stepL'), px, py); else ctx.drawImage(Tiles.variant('rough', 4, tx, ty), px, py); return true; } ctx.drawImage(Tiles.get('tall'), px, py); return true;
+      case 'T': if (this.map.golf && Tiles.has('rough0')) { const fx = this.stepFx; if (fx && fx.x === tx && fx.y === ty && fx.t > 0) ctx.drawImage(Tiles.get(fx.side ? 'rough_stepR' : 'rough_stepL'), px, py, T, T); else ctx.drawImage(Tiles.variant('rough', 4, tx, ty), px, py, T, T); return true; } ctx.drawImage(Tiles.get('tall'), px, py); return true;
       case 'F': grass(); ctx.drawImage(Tiles.variant('flower', 2, tx, ty), px, py); return true;
       case 'H': grass(); this.drawProp(ctx, 'hedge', px, py); return true;
       case 'S': grass(); this.drawProp(ctx, 'sign', px, py); return true;
       case '=': grass(); this.drawProp(ctx, 'fence', px, py); return true;
       case 'Q': ctx.drawImage(Tiles.variant('stone', 5, tx, ty), px, py); return true;
       case 'L': grass(); if (Tiles.has('lamp')) this.drawProp(ctx, 'lamp', px, py); else ctx.drawImage(Gfx.get('lamp', 1, false, 'gGh'), px, py); return true;
-      case 'B': if (this.map.golf && Tiles.has('pd_c0')) { this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); ctx.drawImage(Tiles.get(this.tileAt(tx, ty - 1) === '~' || this.tileAt(tx, ty + 1) === '~' ? 'bridge_v' : 'bridge_h'), px, py); return true; }
+      case 'B': if (this.map.golf && Tiles.has('pd_c0')) { this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); ctx.drawImage(Tiles.get(this.tileAt(tx, ty - 1) === '~' || this.tileAt(tx, ty + 1) === '~' ? 'bridge_v' : 'bridge_h'), px, py, T, T); return true; }
         ctx.drawImage(Tiles.auto('water', 15, tx, ty), px, py); if (Tiles.has('bridge')) { ctx.drawImage(Tiles.get('bridge'), px, py); return true; } return false;   // 橋
     }
     return false;

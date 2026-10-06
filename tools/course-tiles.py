@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ChatGPT製のコースタイル2枚（assets/src/course_sheet_grass.png / course_sheet_water.png、マゼンタ背景）を
+"""ChatGPT製のコースタイル2枚（1タイルを 32×32 ドットで取り込み、描画時に 16px へ縮めて使う＝高解像度タイル）（assets/src/course_sheet_grass.png / course_sheet_water.png、マゼンタ背景）を
    16ドットに落として assets/tiles.png / tiles.json に追加する（行は y、列は x の順で自動検出。ラベル箱は暗いので除外）"""
 import json
 from PIL import Image
@@ -47,10 +47,10 @@ names = [['rough0', 'rough1', 'rough2', 'rough3'], ['rough_fg0', 'rough_fg1', 'r
          ['fairway0', 'fairway1', 'fairway2', 'fairway3'], ['green0', 'green1'], ['fr_u', 'fr_d', 'fr_l', 'fr_r', 'fr_ul', 'fr_ur', 'fr_dl', 'fr_dr']]
 for row, nm in zip(rows, names):
     for (y, x, w, h), name in zip(row, nm):
-        dot = w / 16; th = max(1, round(h / dot))
-        if name.startswith('rough_fg'): th = 8
-        if name.startswith('rough_step'): th = 16
-        tiles[name] = pixelize(A, mag, y, x, w, h, 16, th)
+        dot = w / 32; th = max(1, round(h / dot))
+        if name.startswith('rough_fg'): th = 16
+        if name.startswith('rough_step'): th = 32
+        tiles[name] = pixelize(A, mag, y, x, w, h, 32, th)
 # ---- 砂・水シート ----
 A, mag, rows = comps('assets/src/course_sheet_water.png')
 names = [['bk_c0', 'bk_c1', 'bk_u', 'bk_d', 'bk_l', 'bk_r'], ['bk_ul', 'bk_ur', 'bk_dl', 'bk_dr', 'bk_iul', 'bk_iur', 'bk_idl', 'bk_idr'],
@@ -58,19 +58,17 @@ names = [['bk_c0', 'bk_c1', 'bk_u', 'bk_d', 'bk_l', 'bk_r'], ['bk_ul', 'bk_ur', 
          ['bridge_v', 'bridge_h', 'post1', 'post2', 'post_rope', 'post_pair', 'post_pair2', 'bush', 'lawn']]
 for row, nm in zip(rows, names):
     for (y, x, w, h), name in zip(row, nm):
-        tw, th = 16, 16
-        if name.startswith('bridge'): tw, th = 16, 16
-        tiles[name] = pixelize(A, mag, y, x, w, h, tw, th)
+        tiles[name] = pixelize(A, mag, y, x, w, h, 32, 32)
 # 内角（iul など）はシートの絵が外角と同じだったので、中央タイルに外角タイルの角 7×7 を貼って合成する
 for kind, center in (('bk', 'bk_c0'), ('pd', 'pd_c0')):
     for corner in ('ul', 'ur', 'dl', 'dr'):
         base = tiles[center].copy(); src = tiles[f'{kind}_{corner}']
         x0 = 0 if corner[1] == 'l' else 9; y0 = 0 if corner[0] == 'u' else 9
-        base.paste(src.crop((x0, y0, x0 + 7, y0 + 7)), (x0, y0)); tiles[f'{kind}_i{corner}'] = base
+        base.paste(src.crop((x0 * 2, y0 * 2, x0 * 2 + 14, y0 * 2 + 14)), (x0 * 2, y0 * 2)); tiles[f'{kind}_i{corner}'] = base
 # ---- アトラスに追加（新しい行 y=224 から、横に詰める。2行使う） ----
-ROW = 224; need = 32 + 2
-if atlas.height < ROW + need * 3:
-    big = Image.new('RGBA', (max(atlas.width, 512), ROW + need * 3), (0, 0, 0, 0)); big.paste(atlas, (0, 0)); atlas = big
+ROW = 224; need = 34
+if atlas.height < ROW + need * 6 or atlas.width < 512:
+    big = Image.new('RGBA', (max(atlas.width, 512), ROW + need * 6), (0, 0, 0, 0)); big.paste(atlas, (0, 0)); atlas = big
 x = 0; y = ROW; rowh = 0
 for name, t in tiles.items():
     if x + t.width > atlas.width: x = 0; y += rowh + 2; rowh = 0
@@ -78,7 +76,7 @@ for name, t in tiles.items():
 atlas.save('assets/tiles.png'); json.dump(j, open('assets/tiles.json', 'w'))
 print('added', len(tiles), 'tiles; atlas', atlas.size)
 # プレビュー
-pv = Image.new('RGBA', (16 * 12 + 11 * 2, 16 * 6 + 5 * 2), (255, 0, 255, 255)); i = 0
+pv = Image.new('RGBA', (34 * 12, 34 * 6), (255, 0, 255, 255)); i = 0
 for name, t in tiles.items():
-    pv.paste(t, ((i % 12) * 18, (i // 12) * 18)); i += 1
-pv.resize((pv.width * 5, pv.height * 5), Image.NEAREST).save('/tmp/claude-0/course_tiles_preview.png')
+    pv.paste(t, ((i % 12) * 34, (i // 12) * 34)); i += 1
+pv.resize((pv.width * 3, pv.height * 3), Image.NEAREST).save('/tmp/claude-0/course_tiles_preview.png')
