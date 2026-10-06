@@ -44,9 +44,12 @@ def cut(y, x, w, h, tw, th, anchor):
     return Image.fromarray(arr.astype(np.uint8), 'RGBA')
 DOT = max(c[2] for c in rows[0]) / 16
 tiles = {}
-for (y, x, w, h), nm in zip(rows[0], ['rough0', 'rough1', 'rough2', 'rough3']): tiles[nm] = cut(y, x, w, h, 16, 16, 'full')
+for (y, x, w, h), nm in zip(rows[0], ['rough0', 'rough1', 'rough2', 'rough3']):
+    ins = int(w * 0.05); im = cut(y + ins, x + ins, w - 2 * ins, h - 2 * ins, 16, 16, 'full')   # 縁の暗い線を避けて少し内側から
+    arr = np.asarray(im).copy(); arr[arr[:, :, 3] == 0] = (46, 107, 44, 255); tiles[nm] = Image.fromarray(arr, 'RGBA')   # 穴は根元の暗い緑で埋める
 for (y, x, w, h), nm in zip(rows[1], ['rough_fg0', 'rough_fg1', 'rough_fg2', 'rough_fg3']): tiles[nm] = cut(y, x, w, h, 16, 8, 'bottom')
-for (y, x, w, h), nm in zip(rows[2], ['rough_stepL', 'rough_stepR']): tiles[nm] = cut(y, x, w, h, 16, 16, 'bottom')
+for (y, x, w, h), nm in zip(rows[2], ['rough_stepL', 'rough_stepR']):
+    im = cut(y, x, w, h, 16, 16, 'bottom'); arr = np.asarray(im).copy(); arr[arr[:, :, 3] == 0] = (46, 107, 44, 255); tiles[nm] = Image.fromarray(arr, 'RGBA')
 # 縁：上=タイル上側にラフ（下が透明）、下=下側、左、右。それぞれ 16×16 の中にラフ部分だけ
 ed = rows[3]
 tiles['fr_u'] = cut(*ed[0], 16, 16, 'top'); tiles['fr_d'] = cut(*ed[1], 16, 16, 'bottom'); tiles['fr_l'] = cut(*ed[2], 16, 16, 'left'); tiles['fr_r'] = cut(*ed[3], 16, 16, 'right')

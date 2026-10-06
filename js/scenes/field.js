@@ -664,9 +664,12 @@ class FieldScene {
     const step = this.moving > 0 ? 1 + this.animStep : 0;
     const hs = this.heroSprite(st.dir, step);
     ctx.drawImage(hs, st.x * T - ox - camX + bx + Math.floor((T - hs.width) / 2), st.y * T - oy - camY + by + T - hs.height - 1);
-    // ラフの中：足元に芝を重ねる（立っているマスと、歩き出したマスの両方）
-    this.drawRoughFront(ctx, st.x, st.y, st.x * T - camX + bx, st.y * T - camY + by);
-    if (this.moving > 0) { const [dx, dy] = DIRS[st.dir]; this.drawRoughFront(ctx, st.x - dx, st.y - dy, (st.x - dx) * T - camX + bx, (st.y - dy) * T - camY + by); }
+    // ラフの中：足元に芝を重ねる。重ねるのは「足が入っている行」のマスだけ（上から下へ歩くとき、出てきたマスの芝で顔が隠れないように）
+    {
+      const feetY = st.y * T - oy + T - 1, fy = Math.floor(feetY / T);
+      const xs = this.moving > 0 && DIRS[st.dir][1] === 0 ? [st.x, st.x - DIRS[st.dir][0]] : [st.x];
+      for (const fx of xs) this.drawRoughFront(ctx, fx, fy, fx * T - camX + bx, fy * T - camY + by);
+    }
     if (useImg) for (const [px, py] of frontTrees) ctx.drawImage(Tiles.get('tree'), px - 8, py - 16);
   }
 }
