@@ -54,6 +54,19 @@ for (y, x, w, h), nm in zip(rows[2], ['rough_stepL', 'rough_stepR']):
 ed = rows[3]
 tiles['fr_u'] = cut(*ed[0], 16, 16, 'top'); tiles['fr_d'] = cut(*ed[1], 16, 16, 'bottom'); tiles['fr_l'] = cut(*ed[2], 16, 16, 'left'); tiles['fr_r'] = cut(*ed[3], 16, 16, 'right')
 # 外角＝上と左（など）の重ね合わせ
+# 縁タイルの輪郭を統一：透明に接する不透明ドットを暗い緑に（シートでは上・左だけ暗く、下・右は明るかった）
+OUT = (34, 86, 38, 255)
+def outline(im):
+    a = np.asarray(im).copy(); al = a[:, :, 3] > 0; h, w = al.shape; o = a.copy()
+    for y in range(h):
+        for x in range(w):
+            if not al[y, x]: continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and not al[ny, nx]: o[y, x] = OUT; break
+    return Image.fromarray(o, 'RGBA')
+for nm in ['fr_u', 'fr_d', 'fr_l', 'fr_r']: tiles[nm] = outline(tiles[nm])
+for nm in ['rough_fg0', 'rough_fg1', 'rough_fg2', 'rough_fg3']: tiles[nm] = outline(tiles[nm])
 def union(a, b):
     out = tiles[a].copy(); out.alpha_composite(tiles[b]); return out
 tiles['fr_ul'] = union('fr_u', 'fr_l'); tiles['fr_ur'] = union('fr_u', 'fr_r'); tiles['fr_dl'] = union('fr_d', 'fr_l'); tiles['fr_dr'] = union('fr_d', 'fr_r')
