@@ -6,16 +6,16 @@ class TitleScene {
   enter() { Sound.stop(); }
   items() {
     const it = Save.exists() ? ['はじめから', 'つづきから', 'せってい'] : ['はじめから', 'せってい'];
-    if (this.debug) it.push('バトルテスト', 'モンスターみる', 'ガッツタウンへ', 'ガーデンプレースへ');
+    if (this.debug) it.push('バトルテスト', 'モンスターみる', 'ガッツタウンへ', 'ガーデンプレースへ', 'コースへ');
     return it;
   }
-  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」「モンスターみる」「ガッツタウンへ」「ガーデンプレースへ」が出る（セーブは変えない）
+  // 裏技：タイトルで ↑↓B↓↓ → 「バトルテスト」「モンスターみる」「ガッツタウンへ」「ガーデンプレースへ」「コースへ」が出る（セーブは変えない）
   checkCode() {
     const seq = ['up', 'down', 'b', 'down', 'down'];
     const k = ['up', 'down', 'left', 'right', 'a', 'b', 'start'].find(x => Input.pressed(x));
     if (!k) return false;
     this.code = k === seq[this.code] ? this.code + 1 : (k === seq[0] ? 1 : 0);
-    if (this.code >= seq.length) { this.code = 0; this.debug = true; this.menu = true; this.sel = this.items().length - 4; return true; }
+    if (this.code >= seq.length) { this.code = 0; this.debug = true; this.menu = true; this.sel = this.items().length - 5; return true; }
     return false;
   }
   // 裏技：町へワープ。セーブがあればその手持ちで、無ければテスト用パーティで
@@ -73,6 +73,8 @@ class TitleScene {
         this.warpTo('town', 13, 10);
       } else if (label === 'ガーデンプレースへ') {
         this.warpTo('town2', 9, 10);
+      } else if (label === 'コースへ') {
+        this.warpTo('plaza', 9, 9);
       } else if (label === 'モンスターみる') {
         this.monsterView();
       } else if (label === 'バトルテスト') {
