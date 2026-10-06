@@ -47,10 +47,11 @@ names = [['rough0', 'rough1', 'rough2', 'rough3'], ['rough_fg0', 'rough_fg1', 'r
          ['fairway0', 'fairway1', 'fairway2', 'fairway3'], ['green0', 'green1'], ['fr_u', 'fr_d', 'fr_l', 'fr_r', 'fr_ul', 'fr_ur', 'fr_dl', 'fr_dr']]
 for row, nm in zip(rows, names):
     for (y, x, w, h), name in zip(row, nm):
-        dot = w / 32; th = max(1, round(h / dot))
-        if name.startswith('rough_fg'): th = 16
-        if name.startswith('rough_step'): th = 32
-        tiles[name] = pixelize(A, mag, y, x, w, h, 32, th)
+        RD = int(__import__('os').environ.get('ROUGH_DOTS', '24')); tw = RD if name.startswith('rough') else 32
+        dot = w / tw; th = max(1, round(h / dot))
+        if name.startswith('rough_fg'): th = tw // 2
+        if name.startswith('rough_step'): th = tw
+        tiles[name] = pixelize(A, mag, y, x, w, h, tw, th)
 # ---- 砂・水シート ----
 A, mag, rows = comps('assets/src/course_sheet_water.png')
 names = [['bk_c0', 'bk_c1', 'bk_u', 'bk_d', 'bk_l', 'bk_r'], ['bk_ul', 'bk_ur', 'bk_dl', 'bk_dr', 'bk_iul', 'bk_iur', 'bk_idl', 'bk_idr'],
