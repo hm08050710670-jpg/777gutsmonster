@@ -68,18 +68,12 @@ const server = http.createServer((req, res) => {
   await finishBattle(); await advance(); await page.waitForTimeout(1500); await waitActor(); console.log('after rival:', await st(), 'note:', await note());
   // 森：逃げるモンスター
   await page.evaluate(() => { CONFIG.ENCOUNTER_RATE = 0; });
-  await goto('forest', 8, 15, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(400); await shot('03_forest_call'); await advance(1); await page.waitForTimeout(900); await shot('04_forest_run1');
-  for (let i = 0; i < 60; i++) { const t = await page.evaluate(() => Game.top().constructor.name); if (t === 'DialogScene') { const f = await page.evaluate(() => !!Game.state.flags.forestRun); await advance(1); if (f) break; } await page.waitForTimeout(150); }
-  await page.waitForTimeout(300); await closeAll(); console.log('after forestRun:', await st(), 'note:', await note()); await shot('05_forest_after');
   // ガーデンプレース → 正門前のカエデに観測機
   await goto('town2', 9, 3, 'up'); await walk('up'); await page.waitForTimeout(200); await shot('06_town2_north'); await closeAll();
   await goto('cc', 13, 8, 'right'); await tap('a'); await page.waitForTimeout(300); await shot('07_kaede'); await closeAll(); console.log('after device:', await st(), 'note:', await note());
   // コースを奥へ：アイテム拾い → 林でモンスターが逃げてくる → 18番の調査
   await goto('clubhouse', 8, 3, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(400); console.log('back door ->', await page.evaluate(() => Game.state.map));
   await goto('course1', 9, 2, 'up'); await tap('a'); await page.waitForTimeout(300); await closeAll(); console.log('items:', await page.evaluate(() => Game.state.items));
-  await goto('course3', 17, 6, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(400); await advance(1); await page.waitForTimeout(900);
-  for (let i = 0; i < 60; i++) { const t = await page.evaluate(() => Game.top().constructor.name); if (t === 'DialogScene') { const f = await page.evaluate(() => !!Game.state.flags.forestRun); await advance(1); if (f) break; } await page.waitForTimeout(150); }
-  await page.waitForTimeout(300); await closeAll(); console.log('after courseRun:', await st()); await shot('08_course3_after');
   await goto('course4', 8, 3, 'up'); await walk('up'); await walk('up'); await page.waitForTimeout(300); await shot('09_sound'); await closeAll(); console.log('after sound:', await st(), 'note:', await note());
   // クラブハウス：扉は会員3人に勝つまで閉まっている
   await goto('clubhouse', 2, 2, 'up'); await walk('up'); await page.waitForTimeout(600); await shot('10_door_locked'); await closeAll(); console.log('door locked still map:', await page.evaluate(() => Game.state.map));
