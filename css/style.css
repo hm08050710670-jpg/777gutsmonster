@@ -152,29 +152,6 @@ html, body {
 #saved { opacity: 0; transition: opacity 0.3s; }
 #saved.show { opacity: 1; }
 
-/* 名前入力 */
-#name-overlay[hidden] { display: none; }
-#name-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center; z-index: 10;
-}
-#name-card {
-  background: var(--ivory); color: var(--text);
-  border: 3px solid var(--green); border-radius: 8px;
-  padding: 16px; width: min(320px, 88vw);
-  display: flex; flex-direction: column; gap: 12px;
-  box-shadow: 0 6px 0 rgba(0,0,0,0.3);
-}
-.nc-title { font-weight: 700; letter-spacing: 0.05em; }
-#name-input {
-  font-size: 18px; padding: 8px 10px; border: 2px solid var(--green); border-radius: 4px;
-  background: #fff; color: var(--text); width: 100%;
-}
-.nc-btn {
-  background: var(--green); color: #fff; border: none; border-radius: 4px;
-  padding: 10px; font-size: 14px; font-weight: 700;
-}
-
 /* 横向き（補助的な対応。基本は縦画面） */
 @media (orientation: landscape) and (max-height: 500px) {
   #app { flex-direction: row; justify-content: center; align-items: stretch; }

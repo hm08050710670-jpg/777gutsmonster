@@ -73,7 +73,13 @@ const Input = (() => {
       if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return null;
       return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
     };
-    canvas.addEventListener('pointerdown', e => { e.preventDefault(); swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, key: null }; });
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      // いちばん上のシーンに tap(x, y) があれば、タップはそのシーンが受ける（名前入力の50音など）。スワイプ・Aにはしない
+      const s = typeof Game !== 'undefined' && Game.top && Game.top();
+      if (s && s.tap) { const r = canvas.getBoundingClientRect(); s.tap((e.clientX - r.left) / r.width * CONFIG.W, (e.clientY - r.top) / r.height * CONFIG.H); swipe = null; return; }
+      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, key: null };
+    });
     canvas.addEventListener('pointermove', e => {
       if (!swipe || swipe.id !== e.pointerId) return;
       const k = swipeKey(e.clientX - swipe.x, e.clientY - swipe.y);

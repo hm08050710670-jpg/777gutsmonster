@@ -23,24 +23,5 @@ const UI = (() => {
   }
 
   // 名前入力（HTMLオーバーレイ）。cb(name)
-  function promptName(cb, defaultName = '') {
-    const ov = document.getElementById('name-overlay');
-    const input = document.getElementById('name-input');
-    const ok = document.getElementById('name-ok');
-    input.value = defaultName;
-    ov.hidden = false;
-    setTimeout(() => input.focus(), 50);
-    const done = () => {
-      const v = [...input.value.trim()].slice(0, 8).join('');
-      if (!v) { input.focus(); return; }
-      ov.hidden = true;
-      ok.onclick = null; input.onkeydown = null;
-      cb(v);
-    };
-    ok.onclick = done;
-    input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); done(); } e.stopPropagation(); };
-    input.onkeyup = e => e.stopPropagation();
-  }
-
-  return { setNote, refreshNote, flashSaved, promptName };
+  return { setNote, refreshNote, flashSaved };
 })();

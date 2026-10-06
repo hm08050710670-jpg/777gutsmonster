@@ -176,11 +176,10 @@ class TitleScene {
 // ---- 主人公設定 ----
 class SetupScene {
   constructor() { this.overlay = false; this.step = 'name'; this.name = ''; this.gender = 'm'; this.sel = 0; this.asked = false; }
-  enter() {
-    UI.promptName(name => { this.name = name; this.step = 'gender'; });
-  }
+  enter() { this.kb = new NameKeyboard(name => { this.name = name; this.step = 'gender'; }); }
+  tap(x, y) { if (this.step === 'name') this.kb.tap(x, y); }
   update(frame) {
-    if (this.step === 'name') return; // HTML入力待ち
+    if (this.step === 'name') { this.kb.update(frame); return; }
     if (this.step === 'gender') {
       if (Input.pressed('left') || Input.pressed('right') || Input.pressed('up') || Input.pressed('down')) this.sel ^= 1;
       if (Input.pressed('a')) { this.gender = this.sel === 0 ? 'm' : 'f'; this.step = 'preview'; }
@@ -199,7 +198,7 @@ class SetupScene {
   draw(ctx, frame) {
     const W = CONFIG.W, H = CONFIG.H;
     ctx.fillStyle = THEME.ivory2; ctx.fillRect(0, 0, W, H);
-    if (this.step === 'name') { Text.draw(ctx, '01. なまえを きめよう', 24, 24, THEME.green); return; }
+    if (this.step === 'name') { this.kb.draw(ctx, frame); return; }
     if (this.step === 'gender') {
       Text.draw(ctx, '02. せいべつを えらぼう', 24, 24, THEME.green);
       ['hm', 'hf'].forEach((g, i) => {
@@ -222,5 +221,88 @@ class SetupScene {
     Text.box(ctx, 0, H - 40, W, 40);
     Text.draw(ctx, 'A: この主人公で 冒険をはじめる', 10, H - 30);
     Text.draw(ctx, 'B: もどる', 10, H - 18, THEME.textDim);
+  }
+}
+
+// ---- 名前入力（ゲーム内の50音キーボード。十字キー＋A/B、画面のタップでも選べる） ----
+class NameKeyboard {
+  constructor(cb) {
+    this.cb = cb; this.name = ''; this.col = 0; this.row = 0; this.kata = false; this.msg = 0;
+    this.cols = ['あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの', 'はひふへほ', 'まみむめも', 'やゆよっー', 'らりるれろ', 'わをん゛゜'];
+    this.btns = ['ちいさく', 'カタカナ', 'けす'];   // row 5
+    this.X0 = 16; this.Y0 = 52; this.CW = 16; this.CH = 16; this.MAX = 8;
+  }
+  key(c, r) { let ch = this.cols[c][r]; if (this.kata && ch >= 'ぁ' && ch <= 'ゖ') ch = String.fromCharCode(ch.charCodeAt(0) + 0x60); return ch; }
+  // 直前の文字を変える：゛゜は結合文字で合成／解除、小は小書き文字と入れ替え
+  modify(kind) {
+    if (!this.name) return;
+    const chars = [...this.name], last = chars.pop(); let out = last;
+    if (kind === '゛' || kind === '゜') {
+      const mark = kind === '゛' ? '゙' : '゚', base = last.normalize('NFD').replace(/[゙゚]/g, ''), has = last.normalize('NFD').includes(mark);
+      out = has ? base : (base + mark).normalize('NFC'); if ([...out].length > 1) out = last;   // 合成できない字はそのまま
+    } else {
+      const big = 'あいうえおつやゆよわアイウエオツヤユヨワ', small = 'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮ';
+      const i = big.indexOf(last), j = small.indexOf(last); out = i >= 0 ? small[i] : j >= 0 ? big[j] : last;
+    }
+    chars.push(out); this.name = chars.join('');
+  }
+  put(ch) {
+    if (ch === '゛' || ch === '゜') return this.modify(ch);
+    if ([...this.name].length >= this.MAX) { this.msg = 40; return; }
+    this.name += ch;
+  }
+  act() {
+    if (this.row < 5) return this.put(this.key(this.col, this.row));
+    if (this.row === 5) { const b = this.btnAt(this.col); if (b === 0) this.modify('小'); else if (b === 1) this.kata = !this.kata; else this.name = [...this.name].slice(0, -1).join(''); return; }
+    this.finish();
+  }
+  finish() { if (!this.name) { this.msg = 60; return; } this.cb(this.name); }
+  btnAt(col) { return Math.min(2, Math.floor(col / 3.4)); }
+  update(frame) {
+    if (this.msg > 0) this.msg--;
+    if (Input.pressed('left')) this.col = (this.col + 9) % 10;
+    if (Input.pressed('right')) this.col = (this.col + 1) % 10;
+    if (Input.pressed('up')) this.row = (this.row + 6) % 7;
+    if (Input.pressed('down')) this.row = (this.row + 1) % 7;
+    if (Input.pressed('a')) this.act();
+    if (Input.pressed('b')) this.name = [...this.name].slice(0, -1).join('');
+  }
+  tap(x, y) {
+    const { X0, Y0, CW, CH } = this;
+    if (y >= Y0 && y < Y0 + CH * 5 && x >= X0 && x < X0 + CW * 10) { this.col = Math.floor((x - X0) / CW); this.row = Math.floor((y - Y0) / CH); return this.act(); }
+    const by = Y0 + CH * 5 + 4;
+    if (y >= by && y < by + 16) { const i = Math.floor((x - X0) / 54); if (i >= 0 && i < 3) { this.row = 5; this.col = [1, 5, 8][i]; return this.act(); } }
+    if (y >= by + 20 && y < by + 36 && x >= X0 && x < X0 + 160) { this.row = 6; return this.act(); }
+  }
+  draw(ctx, frame) {
+    const W = CONFIG.W, { X0, Y0, CW, CH } = this;
+    Text.draw(ctx, '01. なまえを きめよう', 24, 8, THEME.green);
+    // 名前の枠
+    const chars = [...this.name];
+    for (let i = 0; i < this.MAX; i++) {
+      const x = 32 + i * 16; ctx.fillStyle = '#b9c9b3'; ctx.fillRect(x + 2, 36, 12, 1);
+      if (chars[i]) Text.draw(ctx, chars[i], x + 4, 26);
+      else if (i === chars.length && Math.floor(frame / 16) % 2 === 0) { ctx.fillStyle = THEME.green; ctx.fillRect(x + 2, 36, 12, 1); ctx.fillRect(x + 2, 35, 12, 1); }
+    }
+    // 50音
+    Text.box(ctx, X0 - 6, Y0 - 4, CW * 10 + 12, CH * 5 + 8);
+    for (let c = 0; c < 10; c++) for (let r = 0; r < 5; r++) {
+      const ch = this.key(c, r), x = X0 + c * CW, y = Y0 + r * CH, sel = this.row === r && this.col === c;
+      if (sel) { ctx.fillStyle = THEME.green; ctx.fillRect(x, y, CW, CH); }
+      Text.draw(ctx, ch, x + 4, y + 3, sel ? THEME.ivory2 : THEME.text);
+    }
+    // ボタン行
+    const by = Y0 + CH * 5 + 4;
+    this.btns.forEach((label, i) => {
+      if (i === 1) label = this.kata ? 'ひらがな' : 'カタカナ';
+      const x = X0 + i * 54, w = 50, sel = this.row === 5 && this.btnAt(this.col) === i;
+      ctx.fillStyle = sel ? THEME.green : '#dfe6d8'; ctx.fillRect(x, by, w, 16);
+      Text.draw(ctx, label, x + w / 2 - Text.width(label) / 2, by + 3, sel ? THEME.ivory2 : THEME.text);
+    });
+    { const label = 'おわり', sel = this.row === 6, x = X0, w = 160, y = by + 20;
+      ctx.fillStyle = sel ? THEME.green : '#dfe6d8'; ctx.fillRect(x, y, w, 16);
+      Text.draw(ctx, label, x + w / 2 - Text.width(label) / 2, y + 3, sel ? THEME.ivory2 : THEME.text); }
+    const hint = this.msg > 0 ? (this.name ? '8もじまで だよ' : 'なまえを いれてね') : (Math.floor(frame / 120) % 2 ? 'がめんを タップしても えらべるよ' : 'A: えらぶ   B: けす');
+    Text.draw(ctx, hint, W / 2 - Text.width(hint) / 2, by + 44, this.msg > 0 ? THEME.green : THEME.textDim);
   }
 }

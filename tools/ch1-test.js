@@ -57,7 +57,7 @@ const server = http.createServer((req, res) => {
   const waitActor = async () => { for (let i = 0; i < 200; i++) { const t = await page.evaluate(() => Game.top().constructor.name + ':' + !!(Game.top().actor)); if (t === 'FieldScene:false') return; if (t.startsWith('DialogScene')) return; await page.waitForTimeout(100); } };
   // 新規開始 → 研究所で御三家
   await tap('start'); await tap('a'); await page.waitForTimeout(400);
-  await page.fill('#name-input', 'テスト'); await page.click('#name-ok'); await page.waitForTimeout(300); await tap('a'); await page.waitForTimeout(200); await tap('a'); await page.waitForTimeout(400);
+  await page.evaluate(() => { Game.top().kb.name = 'テスト'; Game.top().kb.finish(); }); await page.waitForTimeout(300); await tap('a'); await page.waitForTimeout(200); await tap('a'); await page.waitForTimeout(400);
   await goto('lab', 8, 8, 'up'); await advance(40);
   await page.evaluate(() => { Game.state.x = 7; Game.state.y = 6; Game.state.dir = 'up'; }); await tap('a'); await page.waitForTimeout(600); await advance(); await tap('a'); await page.waitForTimeout(300);
   await advance(3); await shot('01_device'); await closeAll(); console.log('after starter:', await st(), 'note:', await note());
