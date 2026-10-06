@@ -519,7 +519,7 @@ class FieldScene {
       case 'K': grass(); this.drawBlob(ctx, 'bk', c => c === 'K', tx, ty, px, py); return true;
       case 'Y': ctx.drawImage(Tiles.get(`green${tx % 2}`), px, py, T, T); this.drawProp(ctx, 'flag', px, py); return true;
       case 'y': this.drawFairway(ctx, tx, ty, px, py); this.drawProp(ctx, 'tee', px, py); return true;
-      case 'P': ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
+      case 'P': if (this.map.golf && Tiles.has('fairway0')) { this.drawFairway(ctx, tx, ty, px, py); ctx.drawImage(Tiles.auto('cart', mask(), tx, ty), px, py); return true; } ctx.drawImage(Tiles.auto('path', mask(), tx, ty), px, py); return true;
       case '~': if (this.map.golf && Tiles.has('pd_c0')) { grass(); this.drawBlob(ctx, 'pd', c => c === '~' || c === 'B', tx, ty, px, py); return true; } ctx.drawImage(Tiles.auto('water', mask(), tx, ty), px, py); return true;
       case 'W': grass(); trees.push([px, py]); return true;
       case 'T': if (this.map.golf && Tiles.has('rough0')) { const fx = this.stepFx; if (fx && fx.x === tx && fx.y === ty && fx.t > 0) ctx.drawImage(Tiles.get(fx.side ? 'rough_stepR' : 'rough_stepL'), px, py, T, T); else ctx.drawImage(Tiles.variant('rough', 4, tx, ty), px, py, T, T); return true; } ctx.drawImage(Tiles.get('tall'), px, py); return true;

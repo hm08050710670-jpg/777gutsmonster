@@ -77,7 +77,23 @@ for nm, im in tiles.items():
         lab2, _ = ndimage.label(hole); k = lab2[INNER[nm]]; fill = hole & ~(lab2 == k) if k else hole
     else:
         fill = hole
-    a[fill] = sand[fill]; tiles[nm] = Image.fromarray(a, 'RGBA')
+    a[fill] = sand[fill]
+    # はみ出し除去：縁線（暗い色）の外側にある砂・緑は透明にする（ゲーム側の芝が見える）
+    if nm in BOX or nm in INNER:
+        rim = (a[:, :, 3] > 0) & ~((a[:, :, 1].astype(int) > a[:, :, 0].astype(int) + 20) | ((a[:, :, 0] > 200) & (a[:, :, 1] > 170)))
+        lab3, _ = ndimage.label(~rim)   # 4連結：斜めにつながった縁線は壁になる
+        seeds = set()
+        if nm in BOX:
+            for side in BOX[nm]:
+                seeds |= set({'t': lab3[0, :], 'b': lab3[15, :], 'l': lab3[:, 0], 'r': lab3[:, 15]}[side].tolist())
+        else:
+            seeds.add(lab3[INNER[nm]])
+        out = np.zeros((16, 16), bool)
+        for k in seeds:
+            if k: out |= (lab3 == k)
+        if out.sum() > 100: print('warn: rim leak?', nm, out.sum())
+        else: a[out] = 0
+    tiles[nm] = Image.fromarray(a, 'RGBA')
 for nm, im in tiles.items():
     x, y, w, h = j[nm]; atlas.paste(Image.new('RGBA', (w, h), (0, 0, 0, 0)), (x, y)); atlas.paste(im, (x, y)); j[nm] = [x, y, 16, 16]
 atlas.save('assets/tiles.png'); json.dump(j, open('assets/tiles.json', 'w'))

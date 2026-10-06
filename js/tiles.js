@@ -44,7 +44,8 @@ const Tiles = (() => {
     if (!cache.has(key)) {
       const c = document.createElement('canvas'); c.width = 16; c.height = 16;
       const g = c.getContext('2d');
-      g.drawImage(variant('grass', 3, x, y), 0, 0);
+      const cart = kind === 'cart';   // コースのカート道：コンクリート色、下地は透明（フェアウェイの上に重ねる）
+      if (!cart) g.drawImage(variant('grass', 3, x, y), 0, 0);
       // ドット単位で内外を決める（曲線のアンチエイリアスでぼやけないように）
       const inset = kind === 'water' ? 2 : 3, r = kind === 'water' ? 3 : 5;
       const N = mask & 1, E = mask & 2, S = mask & 4, W = mask & 8;
@@ -59,9 +60,13 @@ const Tiles = (() => {
         if (!S && !E && px >= x1 - r && py >= y1 - r) return corner(x1 - r, y1 - r);
         return true;
       };
-      const tex = get(kind).getContext('2d').getImageData(0, 0, 16, 16).data;
+      const tex = get(cart ? 'path' : kind).getContext('2d').getImageData(0, 0, 16, 16).data;
+      if (cart) for (let i = 0; i < tex.length; i += 4) {   // 砂色の柄を灰色のコンクリートに置き換える（明暗の柄はそのまま）
+        const l = (tex[i] * 3 + tex[i + 1] * 6 + tex[i + 2]) / 10, v = Math.round(150 + (l - 215) * 0.8);
+        tex[i] = v; tex[i + 1] = v; tex[i + 2] = v + 6;
+      }
       const out = g.getImageData(0, 0, 16, 16), d = out.data;
-      const edge = kind === 'water' ? [24, 70, 130] : [150, 110, 40], ea = kind === 'water' ? 0.8 : 0.45;
+      const edge = kind === 'water' ? [24, 70, 130] : cart ? [84, 84, 92] : [150, 110, 40], ea = kind === 'water' ? 0.8 : cart ? 0.6 : 0.45;
       for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
         if (!inside(px, py)) continue;
         const i = (py * 16 + px) * 4;
