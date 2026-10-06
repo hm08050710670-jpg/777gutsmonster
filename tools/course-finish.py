@@ -82,11 +82,11 @@ def blob_set(prefix, center_names, outline, rim):
         return m
     for kind in ['c', 'u', 'd', 'l', 'r', 'ul', 'ur', 'dl', 'dr', 'iul', 'iur', 'idl', 'idr']:
         m = shape_mask(kind); arr = np.asarray(m) > 0
-        # 縁取り：領域の内側1ドット
-        inner = arr.copy(); inner[1:, :] &= arr[:-1, :]; inner[:-1, :] &= arr[1:, :]; inner[:, 1:] &= arr[:, :-1]; inner[:, :-1] &= arr[:, 1:]
-        edge = arr & ~inner
-        inner2 = inner.copy(); inner2[1:, :] &= inner[:-1, :]; inner2[:-1, :] &= inner[1:, :]; inner2[:, 1:] &= inner[:, :-1]; inner2[:, :-1] &= inner[:, 1:]
-        rimm = inner & ~inner2
+        # 縁取り：領域の内側1ドット（タイルの外側は「同じ地形が続く」とみなして、マス境界には縁を描かない）
+        P = np.pad(arr, 1, constant_values=True)
+        def erode(a): b = a.copy(); b[1:, :] &= a[:-1, :]; b[:-1, :] &= a[1:, :]; b[:, 1:] &= a[:, :-1]; b[:, :-1] &= a[:, 1:]; return b
+        inner = erode(P)[1:-1, 1:-1]; edge = arr & ~inner
+        inner2 = erode(np.pad(inner, 1, constant_values=True))[1:-1, 1:-1]; rimm = inner & ~inner2
         names = [f'{prefix}_c0', f'{prefix}_c1'] + ([f'{prefix}_c2'] if f'{prefix}_c2' in j else []) if kind == 'c' else [f'{prefix}_{kind}']
         for i, nm in enumerate(names):
             t = np.asarray(tex[i % len(tex)]).copy(); t[~arr] = 0
