@@ -189,8 +189,15 @@ const DATA = {
         { x: 9, y: 10, kind: 'warp', to: { map: 'town', x: 29, y: 8, dir: 'down' } },
         { x: 8, y: 1, kind: 'npc', img: 'v12', sprite: 'npc_nurse', dir: 'down', name: 'うけつけ',
           text: 'GOLF GUTSへ ようこそ。\nきょうは まだ じゅんびちゅうです。' },
-        { x: 3, y: 5, kind: 'npc', img: 'v23', sprite: 'npc_man', dir: 'right',
-          text: 'この建物は ずっと むかしから\nここに あるらしいが…\nなにを しているのか だれも しらない。' },
+        // GOLF GUTS の4人（セリフは仮。配置は内装が決まったら調整）
+        { x: 4, y: 3, kind: 'npc', img: 'hori', sprite: 'npc_man', dir: 'right', name: 'ホリ',
+          text: 'おれは ホリ。\nスイングは リズムが いのちだ。' },
+        { x: 13, y: 3, kind: 'npc', img: 'kuga', sprite: 'npc_man', dir: 'left', name: 'クガ',
+          text: 'クガだ。\nまずは グリップから みなおせ。' },
+        { x: 5, y: 7, kind: 'npc', img: 'bunta', sprite: 'npc_man', dir: 'right', name: 'ブンタ',
+          text: 'ブンタっていうんだ。\nここで 毎日 ボールを うってる。' },
+        { x: 12, y: 7, kind: 'npc', img: 'shinji', sprite: 'npc_man', dir: 'left', name: 'シンジ',
+          text: 'シンジです。\nパターは きもちで うつもんだよ。' },
       ],
     },
     lab: {
