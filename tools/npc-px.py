@@ -8,6 +8,7 @@ import numpy as np
 from scipy import ndimage
 exec(open('tools/town-fit.py').read().split("src = Image.open")[0])   # pixelize
 DIRS=['down','up','left','right']; H=18
+EXACT={'hori','kuga','bunta','shinji'}   # 等倍で取り込む（縮小しない）
 sprites={}
 for path in sorted(glob.glob('assets/src/npc/*.png')):
     name=os.path.splitext(os.path.basename(path))[0]
@@ -32,6 +33,36 @@ for path in sorted(glob.glob('assets/src/npc/*.png')):
     byrow={}
     for (y,x,w,h) in cells:
         r=min(range(4),key=lambda i:abs(rows[i]-y)); byrow.setdefault(r,[]).append((x,y,w,h))
+    # 等倍取り込み（EXACT）：元絵の格子の位相を合わせ、各ブロックの中央の色をそのまま1ドットにする（縮小で目や輪郭がぼやけない）
+    if name in EXACT:
+        HH=max(H,nat_h)
+        for r in range(4):
+            for c,(x,y,w,h) in enumerate(sorted(byrow[r])):
+                c0=a[y:y+h,x:x+w]; m0=mag[y:y+h,x:x+w]
+                gx=np.abs(np.diff(c0,axis=1)).sum(axis=2).sum(axis=0); gy=np.abs(np.diff(c0,axis=0)).sum(axis=2).sum(axis=1)
+                ox=max(range(P),key=lambda o: gx[[i for i in range(o,len(gx),P)]].sum())   # 色の変わり目が最も集まる位相＝ブロック境界
+                oy=max(range(P),key=lambda o: gy[[i for i in range(o,len(gy),P)]].sum())
+                x0=(ox+1)%P; y0=(oy+1)%P
+                if x0>P//2: x0-=P
+                if y0>P//2: y0-=P
+                tw=-(-(w-x0)//P); th=-(-(h-y0)//P)
+                px=np.zeros((th,tw,4),dtype=np.uint8)
+                for j in range(th):
+                    for i in range(tw):
+                        cy=y0+j*P+P//2; cx=x0+i*P+P//2
+                        if cy<0 or cx<0 or cy>=h or cx>=w: continue
+                        # ブロック中央 3×3 の中で最も多い色（境界のにじみを避ける）
+                        win=c0[max(0,cy-2):cy+3,max(0,cx-2):cx+3].reshape(-1,3); mw=m0[max(0,cy-2):cy+3,max(0,cx-2):cx+3].reshape(-1)
+                        purple=(win[:,0]>120)&(win[:,2]>120)&(win[:,1]<np.minimum(win[:,0],win[:,2])-50)   # マゼンタの混ざった縁
+                        if (mw|purple).mean()>0.5: continue
+                        win=win[~(mw|purple)]; q=(win//8)*8; vals,cnt=np.unique(q,axis=0,return_counts=True); col=win[(q==vals[cnt.argmax()]).all(axis=1)][0]
+                        px[j,i]=(*col,255)
+                # 透明な行・列を落とす
+                keep_r=np.where(px[:,:,3].any(axis=1))[0]; keep_c=np.where(px[:,:,3].any(axis=0))[0]
+                px=px[keep_r.min():keep_r.max()+1, keep_c.min():keep_c.max()+1]
+                fr=Image.new('RGBA',(px.shape[1],HH),(0,0,0,0)); fr.paste(Image.fromarray(px,'RGBA'),(0,HH-px.shape[0]))
+                sprites[f'{name}_{DIRS[r]}{c}']=fr
+        print(name, 'P=%d nat_h=%d -> exact %dpx'%(P,nat_h,HH)); continue
     for r in range(4):
         for c,(x,y,w,h) in enumerate(sorted(byrow[r])):
             crop=src.crop((x,y,x+w,y+h)).convert('RGBA'); arr=np.asarray(crop).copy(); arr[mag[y:y+h,x:x+w],3]=0
