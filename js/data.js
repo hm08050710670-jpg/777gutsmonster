@@ -155,7 +155,7 @@ const DATA = {
         { x: 9, y: 11, kind: 'sign', text: 'ガッツタウン\nゴルフ場の となりの しずかな町' },
         { x: 12, y: 1, kind: 'sign', text: 'この先 ガーデンロード\nガーデンプレースまで つづく' },
         { x: 19, y: 8, kind: 'sign', text: 'オクムラ モンスター研究所は\n町の 北西' },
-        { x: 15, y: 10, kind: 'npc', img: 'v02', sprite: 'npc_woman', dir: 'down',
+        { x: 15, y: 10, kind: 'npc', img: 'v22', sprite: 'npc_woman', dir: 'down',
           text: '北の ガーデンロードには\nやせいの ガッツモンスターが いるのよ。' },
         { x: 20, y: 6, kind: 'npc', img: 'v23', sprite: 'npc_man', dir: 'down',
           text: 'この帽子は ゴルフ場の 売店で かった。\n日ざしが つよい日に ちょうどいい。' },
