@@ -9,7 +9,7 @@ from scipy import ndimage
 exec(open('tools/town-fit.py').read().split("src = Image.open")[0])   # pixelize
 DIRS=['down','up','left','right']; H=18
 EXACT={'hori','kuga','bunta','shinji'}   # 等倍で取り込む（縮小しない）
-LEG_TRIM={'hori':2}   # 足が長すぎる絵は、シャツより下の「黒だけの行」を上から n 行抜いて背を詰める
+LEG_TRIM={'hori':2,'kuga':1,'bunta':1}   # 足が長すぎる絵は、シャツより下の「黒だけの行」を上から n 行抜いて背を詰める
 sprites={}
 for path in sorted(glob.glob('assets/src/npc/*.png')):
     name=os.path.splitext(os.path.basename(path))[0]
