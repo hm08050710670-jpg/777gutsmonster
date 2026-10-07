@@ -9,6 +9,7 @@ from scipy import ndimage
 exec(open('tools/town-fit.py').read().split("src = Image.open")[0])   # pixelize
 DIRS=['down','up','left','right']; H=18
 EXACT={'hori','kuga','bunta','shinji'}   # 等倍で取り込む（縮小しない）
+LEG_TRIM={'hori':2}   # 足が長すぎる絵は、シャツより下の「黒だけの行」を上から n 行抜いて背を詰める
 sprites={}
 for path in sorted(glob.glob('assets/src/npc/*.png')):
     name=os.path.splitext(os.path.basename(path))[0]
@@ -35,7 +36,7 @@ for path in sorted(glob.glob('assets/src/npc/*.png')):
         r=min(range(4),key=lambda i:abs(rows[i]-y)); byrow.setdefault(r,[]).append((x,y,w,h))
     # 等倍取り込み（EXACT）：元絵の格子の位相を合わせ、各ブロックの中央の色をそのまま1ドットにする（縮小で目や輪郭がぼやけない）
     if name in EXACT:
-        HH=max(H,nat_h)
+        HH=max(H,nat_h-LEG_TRIM.get(name,0))
         for r in range(4):
             for c,(x,y,w,h) in enumerate(sorted(byrow[r])):
                 c0=a[y:y+h,x:x+w]; m0=mag[y:y+h,x:x+w]
@@ -60,6 +61,13 @@ for path in sorted(glob.glob('assets/src/npc/*.png')):
                 # 透明な行・列を落とす
                 keep_r=np.where(px[:,:,3].any(axis=1))[0]; keep_c=np.where(px[:,:,3].any(axis=0))[0]
                 px=px[keep_r.min():keep_r.max()+1, keep_c.min():keep_c.max()+1]
+                trim=LEG_TRIM.get(name,0)
+                if trim:
+                    hh=px.shape[0]; cand=[]
+                    for rr in range(hh-6,hh):   # 下6行のうち、不透明ドットが全部暗い（靴の白を含まない）行
+                        op=px[rr][px[rr,:,3]>0]
+                        if len(op) and (op[:,:3].astype(int).sum(axis=1)<120).all(): cand.append(rr)
+                    drop=set(cand[:trim]); px=np.array([px[rr] for rr in range(hh) if rr not in drop])
                 fr=Image.new('RGBA',(px.shape[1],HH),(0,0,0,0)); fr.paste(Image.fromarray(px,'RGBA'),(0,HH-px.shape[0]))
                 sprites[f'{name}_{DIRS[r]}{c}']=fr
         print(name, 'P=%d nat_h=%d -> exact %dpx'%(P,nat_h,HH)); continue
