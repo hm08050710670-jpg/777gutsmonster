@@ -197,16 +197,14 @@ const DATA = {
       events: [
         { x: 14, y: 18, kind: 'warp', to: { map: 'town', x: 29, y: 8, dir: 'down' } },
         { x: 15, y: 18, kind: 'warp', to: { map: 'town', x: 29, y: 8, dir: 'down' } },
-        { x: 14, y: 3, kind: 'npc', img: 'v12', sprite: 'npc_nurse', dir: 'down', name: 'うけつけ',
-          text: 'GOLF GUTSへ ようこそ。\nきょうは まだ じゅんびちゅうです。' },
-        // GOLF GUTS の4人（セリフは仮）
-        { x: 7, y: 4, kind: 'npc', img: 'hori', sprite: 'npc_man', dir: 'down', name: 'ホリ',
+        // GOLF GUTS の4人（正面向きで1列。セリフは仮）
+        { x: 12, y: 9, kind: 'npc', img: 'hori', sprite: 'npc_man', dir: 'down', name: 'ホリ',
           text: 'おれは ホリ。\nスイングは リズムが いのちだ。' },
-        { x: 21, y: 7, kind: 'npc', img: 'kuga', sprite: 'npc_man', dir: 'down', name: 'クガ',
+        { x: 13, y: 9, kind: 'npc', img: 'kuga', sprite: 'npc_man', dir: 'down', name: 'クガ',
           text: 'クガだ。\nまずは グリップから みなおせ。' },
-        { x: 7, y: 11, kind: 'npc', img: 'bunta', sprite: 'npc_man', dir: 'down', name: 'ブンタ',
+        { x: 14, y: 9, kind: 'npc', img: 'bunta', sprite: 'npc_man', dir: 'down', name: 'ブンタ',
           text: 'ブンタっていうんだ。\nここで 毎日 ボールを うってる。' },
-        { x: 16, y: 16, kind: 'npc', img: 'shinji', sprite: 'npc_man', dir: 'down', name: 'シンジ',
+        { x: 15, y: 9, kind: 'npc', img: 'shinji', sprite: 'npc_man', dir: 'down', name: 'シンジ',
           text: 'シンジです。\nパターは きもちで うつもんだよ。' },
         { x: 7, y: 2, kind: 'look', text: 'ホワイトボード。\nスイングの 図が かいてある。' },
         { x: 6, y: 2, kind: 'look', text: 'モニターに コースの 映像が ながれている。' },
