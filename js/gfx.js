@@ -223,11 +223,17 @@ const Gfx = (() => {
       'BBBBBBmmBBBBBBBB', 'BBBBBRRRRRBBBBBB', 'BBBBBrrrrrBBBBBB', 'BBBBBrrrrrBBBBBB',
       'BBBBBRrrrRBBBBBB', 'BBBBBRRRRRBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB',
     ],
-    mat: [
-      'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBKKKKKKKKKKKKBB', 'BBKjjjjjjjjjjKBB',
-      'BBKjKKKKKKKKjKBB', 'BBKjKjjjjjjKjKBB', 'BBKjKjjjjjjKjKBB', 'BBKjKjjjjjjKjKBB',
-      'BBKjKjjjjjjKjKBB', 'BBKjKKKKKKKKjKBB', 'BBKjjjjjjjjjjKBB', 'BBKKKKKKKKKKKKBB',
-      'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB',
+    mat: [ // 赤いドアマット（出入口）
+      'BBBBBBBBBBBBBBBB', '################', '#oooooooooooooo#', '#orrrrrrrrrrrro#',
+      '#orRRRRRRRRRRro#', '#orRrrrrrrrrRro#', '#orRrorororrRro#', '#orRrrorororRro#',
+      '#orRrorororrRro#', '#orRrrrrrrrrRro#', '#orRRRRRRRRRRro#', '#orrrrrrrrrrrro#',
+      '#oooooooooooooo#', '################', 'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB',
+    ],
+    stairs: [ // 下り階段（じぶんの家の出口）
+      '################', '#VVV#nnn#nnn#nn#', '#VVV#####nnn#nn#', '#VVV#ddd#nnn#nn#',
+      '#VVV#ddd#####nn#', '#VVV#ddd#DDD#nn#', '#VVV#ddd#DDD####', '#VVV#ddd#DDD#AA#',
+      '#VVV#ddd#DDD#AA#', '#VVV#ddd#DDD#AA#', '#VVV#ddd#DDD#AA#', '#VVV#ddd#DDD#AA#',
+      '#VVV#ddd#DDD#AA#', '#VVV#ddd#DDD#AA#', '#VVV#ddd#DDD#AA#', '################',
     ],
     table: [ // 研究所のテーブル（モンスターボールを置く）
       'BBBBBBBBBBBBBBBB', 'BBBBBBBBBBBBBBBB', 'BKKKKKKKKKKKKKKB', 'BKeeeeeeeeeeeeKB',

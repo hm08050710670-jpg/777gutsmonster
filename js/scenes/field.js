@@ -551,6 +551,7 @@ class FieldScene {
       case 's': ctx.drawImage(Tiles.get('in_wallbase'), px, py); ctx.drawImage(Tiles.get('in_shelf'), px, py); return true;
       case '.': floor(); return true;
       case 'm': return over('in_mat');
+      case 'v': return over('in_stairs');
       case 'c': return over('in_carpet');
       case 'C': return over('in_counter');
       case 'n': return over('in_counter_c');

@@ -79,14 +79,14 @@ const DATA = {
   // ---- タイル ----
   // 屋外: G芝 T草むら（ラフ） F花 W木 P道（カート道） ~水 B橋 #壁 N窓 R屋根 ^屋根端 D扉 S看板 =柵 L街灯 H生垣
   // ゴルフ場: gフェアウェイ nグリーン Kバンカー Yピンフラッグ yティーマーカー
-  // 屋内: .床 X壁 b寝台 t TV d机 s棚 p植物 m出口マット c絨毯 M装置 C受付 O台
+  // 屋内: .床 X壁 b寝台 t TV d机 s棚 p植物 m出口マット v階段（出口） c絨毯 M装置 C受付 O台
   TILE_ART: {
     G: 'grass', T: 'tall', F: 'flower', W: 'tree', P: 'path', '~': 'water', B: 'bridge',
     '#': 'wall', N: 'window', R: 'roof', '^': 'roof_edge', D: 'door', S: 'sign', '=': 'fence', L: 'lamp', H: 'hedge',
     A: 'lab_roof', a: 'lab_roof_dish', E: 'lab_wall', e: 'lab_window', J: 'lab_logo', I: 'lab_door',
-    '.': 'floor', X: 'wallin', b: 'bed', t: 'tv', d: 'desk', s: 'shelf', p: 'plant', m: 'mat', c: 'carpet', M: 'machine', C: 'counter', O: 'table',
+    '.': 'floor', X: 'wallin', b: 'bed', t: 'tv', d: 'desk', s: 'shelf', p: 'plant', m: 'mat', v: 'stairs', c: 'carpet', M: 'machine', C: 'counter', O: 'table',
   },
-  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'c', 'g', 'n', 'K', 'y']),   // 一枚絵マップの '#' は進めない
+  WALKABLE: new Set(['G', 'T', 'F', 'P', 'B', 'D', 'I', 'Q', '.', 'm', 'v', 'c', 'g', 'n', 'K', 'y']),   // 一枚絵マップの '#' は進めない
   // 置き物（タイル画像の名前）：w,h はマス数、door は左上からのドアの位置（そこだけ通れる）
   OBJECTS: { in_machine: { w: 2, h: 2, door: [-1, -1] }, in_table: { w: 3, h: 2, door: [-1, -1] }, house: { w: 5, h: 3, door: [2, 2] }, house2: { w: 5, h: 3, door: [2, 2] }, heal: { w: 5, h: 3, door: [2, 2] }, shop: { w: 5, h: 3, door: [2, 2] }, lab: { w: 11, h: 7, door: [5, 6] }, golfguts: { w: 11, h: 7, door: [5, 6] } },
   VOID_ART: 'wallin',
@@ -101,7 +101,7 @@ const DATA = {
         'X.d......X',
         'X........X',
         'Xp.......X',
-        'X....m...X',
+        'X....v...X',
         'XXXXXXXXXX',
       ],
       events: [
