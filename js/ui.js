@@ -34,7 +34,7 @@ const UI = (() => {
     ov.hidden = false;
     pendingFocus = input;
     setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (e) { /* noop */ } }, 30);
-    const close = () => { ov.hidden = true; pendingFocus = null; ok.onclick = null; cancel.onclick = null; input.onkeydown = null; input.blur(); };
+    const close = () => { ov.hidden = true; pendingFocus = null; ok.onclick = null; cancel.onclick = null; input.onkeydown = null; input.blur(); setTimeout(() => { window.scrollTo(0, 0); Game.fit && Game.fit(); }, 50); };   // キーボードで動いたページ位置を戻す
     const done = () => {
       const v = [...input.value.trim()].slice(0, 8).join('');
       if (!v) { input.focus(); input.placeholder = 'なまえを いれてね'; return; }

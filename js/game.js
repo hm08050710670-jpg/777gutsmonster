@@ -31,7 +31,7 @@ const Game = (() => {
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
     let hidden = 0;
     // iOS のアプリ内ブラウザ（WKWebView）は UA に "Safari/" が付かない。Safari 本体や全画面なら申告値を信用する
-    const ua = navigator.userAgent, inAppIOS = /iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua);
+    const ua = navigator.userAgent, inAppIOS = /iPhone|iPad|iPod/.test(ua) && (!/Safari\//.test(ua) || /\bLine\//.test(ua));   // LINE のブラウザは UA に Safari/ が付くが WKWebView
     if (!standalone && ((screen.height && window.innerHeight >= screen.height - 4) || inAppIOS)) {
       const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
       const sat = probe.offsetHeight; probe.remove();
@@ -71,6 +71,11 @@ const Game = (() => {
   }
   function setViewH(h) { if (h === viewH) return; viewH = h; applyViewH(); }
   window.addEventListener('resize', fit);
+  // キーボードの開閉やアプリ内ブラウザのバーの出入りで見えている範囲が変わったら組み直す。
+  // ページがスクロールされたまま（キーボードを閉じた後など）だと上が切れて見えるので、常に先頭に戻す
+  const unscroll = () => { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); };
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { unscroll(); fit(); }); window.visualViewport.addEventListener('scroll', unscroll); }
+  window.addEventListener('scroll', unscroll);
   window.addEventListener('orientationchange', () => setTimeout(fit, 150));
 
   const push = s => { scenes.push(s); s.enter && s.enter(); };
