@@ -184,7 +184,16 @@ class FieldScene {
       }, ev.name);
       return;
     }
-    say(ev.text, null, ev.name);
+    // 初回だけ道具をくれる NPC：gift: { item, n, flag, text(もらう前のせりふ), after(もらった後のせりふ) }
+    if (ev.gift && !st.flags[ev.gift.flag]) {
+      say(ev.gift.text || ev.text, () => {
+        st.flags[ev.gift.flag] = true; const n = ev.gift.n || 1;
+        st.items[ev.gift.item] = (st.items[ev.gift.item] || 0) + n;
+        say(`${ev.gift.item}を ${n}つ もらった！`, () => Save.auto(st));
+      }, ev.name);
+      return;
+    }
+    say(ev.gift && ev.gift.after ? ev.gift.after : ev.text, null, ev.name);
   }
 
   talkProf(ev) {
