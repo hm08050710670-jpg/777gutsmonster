@@ -176,7 +176,12 @@ class TitleScene {
 // ---- 主人公設定 ----
 class SetupScene {
   constructor() { this.overlay = false; this.step = 'pick'; this.name = ''; this.gender = 'm'; this.sel = 0; this.pickSel = 0; this.asked = false; }
-  static get PRESETS() { return ['ガッツ', 'じぶんで つける']; }   // 先頭が基本の名前
+  static get PRESETS() { return ['ガッツ', 'じぶんで つける']; }
+  // 主人公の正面立ち絵（フィールドと同じ画像スプライト 14×18 を整数倍で拡大。無ければ旧アート）
+  static drawHero(ctx, g, x, y, k) {
+    if (Tiles.has(`${g}_down0`)) { const im = Tiles.get(`${g}_down0`); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, x, y, im.width * k, im.height * k); }
+    else ctx.drawImage(Gfx.get(`${g}_down0`, k), x, y);
+  }   // 先頭が基本の名前
   static get CARD() { return { x: 24, w: CONFIG.W - 48, h: 40, gap: 12 }; }
   // 主人公の絵(32)＋余白12＋カード2枚＋余白14＋案内(8) をタイトル下の領域の中央に置く
   pickTop() { const C = SetupScene.CARD, n = SetupScene.PRESETS.length; return 24 + Math.round(((CONFIG.H - 24) - (32 + 12 + n * C.h + (n - 1) * C.gap + 46)) / 2); }
@@ -219,7 +224,7 @@ class SetupScene {
     if (this.step === 'pick' || this.step === 'name') {
       Text.draw(ctx, '01. なまえを きめよう', 24, 8, THEME.green);
       const C = SetupScene.CARD, subs = ['きほんの なまえで はじめる', 'すきな なまえを いれる'];
-      ctx.drawImage(Gfx.get('hm_down0', 2), W / 2 - 16, this.pickTop());   // 主人公（性別は次で選ぶ）
+      SetupScene.drawHero(ctx, 'hm', W / 2 - 14, this.pickTop(), 2);   // 主人公（性別は次で選ぶ）
       SetupScene.PRESETS.forEach((nm, i) => {
         const y = this.pickRowY(i), sel = this.pickSel === i;
         Text.box(ctx, C.x, y, C.w, C.h);
@@ -240,7 +245,7 @@ class SetupScene {
       ['hm', 'hf'].forEach((g, i) => {
         const x = 40 + i * 80, y = 70;
         Text.box(ctx, x - 12, y - 12, 56, 64);
-        ctx.drawImage(Gfx.get(`${g}_down0`, 2), x, y);
+        SetupScene.drawHero(ctx, g, x + 2, y, 2);
         const label = i === 0 ? 'だんせい' : 'じょせい';
         Text.draw(ctx, label, x + 16 - Text.width(label) / 2, y + 40);
         if (this.sel === i) Text.cursor(ctx, x - 6, y + 40);
@@ -252,7 +257,7 @@ class SetupScene {
     // preview
     Text.draw(ctx, '03. この主人公で いく？', 24, 24, THEME.green);
     Text.box(ctx, W / 2 - 40, 48, 80, 96);
-    ctx.drawImage(Gfx.get(`${this.gender === 'f' ? 'hf' : 'hm'}_down0`, 4), W / 2 - 32, 60);
+    SetupScene.drawHero(ctx, this.gender === 'f' ? 'hf' : 'hm', W / 2 - 28, 52, 4);
     Text.draw(ctx, this.name, W / 2 - Text.width(this.name) / 2, 128);
     Text.box(ctx, 0, H - 40, W, 40);
     Text.draw(ctx, 'A: この主人公で 冒険をはじめる', 10, H - 30);
