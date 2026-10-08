@@ -97,6 +97,16 @@ const Input = (() => {
     canvas.addEventListener('pointercancel', swipeEnd);
     canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
+  // アプリ内ブラウザ（LINE など）対策：ピンチ・ダブルタップでページが拡大して操作不能になるのを防ぐ
+  //   iOS は viewport の user-scalable=no を無視することがあるので、ジェスチャー自体を止める
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 300 && !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON'))) e.preventDefault();   // ダブルタップ拡大の抑止（入力欄・ボタンは除く）
+    lastTouchEnd = now;
+  }, { passive: false });
   let tapA = false;
 
   function update() {
