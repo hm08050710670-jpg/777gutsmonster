@@ -601,6 +601,12 @@ class FieldScene {
     if (!this._maps[path]) { const im = new Image(); im.src = (CONFIG.MAP_IMAGES && CONFIG.MAP_IMAGES[path]) || path; this._maps[path] = im; }
     return this._maps[path];
   }
+  // 起動時に一枚絵マップを全部読み込んでおく（入った瞬間に絵がまだ無くて一瞬暗くなるのを防ぐ）
+  static preloadMapImages() {
+    const paths = Object.values(DATA.MAPS).map(m => m.image).filter(Boolean);
+    const ready = im => new Promise(res => { if (im.complete) return res(); im.onload = im.onerror = () => res(); });
+    return Promise.all(paths.map(p => { const im = FieldScene.mapImage(p); return ready(im).then(() => (im.decode ? im.decode().catch(() => {}) : null)); }));   // decode まで済ませて描画時の引っかかりも無くす
+  }
   // ガッツボール（閉じた絵）を接地位置 (x, y) 中央下に描く
   static drawGutsBall(ctx, x, y) {
     const im = BattleScene.ball(), m = BattleScene._ballMeta && BattleScene._ballMeta.closed;
