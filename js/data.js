@@ -786,7 +786,7 @@ const Party = {
   maxHp: st => st.party[0] ? st.party[0].maxHp : 0,
   hp: st => st.party[0] ? Math.max(0, Math.min(st.party[0].maxHp, st.party[0].hp)) : 0,
   set(st, v) { const m = st.party[0]; if (m) m.hp = Math.max(0, Math.min(m.maxHp, Math.round(v))); },
-  full(st) { st.party.forEach(m => { m.hp = m.maxHp; m.moves && m.moves.forEach(mv => { mv.pp = mv.maxPp; }); }); },
+  full(st) { [...st.party, ...(st.box || [])].forEach(m => { m.hp = m.maxHp; m.moves && m.moves.forEach(mv => { mv.pp = mv.maxPp; }); }); },   // ボックスのモンスターも回復
   def: st => st.party[0] ? st.party[0].def : 5,
   spd: st => st.party[0] ? st.party[0].spd : 5,
 };

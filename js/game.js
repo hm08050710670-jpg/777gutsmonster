@@ -30,14 +30,15 @@ const Game = (() => {
     let h = Math.min(document.documentElement.clientHeight || vis, vis);
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
     let hidden = 0;
+    const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
+    const sat = probe.offsetHeight; probe.remove();
     // iOS のアプリ内ブラウザ（WKWebView）は UA に "Safari/" が付かない。Safari 本体や全画面なら申告値を信用する
     const ua = navigator.userAgent, inAppIOS = /iPhone|iPad|iPod/.test(ua) && (!/Safari\//.test(ua) || /\bLine\//.test(ua));   // LINE のブラウザは UA に Safari/ が付くが WKWebView
-    if (!standalone && ((screen.height && window.innerHeight >= screen.height - 4) || inAppIOS)) {
-      const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden'; document.body.appendChild(probe);
-      const sat = probe.offsetHeight; probe.remove();
-      hidden = sat + 72;
-      h -= hidden;
-    }
+    const inApp = !standalone && ((screen.height && window.innerHeight >= screen.height - 4) || inAppIOS);
+    if (inApp) { hidden = sat + 72; h -= hidden; }
+    // 上の余白：ページが状態バーの下まで広がるとき（viewport-fit=cover の Safari・全画面）は安全域ぶん空けて、画面の上が隠れないようにする。
+    //   アプリ内ブラウザは自前のヘッダーの下からページが始まるので空けない
+    if (app) app.style.paddingTop = (inApp ? 0 : sat) + 'px';
     // #app の高さは常にこの値に固定する。ブラウザが報告する高さ（100dvh・innerHeight・visualViewport）が食い違う端末があり、
     //   レイアウト上の箱が見えている範囲より大きいと、下に寄せた操作パッドが画面外に出てしまうため
     if (app) { app.style.boxSizing = 'border-box'; app.style.height = h + 'px'; }
@@ -51,7 +52,8 @@ const Game = (() => {
     const auxH = landscape ? 0 : 18;
     const padMin = landscape ? 0 : (parseFloat(getComputedStyle(document.getElementById('pad')).minHeight) || 250);
     const availW = landscape ? Math.floor(app.clientWidth * 0.5) : app.clientWidth;
-    const availH = visibleHeight(app) - auxH - padMin - 8;
+    const acs = getComputedStyle(app);
+    const availH = visibleHeight(app) - (parseFloat(acs.paddingTop) || 0) - (parseFloat(acs.paddingBottom) || 0) - auxH - padMin - 8;
     // 横幅いっぱいに拡大する（整数倍にはしない。端末によってドットの太さは少し不揃いになるが、左右に黒い帯を残さない）
     let scale = Math.max(1, Math.min(availW / CONFIG.W, availH / H_BASE));
     const h = Math.max(H_BASE, Math.min(H_MAX, Math.floor(availH / scale)));

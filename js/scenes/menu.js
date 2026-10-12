@@ -99,7 +99,7 @@ class PartyScene {
       drawMonster(ctx, m, 14, y + 6, 24);
       Text.draw(ctx, m.name, 44, y + 8);
       Text.draw(ctx, `Lv${m.level}`, 124, y + 8);
-      Text.draw(ctx, `${m.type}  HP${m.maxHp}`, 52, y + 20, THEME.textDim);
+      Text.draw(ctx, `${m.type}  HP${Math.max(0, Math.min(m.maxHp, m.hp))}/${m.maxHp}`, 52, y + 20, THEME.textDim);
       const need = m.level * 20; drawHpBar(ctx, 124, y + 22, 50, m.exp || 0, need);
       if (i === this.sel) Text.cursor(ctx, 2, y + 12);
     });

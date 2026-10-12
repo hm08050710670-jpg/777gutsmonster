@@ -40,9 +40,7 @@ html, body {
   padding-top: 0;
   padding-bottom: var(--safe-b);
 }
-@media (display-mode: standalone), (display-mode: fullscreen) {
-  #app { padding-top: var(--safe-t); }
-}
+/* 上の安全域ぶんの余白は js/game.js visibleHeight() が付ける（アプリ内ブラウザでは 0） */
 
 /* ① ADVENTURE NOTE */
 #note {
@@ -125,7 +123,7 @@ html, body {
 .round.b.active { background-image: url(../assets/ui/pad/b_p.png) !important; transform: translateY(1px) scaleY(0.98); }
 
 #menu-btn {
-  position: absolute; left: 50%; top: 8px;
+  position: absolute; left: 50%; top: 204px;   /* 十字キー・ABより下に置く */
   transform: translateX(-50%);
   width: 72px; height: 24px; border-radius: 12px; font-size: 10px; letter-spacing: 0.1em;
 }
