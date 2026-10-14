@@ -196,6 +196,7 @@ class BattleScene {
     this.flashE = 0; this.flashP = 0;   // 当たったときの白点滅（コマ数）
     this.banner = null;         // 技名の帯 { text, t }
     this.text = '';             // 舞台に出す短いメッセージ（canvas）
+    this.enc = opt.encounter || null;   // 野生遭遇の演出（ジングル同期）。終わるまで BGM・メッセージ・入力を待つ
     this.setMe();
     this.shownHp = { p: this.me ? this.me.hp : 0, e: this.enemy.hp }; // 表示用（アニメ）
   }
@@ -223,13 +224,14 @@ class BattleScene {
   foe() { return this.trainer ? `${this.trainer.name}の ` : 'やせいの '; }
   enter() {
     if (this.viewer) { Puzzle.calc(); this.mode = 'view'; this.ids = Object.keys(DATA.MONSTERS); this.vi = this.ids.indexOf(this.enemy.id); this.pi = this.ids.indexOf(this.me.id); this.bi = Bg.NAMES.indexOf(this.bg); return; }
-    Sound.play(this.trainer ? 'rival' : 'wild');
+    if (!this.enc) Sound.play(this.trainer ? 'rival' : 'wild');   // 遭遇演出つきならジングル終了時に開始
     Puzzle.show(this);
     if (this.trainer) { this.msg(`${this.trainer.name}が しょうぶを しかけてきた！`); this.msg(`${this.trainer.name}は ${this.enemy.name}を くりだした！`); }
     else this.msg(`${this.foe()}${this.enemy.name}が あらわれた！`);
     this.msg(`いけっ ${this.me.name}！`, () => { this.mode = 'command'; });
-    this.next();
+    if (!this.enc) this.next();
   }
+  exit() { if (this.enc) { this.enc.finish(); this.enc = null; } }
 
   // ---- ステップ実行 ----
   //   *Step() はステップ関数を返すだけ。msg/step は末尾に積む。途中に差し込むときは queue.unshift。
@@ -578,6 +580,13 @@ class BattleScene {
     if (this.banner && --this.banner.t <= 0) this.banner = null;
     this.pops.forEach(p => { p.t--; p.y -= 0.4; }); this.pops = this.pops.filter(p => p.t > 0);
     if (this.mode === 'wait') { if (--this.waitT <= 0) { this.mode = 'busy'; const f = this.waitDone; this.waitDone = null; f && f(); } return; }
+    if (this.enc) {   // 遭遇演出中：入力を受けない。ジングルが終わったら野生戦BGMを始めて出現メッセージへ（1回だけ）
+      if (!this.enc.done()) return;
+      this.enc.finish(); this.enc = null;
+      Sound.play('wild');
+      this.next();
+      return;
+    }
     this.frameNo = frame;
     if (this.mode === 'capture' && this.cap) { this.updateCapture(); return; }
     if (this.mode === 'view') {   // ↑↓であいて、←→でなかま、Aで背景、MENUでランダム、Bで戻る
@@ -644,10 +653,11 @@ class BattleScene {
     const ES = 68, ey = 4 + Math.floor(extra * 0.3);
     const lg = this.lunge ? Math.sin(Math.PI * this.lunge.t / 14) * 8 : 0;
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148, ey + ES - 2, 36, 6);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148, ey + ES, 30, 4);
+    const eox = this.enc ? this.enc.enemyOffset() : 0;   // 遭遇演出：右からすべり込む
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148 + eox, ey + ES - 2, 36, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148 + eox, ey + ES, 30, 4);
     const cv = this.enemyCaptureView();
-    if (!cv) this.drawMon(ctx, en, 118 + sx + elx, ey + ely, ES, false, this.flashE);
+    if (!cv) this.drawMon(ctx, en, 118 + sx + elx + eox, ey + ely, ES, false, this.flashE);
     else if (!cv.hidden) {
       // ボールに向かって縮みながら白くなる
       const eb0 = { x: 118, y: ey, size: ES }, b = Mon.drawnBox(en.id, ES / 24, false);
@@ -661,7 +671,7 @@ class BattleScene {
     }
     this._eBox = { x: 118, y: ey, size: ES };
     this.drawStatus(ctx, en, this.shownHp.e, 4, 3, 96, 24, false);
-    if (this.mode !== 'end' && !this.viewer && !this.cap) this.drawNext(ctx, 118 + Mon.drawnBox(en.id, ES / 24, false).dx + Mon.drawnBox(en.id, ES / 24, false).w / 2, ey + Mon.drawnBox(en.id, ES / 24, false).dy);
+    if (this.mode !== 'end' && !this.viewer && !this.cap) this.drawNext(ctx, 118 + eox + Mon.drawnBox(en.id, ES / 24, false).dx + Mon.drawnBox(en.id, ES / 24, false).w / 2, ey + Mon.drawnBox(en.id, ES / 24, false).dy);
 
     // 自分：左下、後ろ姿（72px箱）。足元を舞台の下端に合わせる
     if (me) {
@@ -707,6 +717,7 @@ class BattleScene {
       Text.draw(ctx, 'A はいけい  MENU ランダム  B もどる', 8, ly + lh * 3, THEME.green);
     }
     if (this.mode === 'stats') this.drawStats(ctx, this.statsMon, frame);
+    if (this.enc) this.enc.drawOut(ctx, W, H);   // 遭遇演出：横じまが抜けていく（最後に重ねる）
   }
 
   // 相手の つぎの攻撃と そのターン数（右上の札）
@@ -793,6 +804,83 @@ class BattleScene {
   }
 }
 
+// ============================================================
+// 野生遭遇の演出（ジングル 16_sharp_alert と同期）
+//   0.00〜FLASH  白フラッシュ（フィールドの上）
+//   FLASH〜COVER 黒／濃い緑の横じまが左右から流れ込んで画面を覆う
+//   COVER        覆われた状態で BattleScene に切り替える（BGM・メッセージはまだ）
+//   OPEN〜OPEN+CLEAR 横じまが左右へ抜ける。OPEN〜END で相手が右からすべり込む
+//   END          野生戦BGM開始 → 既存の出現メッセージへ
+//   時計は「音声の実再生位置」と「壁時計」の大きいほう。音が鳴らない（ミュート・未読込・拒否）ときは壁時計で CONFIG.ENCOUNTER_SEC 進める
+// ============================================================
+const ENC = { FLASH: 0.25, COVER: 1.15, OPEN: 1.65, CLEAR: 0.4, ROW: 8 };
+class Encounter {
+  constructor() {
+    this.sfx = Sound.playSfx('encounter');   // null なら音なし
+    this.t0 = performance.now();
+    this.dur = this.sfx ? this.sfx.duration : CONFIG.ENCOUNTER_SEC;
+    this.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.finished = false;
+  }
+  elapsed() {
+    const wall = (performance.now() - this.t0) / 1000;
+    const audio = this.sfx ? Sound.now() - this.sfx.start : 0;
+    return Math.max(wall, audio);
+  }
+  done() { return this.elapsed() >= this.dur; }
+  // 終了：壁時計だけで進んだ（音が実際には進んでいない）ときは、遅れて鳴り出さないよう止める
+  finish() {
+    if (this.finished) return; this.finished = true;
+    if (this.sfx && Sound.now() - this.sfx.start < this.dur - 0.15) this.sfx.stop();
+    this.sfx = null;
+  }
+  stripeColor(i) { return i % 2 ? '#0d3620' : '#06110a'; }
+  // フィールドの上：フラッシュ → 横じま流入
+  drawIn(ctx, W, H) {
+    const e = this.elapsed();
+    if (e < ENC.FLASH) {
+      if (!this.reduce) { const a = e < 0.08 ? 1 : 1 - (e - 0.08) / (ENC.FLASH - 0.08); ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+      return;
+    }
+    const rows = Math.ceil(H / ENC.ROW), span = ENC.COVER - ENC.FLASH;
+    for (let i = 0; i < rows; i++) {
+      // 上の行から順に始まり、各行は span の 55% で流れ込む
+      const st = ENC.FLASH + (i / rows) * span * 0.45, p = Math.max(0, Math.min(1, (e - st) / (span * 0.55)));
+      const w = Math.round(W * p); if (!w) continue;
+      ctx.fillStyle = this.stripeColor(i);
+      ctx.fillRect(i % 2 ? W - w : 0, i * ENC.ROW, w, ENC.ROW);
+    }
+  }
+  // バトルの上：全面カバー → 横じま流出
+  drawOut(ctx, W, H) {
+    const e = this.elapsed(), rows = Math.ceil(H / ENC.ROW);
+    if (e < ENC.OPEN) { for (let i = 0; i < rows; i++) { ctx.fillStyle = this.stripeColor(i); ctx.fillRect(0, i * ENC.ROW, W, ENC.ROW); } return; }
+    for (let i = 0; i < rows; i++) {
+      const st = ENC.OPEN + (i / rows) * ENC.CLEAR * 0.45, p = Math.max(0, Math.min(1, (e - st) / (ENC.CLEAR * 0.55)));
+      const w = Math.round(W * (1 - p)); if (!w) continue;
+      ctx.fillStyle = this.stripeColor(i);
+      ctx.fillRect(i % 2 ? 0 : W - w, i * ENC.ROW, w, ENC.ROW);
+    }
+  }
+  // 相手のすべり込み：OPEN〜END で右（画面外）から定位置へ
+  enemyOffset() {
+    const e = this.elapsed(), p = Math.max(0, Math.min(1, (e - ENC.OPEN) / Math.max(0.2, this.dur - ENC.OPEN)));
+    return Math.round((1 - Math.sin(p * Math.PI / 2)) * 80);
+  }
+}
+// フィールドに重ねる前半（COVER で自分を外して BattleScene に替わる）
+class EncounterScene {
+  constructor(opt) { this.overlay = true; this.enemy = opt.enemy; this.onEnd = opt.onEnd; this.swapped = false; }
+  enter() { Sound.stop(); this.enc = new Encounter(); }
+  update() {
+    if (this.swapped || this.enc.elapsed() < ENC.COVER) return;
+    this.swapped = true;   // 二重に切り替えない
+    Game.pop();
+    Game.push(new BattleScene({ enemy: this.enemy, onEnd: this.onEnd, encounter: this.enc }));
+  }
+  draw(ctx) { this.enc.drawIn(ctx, CONFIG.W, CONFIG.H); }
+}
+
 // 遭遇時のヘルパ（フィールドから呼ぶ）
 function startWildBattle(mapId, onEnd, table) {
   const tbl = table || DATA.MAPS[mapId].encounters;
@@ -800,5 +888,5 @@ function startWildBattle(mapId, onEnd, table) {
   let r = Math.random() * total, pick = tbl[0];
   for (const e of tbl) { if ((r -= e.weight) < 0) { pick = e; break; } }
   const enemy = makeMonster(pick.id, Game.rand(pick.level[0], pick.level[1]));
-  Game.push(new BattleScene({ enemy, onEnd }));
+  Game.push(new EncounterScene({ enemy, onEnd }));
 }

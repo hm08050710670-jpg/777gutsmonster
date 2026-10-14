@@ -47,6 +47,10 @@ const DATA = {
   STARTERS: ['kokegame', 'hinoshishi', 'amepiyo'],
 
   // ---- BGM（assets/bgm/README_BGM.txt 参照）----
+  // 効果音（1回だけ鳴らす。Sound.playSfx(name)）
+  SFX: {
+    encounter: 'assets/sfx/16_sharp_alert.wav',   // 16番「ピリッと緊張」：野生遭遇ジングル（2.4秒）
+  },
   BGM: {
     town:  'assets/bgm/guts_town.mp3',       // GUTS TOWN 112BPM
     lab:   'assets/bgm/okumura_lab.mp3',     // OKUMURA LAB 96BPM

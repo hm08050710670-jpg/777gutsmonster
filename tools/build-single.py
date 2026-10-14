@@ -37,7 +37,13 @@ for name in ['guts_town', 'okumura_lab', 'wild_adventure', 'rival_battle']:
     path = f'assets/bgm/{name}.mp3'
     if os.path.exists(path):
         bgm_b64[path] = 'data:audio/mpeg;base64,' + base64.b64encode(open(path, 'rb').read()).decode()
-print('bgm embedded:', len(bgm_b64), 'tracks')
+# 効果音（wav）も data: URI に
+if os.path.isdir('assets/sfx'):
+    for f in sorted(os.listdir('assets/sfx')):
+        path = f'assets/sfx/{f}'
+        mime = 'audio/wav' if f.endswith('.wav') else 'audio/mpeg'
+        bgm_b64[path] = f'data:{mime};base64,' + base64.b64encode(open(path, 'rb').read()).decode()
+print('bgm embedded:', len(bgm_b64), 'tracks (incl. sfx)')
 
 # アトラスを埋め込み
 atlas_png = atlas_json = None
