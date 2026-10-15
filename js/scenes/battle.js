@@ -827,7 +827,7 @@ const ENC_PRESET = {
 class Encounter {
   constructor(kind) {
     this.kind = kind || 'wild'; this.P = ENC_PRESET[this.kind];
-    this.sfx = Sound.playSfx(this.P.sfx);   // null なら音なし
+    this.sfx = Sound.playSfx ? Sound.playSfx(this.P.sfx) : null;   // null なら音なし（古い sound.js がキャッシュされていても止まらない）
     this.t0 = performance.now();
     this.dur = this.sfx ? this.sfx.duration : this.P.sec();
     this.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);

@@ -109,6 +109,7 @@ if os.path.exists('assets/ui/gutsball.png'):
     gutsball_json = open('assets/ui/gutsball.json', encoding='utf-8').read()
 
 html = open('index.html', encoding='utf-8').read()
+html = re.sub(r'((?:src|href)="(?:js|css)/[^"?]+)\?v=\d+"', r'\1"', html)   # キャッシュ対策の ?v= を外してから埋め込む
 def css_img(m):
     path = 'assets/ui/' + m.group(1)
     return 'url(data:image/png;base64,' + base64.b64encode(open(path, 'rb').read()).decode() + ')'
