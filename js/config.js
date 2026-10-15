@@ -10,6 +10,7 @@ const CONFIG = {
   TEXT_SPEED: 2,
   ENCOUNTER_RATE: 12,
   SFX_VOLUME: 0.8,   // 効果音（遭遇ジングルなど）の音量。BGM（Sound の gain 0.7）に対する相対値
+  DANGER_ENCOUNTER_SEC: 3.65,   // 危険遭遇演出の長さ（音源が使えないときの既定値）
   ENCOUNTER_SEC: 2.4,   // 遭遇演出の長さ（音源が使えないときの既定値。音源があるときは実際の長さを使う）
   GRACE_STEPS: 4,    // 戦闘直後はこの歩数だけ遭遇しない
   SAVE_KEY: 'guts-monsters-save-v1',

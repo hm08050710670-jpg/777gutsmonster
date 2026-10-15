@@ -582,8 +582,8 @@ class BattleScene {
     if (this.mode === 'wait') { if (--this.waitT <= 0) { this.mode = 'busy'; const f = this.waitDone; this.waitDone = null; f && f(); } return; }
     if (this.enc) {   // 遭遇演出中：入力を受けない。ジングルが終わったら野生戦BGMを始めて出現メッセージへ（1回だけ）
       if (!this.enc.done()) return;
-      this.enc.finish(); this.enc = null;
-      Sound.play('wild');
+      const bgm = this.enc.bgm(); this.enc.finish(); this.enc = null;
+      Sound.play(bgm);
       this.next();
       return;
     }
@@ -655,7 +655,7 @@ class BattleScene {
     const elx = this.lunge && this.lunge.who === 'e' ? -lg : 0, ely = this.lunge && this.lunge.who === 'e' ? lg * 0.5 : 0;
     const eox = this.enc ? this.enc.enemyOffset() : 0;   // 遭遇演出：右からすべり込む
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; oval(148 + eox, ey + ES - 2, 36, 6);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'; oval(148 + eox, ey + ES, 30, 4);
+    ctx.fillStyle = `rgba(0,0,0,${(0.10 + (this.enc ? this.enc.shadowBoost() : 0)).toFixed(2)})`; oval(148 + eox, ey + ES, 30, 4);
     const cv = this.enemyCaptureView();
     if (!cv) this.drawMon(ctx, en, 118 + sx + elx + eox, ey + ely, ES, false, this.flashE);
     else if (!cv.hidden) {
@@ -805,20 +805,31 @@ class BattleScene {
 }
 
 // ============================================================
-// 野生遭遇の演出（ジングル 16_sharp_alert と同期）
-//   0.00〜FLASH  白フラッシュ（フィールドの上）
-//   FLASH〜COVER 黒／濃い緑の横じまが左右から流れ込んで画面を覆う
-//   COVER        覆われた状態で BattleScene に切り替える（BGM・メッセージはまだ）
-//   OPEN〜OPEN+CLEAR 横じまが左右へ抜ける。OPEN〜END で相手が右からすべり込む
-//   END          野生戦BGM開始 → 既存の出現メッセージへ
-//   時計は「音声の実再生位置」と「壁時計」の大きいほう。音が鳴らない（ミュート・未読込・拒否）ときは壁時計で CONFIG.ENCOUNTER_SEC 進める
+// 野生遭遇の演出（ジングルと同期）。種類ごとの区切りは ENC_PRESET（秒）
+//   wild（16_sharp_alert 2.4秒）
+//     0.00〜FLASH  白フラッシュ（フィールドの上）
+//     FLASH〜COVER 黒／濃い緑の横じまが左右から流れ込んで画面を覆う
+//   danger（49_predator_warning 3.65秒）：危険な相手
+//     0.00〜HIT    予兆：フィールドをほんの少し暗くし、鼓動（PULSES）に合わせて一瞬ずつ沈める
+//     HIT〜FLASH   強い音：白 → 濃い緑のフラッシュ
+//     FLASH〜COVER 横じま（より濃い色）が流れ込む
+//   共通
+//     COVER        覆われた状態で BattleScene に切り替える（BGM・メッセージはまだ）
+//     OPEN〜OPEN+CLEAR 横じまが左右へ抜ける。OPEN〜END で相手が右からすべり込む（danger は LAND で小さく揺れて前に出る）
+//     END          戦闘BGM開始 → 既存の出現メッセージへ
+//   時計は「音声の実再生位置」と「壁時計」の大きいほう。音が鳴らない（ミュート・未読込・拒否）ときは壁時計で sec 秒進める
 // ============================================================
-const ENC = { FLASH: 0.25, COVER: 1.15, OPEN: 1.65, CLEAR: 0.4, ROW: 8 };
+const ENC_PRESET = {
+  wild:   { sfx: 'encounter', sec: () => CONFIG.ENCOUNTER_SEC, FLASH: 0.25, COVER: 1.15, OPEN: 1.65, CLEAR: 0.4, ROW: 8, colors: ['#06110a', '#0d3620'], bgm: () => 'wild' },
+  danger: { sfx: 'danger', sec: () => CONFIG.DANGER_ENCOUNTER_SEC, PULSES: [0.05, 0.3, 0.6, 0.85], HIT: 1.2, FLASH: 1.35, COVER: 2.3, OPEN: 2.6, CLEAR: 0.35, LAND: 3.25, ROW: 8, colors: ['#020603', '#082314'],
+            bgm: () => (DATA.BGM.danger ? 'danger' : 'wild') },   // 危険モンスター専用BGMは DATA.BGM.danger を足せば自動で使う（未定義なら野生戦BGM）
+};
 class Encounter {
-  constructor() {
-    this.sfx = Sound.playSfx('encounter');   // null なら音なし
+  constructor(kind) {
+    this.kind = kind || 'wild'; this.P = ENC_PRESET[this.kind];
+    this.sfx = Sound.playSfx(this.P.sfx);   // null なら音なし
     this.t0 = performance.now();
-    this.dur = this.sfx ? this.sfx.duration : CONFIG.ENCOUNTER_SEC;
+    this.dur = this.sfx ? this.sfx.duration : this.P.sec();
     this.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.finished = false;
   }
@@ -828,52 +839,70 @@ class Encounter {
     return Math.max(wall, audio);
   }
   done() { return this.elapsed() >= this.dur; }
+  bgm() { return this.P.bgm(); }
   // 終了：壁時計だけで進んだ（音が実際には進んでいない）ときは、遅れて鳴り出さないよう止める
   finish() {
     if (this.finished) return; this.finished = true;
     if (this.sfx && Sound.now() - this.sfx.start < this.dur - 0.15) this.sfx.stop();
     this.sfx = null;
   }
-  stripeColor(i) { return i % 2 ? '#0d3620' : '#06110a'; }
-  // フィールドの上：フラッシュ → 横じま流入
+  stripeColor(i) { return this.P.colors[i % 2]; }
+  // フィールドの上：（danger は予兆 →）フラッシュ → 横じま流入
   drawIn(ctx, W, H) {
-    const e = this.elapsed();
-    if (e < ENC.FLASH) {
-      if (!this.reduce) { const a = e < 0.08 ? 1 : 1 - (e - 0.08) / (ENC.FLASH - 0.08); ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+    const e = this.elapsed(), P = this.P;
+    if (P.HIT !== undefined && e < P.HIT) {   // 予兆：少しずつ暗く＋鼓動ごとに一瞬沈む
+      let a = 0.22 * Math.min(1, e / P.HIT);
+      for (const t of P.PULSES) { const d = e - t; if (d >= 0 && d < 0.16) a += 0.16 * (1 - d / 0.16); }
+      ctx.fillStyle = `rgba(4,12,6,${Math.min(0.6, a).toFixed(3)})`; ctx.fillRect(0, 0, W, H);
       return;
     }
-    const rows = Math.ceil(H / ENC.ROW), span = ENC.COVER - ENC.FLASH;
+    if (e < P.FLASH) {
+      const f0 = P.HIT !== undefined ? P.HIT : 0, span = P.FLASH - f0, d = e - f0;
+      if (this.reduce) { ctx.fillStyle = 'rgba(4,12,6,0.4)'; ctx.fillRect(0, 0, W, H); return; }
+      if (P.HIT !== undefined) {   // 強い音：白 → 濃い緑
+        if (d < span * 0.4) ctx.fillStyle = `rgba(255,255,255,${(1 - d / (span * 0.4) * 0.3).toFixed(3)})`;
+        else ctx.fillStyle = `rgba(8,35,20,${(1 - (d - span * 0.4) / (span * 0.6) * 0.5).toFixed(3)})`;
+      } else { const a = d < 0.08 ? 1 : 1 - (d - 0.08) / (span - 0.08); ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`; }
+      ctx.fillRect(0, 0, W, H);
+      return;
+    }
+    const rows = Math.ceil(H / P.ROW), span = P.COVER - P.FLASH;
     for (let i = 0; i < rows; i++) {
       // 上の行から順に始まり、各行は span の 55% で流れ込む
-      const st = ENC.FLASH + (i / rows) * span * 0.45, p = Math.max(0, Math.min(1, (e - st) / (span * 0.55)));
+      const st = P.FLASH + (i / rows) * span * 0.45, p = Math.max(0, Math.min(1, (e - st) / (span * 0.55)));
       const w = Math.round(W * p); if (!w) continue;
       ctx.fillStyle = this.stripeColor(i);
-      ctx.fillRect(i % 2 ? W - w : 0, i * ENC.ROW, w, ENC.ROW);
+      ctx.fillRect(i % 2 ? W - w : 0, i * P.ROW, w, P.ROW);
     }
   }
   // バトルの上：全面カバー → 横じま流出
   drawOut(ctx, W, H) {
-    const e = this.elapsed(), rows = Math.ceil(H / ENC.ROW);
-    if (e < ENC.OPEN) { for (let i = 0; i < rows; i++) { ctx.fillStyle = this.stripeColor(i); ctx.fillRect(0, i * ENC.ROW, W, ENC.ROW); } return; }
+    const e = this.elapsed(), P = this.P, rows = Math.ceil(H / P.ROW);
+    if (e < P.OPEN) { for (let i = 0; i < rows; i++) { ctx.fillStyle = this.stripeColor(i); ctx.fillRect(0, i * P.ROW, W, P.ROW); } return; }
     for (let i = 0; i < rows; i++) {
-      const st = ENC.OPEN + (i / rows) * ENC.CLEAR * 0.45, p = Math.max(0, Math.min(1, (e - st) / (ENC.CLEAR * 0.55)));
+      const st = P.OPEN + (i / rows) * P.CLEAR * 0.45, p = Math.max(0, Math.min(1, (e - st) / (P.CLEAR * 0.55)));
       const w = Math.round(W * (1 - p)); if (!w) continue;
       ctx.fillStyle = this.stripeColor(i);
-      ctx.fillRect(i % 2 ? 0 : W - w, i * ENC.ROW, w, ENC.ROW);
+      ctx.fillRect(i % 2 ? 0 : W - w, i * P.ROW, w, P.ROW);
     }
   }
-  // 相手のすべり込み：OPEN〜END で右（画面外）から定位置へ
+  // 相手のすべり込み：OPEN〜LAND（なければ END）で右（画面外）から定位置へ。danger は着地で小さく揺れて短く前へ出る
   enemyOffset() {
-    const e = this.elapsed(), p = Math.max(0, Math.min(1, (e - ENC.OPEN) / Math.max(0.2, this.dur - ENC.OPEN)));
-    return Math.round((1 - Math.sin(p * Math.PI / 2)) * 80);
+    const e = this.elapsed(), P = this.P, land = P.LAND || this.dur;
+    const p = Math.max(0, Math.min(1, (e - P.OPEN) / Math.max(0.2, land - P.OPEN)));
+    let x = Math.round((1 - Math.sin(p * Math.PI / 2)) * 80);
+    if (P.LAND && e >= P.LAND && e < P.LAND + 0.3) { const d = (e - P.LAND) / 0.3; x += Math.round(-5 * Math.sin(d * Math.PI)) + (Math.floor(e * 40) % 2 ? 1 : -1) * (d < 0.5 ? 1 : 0); }
+    return x;
   }
+  // 影の濃さ（danger は着地で一瞬強く）
+  shadowBoost() { const P = this.P, e = this.elapsed(); if (!P.LAND || e < P.LAND) return 0; return Math.max(0, 0.3 * (1 - (e - P.LAND) / 0.4)); }
 }
 // フィールドに重ねる前半（COVER で自分を外して BattleScene に替わる）
 class EncounterScene {
-  constructor(opt) { this.overlay = true; this.enemy = opt.enemy; this.onEnd = opt.onEnd; this.swapped = false; }
-  enter() { Sound.stop(); this.enc = new Encounter(); }
+  constructor(opt) { this.overlay = true; this.enemy = opt.enemy; this.onEnd = opt.onEnd; this.kind = opt.danger ? 'danger' : 'wild'; this.swapped = false; }
+  enter() { Sound.stop(); this.enc = new Encounter(this.kind); }
   update() {
-    if (this.swapped || this.enc.elapsed() < ENC.COVER) return;
+    if (this.swapped || this.enc.elapsed() < this.enc.P.COVER) return;
     this.swapped = true;   // 二重に切り替えない
     Game.pop();
     Game.push(new BattleScene({ enemy: this.enemy, onEnd: this.onEnd, encounter: this.enc }));
@@ -888,5 +917,5 @@ function startWildBattle(mapId, onEnd, table) {
   let r = Math.random() * total, pick = tbl[0];
   for (const e of tbl) { if ((r -= e.weight) < 0) { pick = e; break; } }
   const enemy = makeMonster(pick.id, Game.rand(pick.level[0], pick.level[1]));
-  Game.push(new EncounterScene({ enemy, onEnd }));
+  Game.push(new EncounterScene({ enemy, onEnd, danger: !!pick.danger }));   // 出現表の項目に danger: true があれば危険遭遇（49番）
 }

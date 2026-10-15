@@ -50,6 +50,7 @@ const DATA = {
   // 効果音（1回だけ鳴らす。Sound.playSfx(name)）
   SFX: {
     encounter: 'assets/sfx/16_sharp_alert.wav',   // 16番「ピリッと緊張」：野生遭遇ジングル（2.4秒）
+    danger: 'assets/sfx/49_predator_warning.wav',   // 49番：危険な野生モンスター遭遇ジングル（3.65秒）。出現表の項目に danger: true を付けた相手で鳴る
   },
   BGM: {
     town:  'assets/bgm/guts_town.mp3',       // GUTS TOWN 112BPM
