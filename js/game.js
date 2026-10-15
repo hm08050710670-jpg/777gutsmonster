@@ -46,7 +46,15 @@ const Game = (() => {
   }
   // ---- スケーリング：端末幅に合わせて拡大。縦に余る端末では画面の高さ（CONFIG.H）を 208〜272 の範囲で広げて、フィールドをより広く見せる ----
   const H_BASE = 208, H_MAX = 272;
+  let fitKey = '';   // 最後に組んだときの見えている大きさ。変わったのにイベントが来なかったとき（iOS のキーボード閉じ後など）に組み直す判定に使う
+  const viewKey = () => { const vv = window.visualViewport; return `${app().clientWidth}x${Math.round(vv ? vv.height : window.innerHeight)}`; };
+  const app = () => document.getElementById('app');
   function fit() {
+    // キーボードが出ている間・ピンチで拡大されている間は見えている高さが一時的に小さくなる。その値で組むと画面が小さいまま残ることがあるので組み直さない
+    const vv = window.visualViewport, ae = document.activeElement;
+    const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+    if (fitKey && ((vv && vv.scale > 1.02) || typing)) return;
+    fitKey = viewKey();
     const app = document.getElementById('app');
     const landscape = matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
     const auxH = landscape ? 0 : 18;
@@ -114,6 +122,7 @@ const Game = (() => {
   function loop(t) {
     acc += Math.min(100, t - last); last = t;
     while (acc >= STEP) { update(); acc -= STEP; }
+    if (frame % 30 === 0 && fitKey && viewKey() !== fitKey) fit();   // 見えている大きさが変わっていたら組み直す（イベント取りこぼし対策）
     draw();
     requestAnimationFrame(loop);
   }
