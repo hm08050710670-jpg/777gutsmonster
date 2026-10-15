@@ -79,6 +79,7 @@ const Sound = (() => {
     const g = ctx.createGain(); g.gain.value = CONFIG.SFX_VOLUME || 1; g.connect(gain);
     const src = ctx.createBufferSource(); src.buffer = buf; src.loop = false; src.connect(g);
     const start = ctx.currentTime; src.start(start);
+    src.onended = () => { lastSfx += ` end${(ctx.currentTime - start).toFixed(1)}s`; };   // 診断：実際に鳴り終わった（または止められた）時刻
     return { start, duration: buf.duration, stop: () => { try { src.stop(); } catch (e) {} } };
   }
   const now = () => (ctx ? ctx.currentTime : 0);
