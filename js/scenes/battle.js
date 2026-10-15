@@ -917,5 +917,6 @@ function startWildBattle(mapId, onEnd, table) {
   let r = Math.random() * total, pick = tbl[0];
   for (const e of tbl) { if ((r -= e.weight) < 0) { pick = e; break; } }
   const enemy = makeMonster(pick.id, Game.rand(pick.level[0], pick.level[1]));
-  Game.push(new EncounterScene({ enemy, onEnd, danger: !!pick.danger }));   // 出現表の項目に danger: true があれば危険遭遇（49番）
+  const kind = pick.kind || (pick.danger ? 'danger' : (CONFIG.ENCOUNTER_KIND || 'wild'));   // 既定は CONFIG.ENCOUNTER_KIND。項目ごとに kind:'wild'／danger:true で上書き
+  Game.push(new EncounterScene({ enemy, onEnd, danger: kind === 'danger' }));
 }
