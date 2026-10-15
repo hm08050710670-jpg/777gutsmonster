@@ -821,7 +821,7 @@ class BattleScene {
 // ============================================================
 const ENC_PRESET = {
   wild:   { sfx: 'encounter', sec: () => CONFIG.ENCOUNTER_SEC, FLASH: 0.25, COVER: 1.15, OPEN: 1.65, CLEAR: 0.4, ROW: 8, colors: ['#06110a', '#0d3620'], bgm: () => 'wild' },
-  danger: { sfx: 'danger', sec: () => CONFIG.DANGER_ENCOUNTER_SEC, PULSES: [0.05, 0.3, 0.6, 0.85], HIT: 1.2, FLASH: 1.35, COVER: 2.3, OPEN: 2.6, CLEAR: 0.35, LAND: 3.25, ROW: 8, colors: ['#020603', '#082314'],
+  danger: { sfx: 'danger', sec: () => CONFIG.DANGER_ENCOUNTER_SEC, PULSES: [0.05, 0.3, 0.6, 0.85], HIT: 1.2, FLASH: 1.35, COVER: 2.3, OPEN: 3.0, CLEAR: 0.35, LAND: 3.45, ROW: 8, colors: ['#020603', '#082314'],
             bgm: () => (DATA.BGM.danger ? 'danger' : 'wild') },   // 危険モンスター専用BGMは DATA.BGM.danger を足せば自動で使う（未定義なら野生戦BGM）
 };
 class Encounter {
