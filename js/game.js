@@ -86,6 +86,17 @@ const Game = (() => {
   const unscroll = () => { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); };
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { unscroll(); fit(); }); window.visualViewport.addEventListener('scroll', unscroll); }
   window.addEventListener('scroll', unscroll);
+  // iOS Safari はピンチ／ダブルタップの拡大を止められないことがある（user-scalable=no を無視する）。
+  //   拡大されたままだとパズルが画面からはみ出して押せなくなるので、拡大を検知したら viewport を書き直して等倍に戻す
+  const VIEWPORT = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+  let zoomTimer = null;
+  function resetZoom() {
+    const vv = window.visualViewport, m = document.querySelector('meta[name="viewport"]');
+    if (!vv || !m || vv.scale <= 1.05) return;
+    m.setAttribute('content', VIEWPORT + ', minimum-scale=1');
+    setTimeout(() => { m.setAttribute('content', VIEWPORT); window.scrollTo(0, 0); fit(); }, 60);
+  }
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { if (window.visualViewport.scale > 1.05) { clearTimeout(zoomTimer); zoomTimer = setTimeout(resetZoom, 350); } });
   window.addEventListener('orientationchange', () => setTimeout(fit, 150));
 
   const push = s => { scenes.push(s); s.enter && s.enter(); };

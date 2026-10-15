@@ -17,6 +17,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+* { touch-action: manipulation; }   /* iOS のダブルタップ拡大を止める（盤面・パッドは個別に none） */
 html, body {
   margin: 0; padding: 0;
   background: var(--bg);
