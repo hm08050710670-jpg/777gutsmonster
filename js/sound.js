@@ -60,26 +60,30 @@ const Sound = (() => {
   }
 
   // ---- 効果音：一度だけ鳴らす。戻り値は { start: 音声時計での開始時刻, duration: 秒 }。鳴らせないときは null（ミュート・未アンロック・未読込）----
-  let sfxBuf = {}, sfxLoading = {};
+  let sfxBuf = {}, sfxLoading = {}, sfxErr = {}, lastSfx = '-';   // sfxErr/lastSfx は設定画面の診断表示用
   function loadSfx(name) {
     if (sfxBuf[name] || sfxLoading[name] || !ctx) return sfxLoading[name];
     const url = (DATA.SFX || {})[name]; if (!url) return null;
     sfxLoading[name] = fetchBytes(url)
       .then(bytes => new Promise((res, rej) => ctx.decodeAudioData(bytes, res, rej)))
-      .then(buf => { sfxBuf[name] = buf; })
-      .catch(e => { console.warn('SFX 読込失敗', name, e); delete sfxLoading[name]; });
+      .then(buf => { sfxBuf[name] = buf; delete sfxErr[name]; })
+      .catch(e => { console.warn('SFX 読込失敗', name, e); sfxErr[name] = String(e && (e.message || e.name || e)).slice(0, 24); delete sfxLoading[name]; });
     return sfxLoading[name];
   }
   function playSfx(name) {
-    if (!readEnabled() || !unlocked || !ctx) return null;
-    const buf = sfxBuf[name]; if (!buf) { loadSfx(name); return null; }   // 間に合わなければ今回は鳴らさない（次回から鳴る）
-    if (ctx.state === 'suspended') ctx.resume();
+    if (!readEnabled()) { lastSfx = 'off'; return null; }
+    if (!unlocked || !ctx) { lastSfx = 'locked'; return null; }
+    const buf = sfxBuf[name]; if (!buf) { loadSfx(name); lastSfx = sfxErr[name] ? 'err:' + sfxErr[name] : 'loading'; return null; }   // 間に合わなければ今回は鳴らさない（次回から鳴る）
+    if (ctx.state !== 'running') ctx.resume();
+    lastSfx = `ok ${ctx.state}`;
     const g = ctx.createGain(); g.gain.value = CONFIG.SFX_VOLUME || 1; g.connect(gain);
     const src = ctx.createBufferSource(); src.buffer = buf; src.loop = false; src.connect(g);
     const start = ctx.currentTime; src.start(start);
     return { start, duration: buf.duration, stop: () => { try { src.stop(); } catch (e) {} } };
   }
   const now = () => (ctx ? ctx.currentTime : 0);
+  // 診断（設定画面に小さく出す）：音声の状態 / 効果音の読込数 / 最後の効果音の結果
+  const diag = () => `おと:${ctx ? ctx.state : 'なし'} SFX:${Object.keys(sfxBuf).length}/${Object.keys(DATA.SFX || {}).length}${Object.keys(sfxErr).length ? ' err' : ''} さいご:${lastSfx}`;
 
   function start(name) {
     const buf = buffers[name]; if (!buf || !ctx) return;
@@ -117,5 +121,5 @@ const Sound = (() => {
   const currentName = () => (current ? current.name : null);
   const status = () => ({ unlocked, ctx: ctx ? ctx.state : null, current: currentName(), wanted, loaded: Object.keys(buffers) });
 
-  return { installUnlock, unlock, play, stop, setEnabled, currentName, status, playSfx, now };
+  return { installUnlock, unlock, play, stop, setEnabled, currentName, status, playSfx, now, diag };
 })();

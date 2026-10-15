@@ -67,12 +67,13 @@ class SettingsScene {
   }
   draw(ctx) {
     const it = this.items();
-    const w = 150, h = it.length * 16 + 16, x = (CONFIG.W - w) / 2, y = 40;
+    const w = 150, h = it.length * 16 + 26, x = (CONFIG.W - w) / 2, y = 40;
     Text.box(ctx, x, y, w, h);
     it.forEach((o, i) => {
       Text.draw(ctx, o.label, x + 18, y + 8 + i * 16);
       if (i === this.sel) Text.cursor(ctx, x + 9, y + 8 + i * 16);
     });
+    if (Sound.diag) { ctx.save(); ctx.translate(x + 8, y + h - 13); ctx.scale(0.7, 0.7); Text.draw(ctx, Sound.diag(), 0, 0, THEME.textDim); ctx.restore(); }   // 音の診断（小さく）
   }
 }
 
