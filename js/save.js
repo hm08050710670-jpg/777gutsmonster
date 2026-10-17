@@ -33,6 +33,17 @@ const Save = {
     catch (e) { console.warn('セーブ失敗', e); return false; }
   },
   clear() { try { localStorage.removeItem(CONFIG.SAVE_KEY); } catch (e) {} },
+  // ---- セーブコード：端末のデータが消えても戻せるように、文字列にして持ち出す／読み戻す ----
+  //   形式 "GM1." + base64(UTF-8 JSON) + "." + 簡易チェック（壊れた貼り付けを弾く）
+  sum(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h.toString(36); },
+  encode(state) { const b = btoa(unescape(encodeURIComponent(JSON.stringify(state)))); return `GM1.${b}.${Save.sum(b)}`; },
+  decode(code) {
+    try {
+      const m = String(code || '').trim().match(/^GM1\.([A-Za-z0-9+/=]+)\.([a-z0-9]+)$/); if (!m || Save.sum(m[1]) !== m[2]) return null;
+      const st = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      return st && st.party && st.map ? st : null;
+    } catch (e) { return null; }
+  },
   // オートセーブ：成功したら画面下の補助表示に知らせる
   auto(state) {
     if (Save.store(state)) UI.flashSaved();

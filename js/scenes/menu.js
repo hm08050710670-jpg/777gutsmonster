@@ -56,8 +56,28 @@ class SettingsScene {
       { label: `BGM：${s.bgm === false ? 'OFF' : 'ON'}`, action: () => { s.bgm = s.bgm === false; Sound.setEnabled(s.bgm); } },
       { label: `なまえ：${Game.state ? Game.state.name : ''}`, action: () => { if (!Game.state) return; UI.promptName(n => { Game.state.name = n; Save.auto(Game.state); }, { title: 'なまえを かえる', defaultName: Game.state.name, onCancel: () => {} }); } },
       { label: 'おとテスト（ジングル）', action: () => { Sound.playSfx && Sound.playSfx('encounter'); } },   // 遭遇ジングルをその場で鳴らす（確認用）
+      { label: 'セーブコードを コピー', action: () => this.copyCode() },
+      { label: 'セーブコードから ふっき', action: () => this.pasteCode() },
       { label: 'とじる', action: () => Game.pop() },
     ];
+  }
+  // セーブコード：いまの状態を文字列にしてクリップボードへ（メモやLINEに貼って控えられる）
+  copyCode() {
+    const st = Game.state || Save.load(); if (!st) { this.note = 'セーブデータが ありません'; return; }
+    const code = Save.encode(st);
+    const done = () => { this.note = 'コピーしました（メモなどに はりつけて ほぞん）'; };
+    const fallback = () => { window.prompt('このコードを コピーして ほぞんしてください', code); this.note = 'コードを ひょうじしました'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, fallback); else fallback();
+  }
+  // セーブコードから復帰：貼り付けたコードを検証して、セーブに書き戻してから読み直す
+  pasteCode() {
+    const code = window.prompt('セーブコードを はりつけてください', '');
+    if (code == null || !code.trim()) return;
+    const st = Save.decode(code);
+    if (!st) { this.note = 'コードが ただしくありません'; return; }
+    if (!Save.store(st)) { this.note = 'ほぞんに しっぱいしました'; return; }
+    this.note = 'ふっきしました';
+    Game.state = st; Game.replace(new FieldScene());
   }
   update() {
     const it = this.items();
@@ -74,7 +94,7 @@ class SettingsScene {
       Text.draw(ctx, o.label, x + 18, y + 8 + i * 16);
       if (i === this.sel) Text.cursor(ctx, x + 9, y + 8 + i * 16);
     });
-    if (Sound.diag) { ctx.save(); ctx.translate(x + 8, y + h - 13); ctx.scale(0.7, 0.7); Text.draw(ctx, Sound.diag(), 0, 0, THEME.textDim); ctx.restore(); }   // 音の診断（小さく）
+    if (Sound.diag) { ctx.save(); ctx.translate(x + 8, y + h - 13); ctx.scale(0.7, 0.7); Text.draw(ctx, this.note || Sound.diag(), 0, 0, this.note ? THEME.green : THEME.textDim); ctx.restore(); }   // 音の診断／操作の結果（小さく）
   }
 }
 
